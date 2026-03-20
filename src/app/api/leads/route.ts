@@ -72,7 +72,11 @@ export async function POST(request: NextRequest) {
 
     if (supabaseUrl && supabaseKey) {
       const supabase = await createClient()
-      const { error } = await supabase.from('leads').insert(sanitizedLead)
+      const { data: insertedLead, error } = await supabase
+        .from('leads')
+        .insert(sanitizedLead)
+        .select('id')
+        .single()
       if (error) {
         console.error('Supabase insert error:', error)
         return NextResponse.json(
@@ -80,12 +84,13 @@ export async function POST(request: NextRequest) {
           { status: 500 }
         )
       }
+      return NextResponse.json({ success: true, lead_id: insertedLead?.id ?? null }, { status: 201 })
     } else {
       // Log lead to console in dev when DB is not configured
       console.log('[Lead captured - no DB configured]', sanitizedLead)
     }
 
-    return NextResponse.json({ success: true }, { status: 201 })
+    return NextResponse.json({ success: true, lead_id: null }, { status: 201 })
   } catch (err) {
     console.error('API route error:', err)
     return NextResponse.json(
