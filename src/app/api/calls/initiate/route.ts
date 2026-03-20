@@ -116,9 +116,12 @@ Comienza diciendo: "Hola, ¿hablo con ${nombre || 'el candidato'}? Le llamo de p
     const vapiData = await response.json()
 
     if (!response.ok) {
-      console.error('Vapi error:', vapiData)
-      return NextResponse.json({ success: false, error: 'Error al iniciar la llamada.' }, { status: 500 })
+      console.error('Vapi error status:', response.status, 'body:', JSON.stringify(vapiData))
+      console.error('Vapi payload sent:', JSON.stringify({ ...payload, assistant: '...' }))
+      return NextResponse.json({ success: false, error: 'Error al iniciar la llamada.', detail: vapiData }, { status: 500 })
     }
+
+    console.log('Vapi call initiated successfully:', vapiData.id, 'to:', e164)
 
     // Save call record to Supabase if configured
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
