@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@supabase/supabase-js'
 
 export async function POST(request: NextRequest) {
   try {
@@ -68,10 +68,10 @@ export async function POST(request: NextRequest) {
 
     // Skip DB insert if Supabase credentials are not configured
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
     if (supabaseUrl && supabaseKey) {
-      const supabase = await createClient()
+      const supabase = createClient(supabaseUrl, supabaseKey)
       const { data: insertedLead, error } = await supabase
         .from('leads')
         .insert(sanitizedLead)
