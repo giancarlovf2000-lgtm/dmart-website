@@ -72,8 +72,8 @@ Comienza diciendo: "Hola, ¿hablo con ${nombre || 'el candidato'}? Le llamo de p
         maxTokens: 250,
       },
       voice: {
-        provider: 'playht',
-        voiceId: 'es-ES-ElviraNeural',
+        provider: 'azure',
+        voiceId: 'es-PR-KarinaNeural',
       },
       firstMessage: `Hola, ¿hablo con ${nombre || 'el candidato'}? Le llamo de parte de D'Mart Institute. Mi nombre es Sofía. Nos comunicamos porque usted solicitó información sobre ${programa_interes || 'nuestros programas'}. ¿Tiene un momento para hablar?`,
       endCallMessage: 'Muchas gracias por su tiempo. Un consejero estará en contacto con usted pronto. ¡Que tenga un excelente día!',
@@ -122,10 +122,10 @@ Comienza diciendo: "Hola, ¿hablo con ${nombre || 'el candidato'}? Le llamo de p
 
     // Save call record to Supabase if configured
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     if (supabaseUrl && supabaseKey) {
-      const { createClient } = await import('@/lib/supabase/server')
-      const supabase = await createClient()
+      const { createClient } = await import('@supabase/supabase-js')
+      const supabase = createClient(supabaseUrl, supabaseKey)
       await supabase.from('calls').insert({
         lead_id: lead_id || null,
         vapi_call_id: vapiData.id,
