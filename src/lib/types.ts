@@ -55,6 +55,85 @@ export interface ProgramCampus {
   campus?: Campus
 }
 
+// ============================================================
+// Portal types
+// ============================================================
+
+export type LeadStatus =
+  | 'Nuevo Lead'
+  | 'Crítico'
+  | 'Contacto Inicial (Pendiente de Respuesta)'
+  | 'Contacto Establecido'
+  | 'Cita Programada'
+  | 'No Asistió a la Cita'
+  | 'Reagendado'
+  | 'En Espera de Documentos'
+  | 'Orientado (En Proceso de Matricularse)'
+  | 'Seguimiento a Futuro'
+  | 'Matriculado'
+  | 'Desinteresado / Rechazado'
+
+export type CommunicationType =
+  | 'Llamada'
+  | 'Mensaje de texto'
+  | 'Email'
+  | 'Visita presencial'
+  | 'WhatsApp'
+  | 'Otro'
+
+export type ActionType = 'status_change' | 'note_added' | 'lead_created' | 'lead_assigned'
+
+export type AssignmentSource = 'website' | 'manual'
+
+export type EmployeeRole = 'admin' | 'empleado'
+
+export interface Employee {
+  id: string
+  full_name: string
+  campus: string[]
+  role: EmployeeRole
+  active: boolean
+  round_robin_index: number
+  created_at: string
+}
+
+export interface LeadHistory {
+  id: string
+  lead_id: string
+  employee_id: string | null
+  action_type: ActionType
+  old_status: string | null
+  new_status: string | null
+  note: string | null
+  communication_type: CommunicationType | null
+  created_at: string
+  employee?: Pick<Employee, 'full_name'>
+}
+
+export interface Activity {
+  id: string
+  employee_id: string
+  month: string
+  name: string
+  description: string | null
+  type: 'feria' | 'visita_escuela' | 'evento_comunitario' | 'otro'
+  planned_leads: number | null
+  actual_leads: number | null
+  created_at: string
+}
+
+export interface MonthlyReport {
+  id: string
+  employee_id: string
+  month: string
+  report_type: 'planning' | 'performance'
+  leads_acquired: number | null
+  leads_contacted: number | null
+  leads_enrolled: number | null
+  notes: string | null
+  created_at: string
+}
+
 export interface Lead {
   id: string
   created_at: string
@@ -71,12 +150,19 @@ export interface Lead {
   utm_medium: string | null
   utm_campaign: string | null
   page_source: string | null
-  status: 'new' | 'contacted' | 'enrolled' | 'closed'
+  status: LeadStatus
   notes: string | null
+  assigned_to: string | null
+  assignment_source: AssignmentSource | null
+  last_action_at: string
+  activity_id: string | null
+  lead_source_text: string | null
+  employee?: Pick<Employee, 'full_name'>
+  activity?: Pick<Activity, 'name'>
 }
 
-export type LeadInsert = Omit<Lead, 'id' | 'created_at' | 'updated_at' | 'status'> & {
-  status?: Lead['status']
+export type LeadInsert = Omit<Lead, 'id' | 'created_at' | 'updated_at' | 'status' | 'last_action_at' | 'employee' | 'activity'> & {
+  status?: LeadStatus
 }
 
 export interface Document {

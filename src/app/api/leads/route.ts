@@ -1,6 +1,62 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
+function getServiceClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!url || !key) return null
+  return createClient(url, key)
+}
+
+async function assignLeadToEmployee(
+  supabase: ReturnType<typeof createClient>,
+  leadId: string,
+  campus: string | null
+) {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = supabase as any
+
+    const isAny = !campus || campus === 'No tengo preferencia'
+    let query = db
+      .from('employees')
+      .select('id, round_robin_index')
+      .eq('active', true)
+      .order('round_robin_index', { ascending: true })
+
+    if (!isAny) {
+      query = query.contains('campus', [campus])
+    }
+
+    const { data: employees, error } = await query
+    if (error || !employees || employees.length === 0) return
+
+    const chosen = employees[0]
+    const total = employees.length
+    const nextIndex = (chosen.round_robin_index + 1) % total
+
+    await Promise.all([
+      db.from('employees').update({ round_robin_index: nextIndex }).eq('id', chosen.id),
+      db.from('leads').update({
+        assigned_to: chosen.id,
+        assignment_source: 'website',
+        status: 'Nuevo Lead',
+        last_action_at: new Date().toISOString(),
+      }).eq('id', leadId),
+      db.from('lead_history').insert({
+        lead_id: leadId,
+        employee_id: chosen.id,
+        action_type: 'lead_assigned',
+        new_status: 'Nuevo Lead',
+        note: 'Lead asignado automáticamente desde formulario web',
+      }),
+    ])
+  } catch (err) {
+    // Non-blocking: assignment failure should not fail the lead capture
+    console.error('Lead assignment error (non-blocking):', err)
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -49,7 +105,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Sanitize inputs
     const sanitizedLead = {
       nombre: nombre.trim().slice(0, 100),
       apellido: apellido.trim().slice(0, 100),
@@ -63,20 +118,19 @@ export async function POST(request: NextRequest) {
       utm_medium: typeof utm_medium === 'string' ? utm_medium.trim().slice(0, 100) : null,
       utm_campaign: typeof utm_campaign === 'string' ? utm_campaign.trim().slice(0, 200) : null,
       page_source: typeof page_source === 'string' ? page_source.trim().slice(0, 500) : null,
-      status: 'new' as const,
+      status: 'Nuevo Lead' as const,
+      last_action_at: new Date().toISOString(),
     }
 
-    // Skip DB insert if Supabase credentials are not configured
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    const supabase = getServiceClient()
 
-    if (supabaseUrl && supabaseKey) {
-      const supabase = createClient(supabaseUrl, supabaseKey)
+    if (supabase) {
       const { data: insertedLead, error } = await supabase
         .from('leads')
         .insert(sanitizedLead)
         .select('id')
         .single()
+
       if (error) {
         console.error('Supabase insert error:', error)
         return NextResponse.json(
@@ -84,9 +138,15 @@ export async function POST(request: NextRequest) {
           { status: 500 }
         )
       }
+
+      // Fire-and-forget: assign lead to an employee via round-robin
+      if (insertedLead?.id) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        assignLeadToEmployee(supabase as any, insertedLead.id, sanitizedLead.campus)
+      }
+
       return NextResponse.json({ success: true, lead_id: insertedLead?.id ?? null }, { status: 201 })
     } else {
-      // Log lead to console in dev when DB is not configured
       console.log('[Lead captured - no DB configured]', sanitizedLead)
     }
 

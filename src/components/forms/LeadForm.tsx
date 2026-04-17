@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { User, Mail, Phone, MapPin, BookOpen, Clock, Send, CheckCircle, AlertCircle } from 'lucide-react'
+import { User, Mail, Phone, MapPin, BookOpen, Clock, Send, AlertCircle } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import { ALL_PROGRAMS, cn } from '@/lib/utils'
 import type { LeadFormData } from '@/lib/types'
@@ -54,7 +54,6 @@ export default function LeadForm({
   const router = useRouter()
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle')
   const [errorMsg, setErrorMsg] = useState('')
-  const [callQueued, setCallQueued] = useState(false)
   const [formData, setFormData] = useState<LeadFormData>({
     nombre: '',
     apellido: '',
@@ -109,23 +108,6 @@ export default function LeadForm({
         throw new Error(data.error ?? 'Error al enviar el formulario. Por favor intenta de nuevo.')
       }
 
-      // Fire-and-forget: trigger AI voice agent call (non-blocking)
-      const lead_id: string | undefined = data.lead_id
-      setCallQueued(true)
-      fetch('/api/calls/initiate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          lead_id: lead_id ?? null,
-          nombre: formData.nombre,
-          telefono: formData.telefono,
-          programa_interes: formData.programa_interes,
-          campus: formData.campus,
-        }),
-      }).catch((callErr) => {
-        console.warn('Call initiation failed (non-blocking):', callErr)
-      })
-
       router.push('/gracias')
     } catch (err) {
       setStatus('error')
@@ -157,16 +139,6 @@ export default function LeadForm({
         <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 flex gap-3">
           <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
           <p className="text-sm text-red-700">{errorMsg}</p>
-        </div>
-      )}
-
-      {/* AI call queued notice */}
-      {callQueued && (
-        <div className="mb-6 p-4 rounded-xl bg-green-50 border border-green-200 flex gap-3 items-start">
-          <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-green-800 font-medium">
-            ✓ Un agente te llamará en breve para brindarte más información.
-          </p>
         </div>
       )}
 
