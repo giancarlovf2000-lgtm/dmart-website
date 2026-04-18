@@ -124,9 +124,11 @@ export default function AdminPage() {
 
   async function loadEmployees() {
     const res = await fetch('/api/portal/admin/employees')
-    if (!res.ok) return
-    const data = await res.json()
-    setEmployees(data.employees ?? [])
+    if (res.ok) {
+      const data = await res.json()
+      setEmployees(data.employees ?? [])
+    }
+    setLoading(false)
   }
 
   async function toggleActive(emp: EmployeeWithCount) {
