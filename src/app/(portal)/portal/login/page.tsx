@@ -20,6 +20,10 @@ export default function LoginPage() {
     setError('')
 
     const supabase = createClient()
+
+    // Clear any existing session first so stale cookies can't bleed into the new login
+    await supabase.auth.signOut()
+
     const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
 
     if (authError) {
@@ -28,7 +32,9 @@ export default function LoginPage() {
       return
     }
 
-    router.push('/portal/dashboard')
+    // Hard redirect so the server reads the fresh session cookie from scratch.
+    // router.push() is client-side and can carry over a stale middleware session.
+    window.location.href = '/portal/dashboard'
   }
 
   return (

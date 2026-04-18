@@ -13,7 +13,8 @@ export default function PortalHeader({ employee }: PortalHeaderProps) {
 
   async function handleLogout() {
     await fetch('/api/portal/auth/logout', { method: 'POST' })
-    router.push('/portal/login')
+    // Hard redirect to ensure the cleared session cookie is re-read by the server
+    window.location.href = '/portal/login'
   }
 
   return (
