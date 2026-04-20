@@ -1,10 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-function getServiceClient() {
+function getInsertClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   if (!url || !key) return null
+  return createClient(url, key)
+}
+
+function getServiceClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) {
+    console.error('[leads] SUPABASE_SERVICE_ROLE_KEY is not set — lead assignment skipped')
+    return null
+  }
   return createClient(url, key)
 }
 
@@ -122,10 +132,10 @@ export async function POST(request: NextRequest) {
       last_action_at: new Date().toISOString(),
     }
 
-    const supabase = getServiceClient()
+    const insertClient = getInsertClient()
 
-    if (supabase) {
-      const { data: insertedLead, error } = await supabase
+    if (insertClient) {
+      const { data: insertedLead, error } = await (insertClient as any)
         .from('leads')
         .insert(sanitizedLead)
         .select('id')
@@ -139,10 +149,12 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      // Fire-and-forget: assign lead to an employee via round-robin
+      // Fire-and-forget: assign lead via round-robin (requires service role key)
       if (insertedLead?.id) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        assignLeadToEmployee(supabase as any, insertedLead.id, sanitizedLead.campus)
+        const serviceClient = getServiceClient()
+        if (serviceClient) {
+          assignLeadToEmployee(serviceClient as any, insertedLead.id, sanitizedLead.campus)
+        }
       }
 
       return NextResponse.json({ success: true, lead_id: insertedLead?.id ?? null }, { status: 201 })
