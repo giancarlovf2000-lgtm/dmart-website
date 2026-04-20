@@ -28,6 +28,8 @@ async function assignLeadToEmployee(
     const db = supabase as any
 
     const isAny = !campus || campus === 'No tengo preferencia'
+    console.log('[assignment] start — leadId:', leadId, 'campus:', campus, 'isAny:', isAny)
+
     let query = db
       .from('employees')
       .select('id, round_robin_index')
@@ -40,17 +42,23 @@ async function assignLeadToEmployee(
     }
 
     const { data: employees, error } = await query
+    console.log('[assignment] employee query result — count:', employees?.length ?? 0, 'error:', error)
+
     if (error) {
       console.error('[assignment] employee query failed:', error)
       return
     }
-    if (!employees || employees.length === 0) return
+    if (!employees || employees.length === 0) {
+      console.warn('[assignment] no eligible employees found for campus:', campus)
+      return
+    }
 
     const chosen = employees[0]
     const total = employees.length
     const nextIndex = (chosen.round_robin_index + 1) % total
+    console.log('[assignment] assigning to:', chosen.id, 'nextIndex:', nextIndex)
 
-    await Promise.all([
+    const [empRes, leadRes, histRes] = await Promise.all([
       db.from('employees').update({ round_robin_index: nextIndex }).eq('id', chosen.id),
       db.from('leads').update({
         assigned_to: chosen.id,
@@ -66,9 +74,9 @@ async function assignLeadToEmployee(
         note: 'Lead asignado automáticamente desde formulario web',
       }),
     ])
+    console.log('[assignment] done — empErr:', empRes.error, 'leadErr:', leadRes.error, 'histErr:', histRes.error)
   } catch (err) {
-    // Non-blocking: assignment failure should not fail the lead capture
-    console.error('Lead assignment error (non-blocking):', err)
+    console.error('[assignment] uncaught error:', err)
   }
 }
 
@@ -154,9 +162,10 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      // Fire-and-forget: assign lead via round-robin (requires service role key)
+      // Assign lead via round-robin
       if (insertedLead?.id) {
         const serviceClient = getServiceClient()
+        console.log('[leads] serviceClient available:', !!serviceClient, 'campus:', sanitizedLead.campus)
         if (serviceClient) {
           await assignLeadToEmployee(serviceClient as any, insertedLead.id, sanitizedLead.campus)
         }
