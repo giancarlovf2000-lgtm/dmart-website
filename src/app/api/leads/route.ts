@@ -8,75 +8,78 @@ function getInsertClient() {
   return createClient(url, key)
 }
 
-function getServiceClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url || !key) {
-    console.error('[leads] SUPABASE_SERVICE_ROLE_KEY is not set — lead assignment skipped')
-    return null
+// Assignment uses raw fetch() against the REST API to avoid any Supabase JS client
+// auth/session state that could interfere when requests carry browser cookies.
+async function assignLeadToEmployee(leadId: string, campus: string | null) {
+  const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (!SUPABASE_URL || !SERVICE_KEY) {
+    console.error('[assignment] env vars missing — SUPABASE_URL:', !!SUPABASE_URL, 'SERVICE_KEY:', !!SERVICE_KEY)
+    return
   }
-  return createClient(url, key)
-}
 
-async function assignLeadToEmployee(
-  supabase: ReturnType<typeof createClient>,
-  leadId: string,
-  campus: string | null
-) {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const db = supabase as any
+    const headers: Record<string, string> = {
+      apikey: SERVICE_KEY,
+      Authorization: `Bearer ${SERVICE_KEY}`,
+      'Content-Type': 'application/json',
+    }
 
+    // Build employee query — always filter role=empleado, active=true, order by round_robin_index
     const isAny = !campus || campus === 'No tengo preferencia'
-    console.log('[assignment] start — leadId:', leadId, 'campus:', campus, 'isAny:', isAny)
-
-    let query = db
-      .from('employees')
-      .select('id, round_robin_index')
-      .eq('active', true)
-      .eq('role', 'empleado')
-      .order('round_robin_index', { ascending: true })
-
+    let empUrl = `${SUPABASE_URL}/rest/v1/employees?active=eq.true&role=eq.empleado&select=id,round_robin_index&order=round_robin_index.asc`
     if (!isAny) {
-      query = query.contains('campus', [campus])
+      // PostgREST array-contains syntax: campus=cs.{"Vega Alta"}
+      empUrl += `&campus=cs.${encodeURIComponent(`{"${campus}"}`)}`
     }
 
-    const { data: employees, error } = await query
-    console.log('[assignment] employee query result — count:', employees?.length ?? 0, 'error:', error)
+    console.log('[assignment] querying employees, campus:', campus, 'isAny:', isAny)
+    const empRes = await fetch(empUrl, { headers })
+    const employees: { id: string; round_robin_index: number }[] = await empRes.json()
+    console.log('[assignment] employees found:', employees?.length ?? 0)
 
-    if (error) {
-      console.error('[assignment] employee query failed:', error)
-      return
-    }
-    if (!employees || employees.length === 0) {
-      console.warn('[assignment] no eligible employees found for campus:', campus)
-      return
-    }
+    if (!Array.isArray(employees) || employees.length === 0) return
 
     const chosen = employees[0]
     const total = employees.length
     const nextIndex = (chosen.round_robin_index + 1) % total
-    console.log('[assignment] assigning to:', chosen.id, 'nextIndex:', nextIndex)
+    const now = new Date().toISOString()
 
-    const [empRes, leadRes, histRes] = await Promise.all([
-      db.from('employees').update({ round_robin_index: nextIndex }).eq('id', chosen.id),
-      db.from('leads').update({
-        assigned_to: chosen.id,
-        assignment_source: 'website',
-        status: 'Nuevo Lead',
-        last_action_at: new Date().toISOString(),
-      }).eq('id', leadId),
-      db.from('lead_history').insert({
-        lead_id: leadId,
-        employee_id: chosen.id,
-        action_type: 'lead_assigned',
-        new_status: 'Nuevo Lead',
-        note: 'Lead asignado automáticamente desde formulario web',
+    console.log('[assignment] assigning leadId:', leadId, 'to employee:', chosen.id)
+
+    const [empUpdate, leadUpdate, histInsert] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/employees?id=eq.${chosen.id}`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ round_robin_index: nextIndex }),
+      }),
+      fetch(`${SUPABASE_URL}/rest/v1/leads?id=eq.${leadId}`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({
+          assigned_to: chosen.id,
+          assignment_source: 'website',
+          status: 'Nuevo Lead',
+          last_action_at: now,
+        }),
+      }),
+      fetch(`${SUPABASE_URL}/rest/v1/lead_history`, {
+        method: 'POST',
+        headers: { ...headers, Prefer: 'return=minimal' },
+        body: JSON.stringify({
+          lead_id: leadId,
+          employee_id: chosen.id,
+          action_type: 'lead_assigned',
+          new_status: 'Nuevo Lead',
+          note: 'Lead asignado automáticamente desde formulario web',
+        }),
       }),
     ])
-    console.log('[assignment] done — empErr:', empRes.error, 'leadErr:', leadRes.error, 'histErr:', histRes.error)
+
+    console.log('[assignment] done — empStatus:', empUpdate.status, 'leadStatus:', leadUpdate.status, 'histStatus:', histInsert.status)
   } catch (err) {
-    console.error('[assignment] uncaught error:', err)
+    console.error('[assignment] error:', err)
   }
 }
 
@@ -148,6 +151,7 @@ export async function POST(request: NextRequest) {
     const insertClient = getInsertClient()
 
     if (insertClient) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: insertedLead, error } = await (insertClient as any)
         .from('leads')
         .insert(sanitizedLead)
@@ -162,13 +166,8 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      // Assign lead via round-robin
       if (insertedLead?.id) {
-        const serviceClient = getServiceClient()
-        console.log('[leads] serviceClient available:', !!serviceClient, 'campus:', sanitizedLead.campus)
-        if (serviceClient) {
-          await assignLeadToEmployee(serviceClient as any, insertedLead.id, sanitizedLead.campus)
-        }
+        await assignLeadToEmployee(insertedLead.id, sanitizedLead.campus)
       }
 
       return NextResponse.json({ success: true, lead_id: insertedLead?.id ?? null }, { status: 201 })
