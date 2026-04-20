@@ -32,6 +32,7 @@ async function assignLeadToEmployee(
       .from('employees')
       .select('id, round_robin_index')
       .eq('active', true)
+      .eq('role', 'empleado')
       .order('round_robin_index', { ascending: true })
 
     if (!isAny) {
@@ -39,7 +40,11 @@ async function assignLeadToEmployee(
     }
 
     const { data: employees, error } = await query
-    if (error || !employees || employees.length === 0) return
+    if (error) {
+      console.error('[assignment] employee query failed:', error)
+      return
+    }
+    if (!employees || employees.length === 0) return
 
     const chosen = employees[0]
     const total = employees.length
@@ -153,7 +158,7 @@ export async function POST(request: NextRequest) {
       if (insertedLead?.id) {
         const serviceClient = getServiceClient()
         if (serviceClient) {
-          assignLeadToEmployee(serviceClient as any, insertedLead.id, sanitizedLead.campus)
+          await assignLeadToEmployee(serviceClient as any, insertedLead.id, sanitizedLead.campus)
         }
       }
 
