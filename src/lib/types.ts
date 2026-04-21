@@ -119,6 +119,9 @@ export interface Activity {
   type: 'feria' | 'visita_escuela' | 'evento_comunitario' | 'otro'
   planned_leads: number | null
   actual_leads: number | null
+  activity_date: string | null
+  location: string | null
+  status: 'planificada' | 'terminada'
   created_at: string
 }
 
@@ -131,6 +134,8 @@ export interface MonthlyReport {
   leads_contacted: number | null
   leads_enrolled: number | null
   notes: string | null
+  performance_score: 'deficiente' | 'basico' | 'bueno' | 'excelente' | null
+  activities_completed: number | null
   created_at: string
 }
 

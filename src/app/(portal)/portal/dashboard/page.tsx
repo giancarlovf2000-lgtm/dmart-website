@@ -250,11 +250,16 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                   ? `Seguimiento pendiente · ${staleLeadIds.length} leads`
                   : `${isAdmin ? 'Todos los leads' : 'Mis leads'} · ${counts.total} total`}
               </h2>
-              {isAdmin && !showStale && (
-                <a href="/portal/admin" className="text-xs text-navy hover:underline font-medium">
-                  Ver empleados →
+              <div className="flex items-center gap-3">
+                <a href="/portal/reportes" className="text-xs text-navy hover:underline font-medium">
+                  Plan y Reportes →
                 </a>
-              )}
+                {isAdmin && !showStale && (
+                  <a href="/portal/admin" className="text-xs text-navy hover:underline font-medium">
+                    Ver empleados →
+                  </a>
+                )}
+              </div>
             </div>
             <LeadTable
               leads={(leads ?? []) as Lead[]}

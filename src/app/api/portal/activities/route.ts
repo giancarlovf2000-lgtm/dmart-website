@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
 
   const body = await request.json()
-  const { name, type, description, planned_leads, month } = body
+  const { name, type, description, planned_leads, month, activity_date, location } = body
 
   if (!name?.trim()) return NextResponse.json({ error: 'El nombre es requerido.' }, { status: 400 })
   if (!['feria', 'visita_escuela', 'evento_comunitario', 'otro'].includes(type))
@@ -59,6 +59,9 @@ export async function POST(request: NextRequest) {
       description: description?.trim() || null,
       planned_leads: planned_leads ? parseInt(planned_leads, 10) : null,
       month,
+      activity_date: activity_date || null,
+      location: location?.trim() || null,
+      status: 'planificada',
     })
     .select()
     .single()

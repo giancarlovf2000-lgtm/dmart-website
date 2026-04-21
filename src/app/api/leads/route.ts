@@ -25,6 +25,7 @@ export async function POST(request: NextRequest) {
       utm_medium,
       utm_campaign,
       page_source,
+      activity_id,
     } = body
 
     if (!nombre || typeof nombre !== 'string' || nombre.trim().length < 2) {
@@ -55,6 +56,24 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Resolve activity source label if activity_id provided
+    let resolvedSource = typeof source === 'string' ? source.trim().slice(0, 200) : 'direct'
+    let resolvedActivityId: string | null = null
+
+    const insertClient = getInsertClient()
+
+    if (typeof activity_id === 'string' && activity_id.trim() && insertClient) {
+      const { data: act } = await insertClient
+        .from('activities')
+        .select('id, name')
+        .eq('id', activity_id.trim())
+        .single()
+      if (act) {
+        resolvedActivityId = act.id
+        resolvedSource = `Actividad: ${act.name}`.slice(0, 200)
+      }
+    }
+
     const sanitizedLead = {
       nombre: nombre.trim().slice(0, 100),
       apellido: apellido.trim().slice(0, 100),
@@ -63,16 +82,15 @@ export async function POST(request: NextRequest) {
       campus: typeof campus === 'string' ? campus.trim().slice(0, 100) : null,
       programa_interes: typeof programa_interes === 'string' ? programa_interes.trim().slice(0, 200) : null,
       horario: typeof horario === 'string' ? horario.trim().slice(0, 50) : null,
-      source: typeof source === 'string' ? source.trim().slice(0, 200) : 'direct',
+      source: resolvedSource,
       utm_source: typeof utm_source === 'string' ? utm_source.trim().slice(0, 100) : null,
       utm_medium: typeof utm_medium === 'string' ? utm_medium.trim().slice(0, 100) : null,
       utm_campaign: typeof utm_campaign === 'string' ? utm_campaign.trim().slice(0, 200) : null,
       page_source: typeof page_source === 'string' ? page_source.trim().slice(0, 500) : null,
+      activity_id: resolvedActivityId,
       status: 'Nuevo Lead' as const,
       last_action_at: new Date().toISOString(),
     }
-
-    const insertClient = getInsertClient()
 
     if (insertClient) {
       // Assignment is handled automatically by the DB trigger (006_lead_auto_assign_trigger.sql)
