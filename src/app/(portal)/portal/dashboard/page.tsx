@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 import { promoteNewLeadsToCritico, getStaleLeadIds } from '@/lib/portal/alerts'
 import PortalHeader from '@/components/portal/PortalHeader'
 import LeadTable from '@/components/portal/LeadTable'
-import type { Lead, Employee, Activity, LeadStatus } from '@/lib/types'
+import type { Lead, Employee, Activity } from '@/lib/types'
 import { AlertTriangle, Users, Calendar, GraduationCap, Flame } from 'lucide-react'
 
 function getAdminClient() {
@@ -41,18 +41,15 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   await promoteNewLeadsToCritico(employeeIdFilter)
   const staleLeadIds = await getStaleLeadIds(employeeIdFilter)
 
-  // Build lead query with filters
+  // Build lead query with filters — no row limit (up to 2000)
   const status = searchParams.status
   const campus = searchParams.campus
-  const page = parseInt(searchParams.page ?? '1', 10)
-  const pageSize = 50
-  const offset = (page - 1) * pageSize
 
   let leadsQuery = adminClient
     .from('leads')
     .select('id, created_at, nombre, apellido, telefono, campus, programa_interes, status, last_action_at, assignment_source, lead_source_text, activity_id, assigned_to')
     .order('last_action_at', { ascending: false })
-    .range(offset, offset + pageSize - 1)
+    .range(0, 1999)
 
   if (!isAdmin) leadsQuery = leadsQuery.eq('assigned_to', user.id)
   if (status) leadsQuery = leadsQuery.eq('status', status)
@@ -60,17 +57,27 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   const { data: leads } = await leadsQuery
 
-  // Stats counts
+  // Stats counts — all 12 statuses
   let statsQuery = adminClient.from('leads').select('status', { count: 'exact', head: false })
   if (!isAdmin) statsQuery = statsQuery.eq('assigned_to', user.id)
   const { data: allLeads } = await statsQuery
 
+  const countByStatus = (s: string) => allLeads?.filter((l) => l.status === s).length ?? 0
+
   const counts = {
-    nuevo: allLeads?.filter((l) => l.status === 'Nuevo Lead').length ?? 0,
-    critico: allLeads?.filter((l) => l.status === 'Crítico').length ?? 0,
-    cita: allLeads?.filter((l) => l.status === 'Cita Programada').length ?? 0,
-    matriculado: allLeads?.filter((l) => l.status === 'Matriculado').length ?? 0,
     total: allLeads?.length ?? 0,
+    nuevo: countByStatus('Nuevo Lead'),
+    critico: countByStatus('Crítico'),
+    contacto_inicial: countByStatus('Contacto Inicial (Pendiente de Respuesta)'),
+    contacto_establecido: countByStatus('Contacto Establecido'),
+    cita: countByStatus('Cita Programada'),
+    no_asistio: countByStatus('No Asistió a la Cita'),
+    reagendado: countByStatus('Reagendado'),
+    documentos: countByStatus('En Espera de Documentos'),
+    orientado: countByStatus('Orientado (En Proceso de Matricularse)'),
+    futuro: countByStatus('Seguimiento a Futuro'),
+    matriculado: countByStatus('Matriculado'),
+    desinteresado: countByStatus('Desinteresado / Rechazado'),
   }
 
   // Fetch current month activities for "Add Lead" modal
@@ -84,11 +91,26 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     .eq('employee_id', user.id)
     .gte('month', monthStart.toISOString().slice(0, 10))
 
-  const stats = [
+  const keyStats = [
     { label: 'Nuevo Lead', value: counts.nuevo, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
     { label: 'Crítico', value: counts.critico, icon: Flame, color: 'text-red-600', bg: 'bg-red-50' },
     { label: 'Cita Programada', value: counts.cita, icon: Calendar, color: 'text-indigo-600', bg: 'bg-indigo-50' },
     { label: 'Matriculado', value: counts.matriculado, icon: GraduationCap, color: 'text-green-600', bg: 'bg-green-50' },
+  ]
+
+  const allStats: { label: string; value: number }[] = [
+    { label: 'Nuevo Lead', value: counts.nuevo },
+    { label: 'Crítico', value: counts.critico },
+    { label: 'Contacto Inicial', value: counts.contacto_inicial },
+    { label: 'Contacto Establecido', value: counts.contacto_establecido },
+    { label: 'Cita Programada', value: counts.cita },
+    { label: 'No Asistió a la Cita', value: counts.no_asistio },
+    { label: 'Reagendado', value: counts.reagendado },
+    { label: 'En Espera de Documentos', value: counts.documentos },
+    { label: 'Orientado', value: counts.orientado },
+    { label: 'Seguimiento a Futuro', value: counts.futuro },
+    { label: 'Matriculado', value: counts.matriculado },
+    { label: 'Desinteresado / Rechazado', value: counts.desinteresado },
   ]
 
   return (
@@ -112,15 +134,25 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           </div>
         )}
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-          {stats.map(({ label, value, icon: Icon, color, bg }) => (
+        {/* Key stats — 4 large cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
+          {keyStats.map(({ label, value, icon: Icon, color, bg }) => (
             <div key={label} className="bg-white rounded-xl border border-gray-200 p-4">
               <div className={`inline-flex p-2 rounded-lg ${bg} mb-2`}>
                 <Icon className={`h-4 w-4 ${color}`} />
               </div>
               <p className="text-2xl font-bold text-gray-900">{value}</p>
               <p className="text-xs text-gray-500 mt-0.5">{label}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* All 12 statuses — compact grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-6">
+          {allStats.map(({ label, value }) => (
+            <div key={label} className="bg-white rounded-lg border border-gray-100 px-3 py-2 flex items-center justify-between gap-2">
+              <p className="text-xs text-gray-500 leading-tight truncate" title={label}>{label}</p>
+              <p className="text-sm font-bold text-gray-800 flex-shrink-0">{value}</p>
             </div>
           ))}
         </div>

@@ -113,3 +113,26 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({ success: true, lead_id: lead.id }, { status: 201 })
 }
+
+export async function DELETE(request: NextRequest) {
+  const supabase = await createServerSupabase()
+  const auth = await getAuthenticatedEmployee(supabase)
+  if (!auth) return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
+  if (auth.employee.role !== 'admin') return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
+
+  const body = await request.json()
+  const ids: string[] = body.ids
+
+  if (!Array.isArray(ids) || ids.length === 0)
+    return NextResponse.json({ error: 'IDs requeridos.' }, { status: 400 })
+
+  const admin = getAdminClient()
+  const { error } = await admin.from('leads').delete().in('id', ids)
+
+  if (error) {
+    console.error('[leads bulk DELETE] error:', error)
+    return NextResponse.json({ error: 'Error al eliminar los leads.' }, { status: 500 })
+  }
+
+  return NextResponse.json({ success: true, deleted: ids.length })
+}

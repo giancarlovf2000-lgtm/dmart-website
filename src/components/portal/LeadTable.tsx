@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { AlertTriangle, Plus, ChevronRight, Filter } from 'lucide-react'
+import { AlertTriangle, Plus, ChevronRight, Filter, Trash2 } from 'lucide-react'
 import LeadStatusBadge from './LeadStatusBadge'
 import AddLeadModal from './AddLeadModal'
 import type { Lead, Activity, LeadStatus, Employee } from '@/lib/types'
@@ -33,7 +33,10 @@ export default function LeadTable({ leads, staleLeadIds, employee, activities }:
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const [showAddModal, setShowAddModal] = useState(false)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [deleting, setDeleting] = useState(false)
 
+  const isAdmin = employee.role === 'admin'
   const staleSet = new Set(staleLeadIds)
 
   function updateFilter(key: string, value: string) {
@@ -46,9 +49,49 @@ export default function LeadTable({ leads, staleLeadIds, employee, activities }:
   const currentStatus = searchParams.get('status') ?? ''
   const currentCampus = searchParams.get('campus') ?? ''
 
+  const allSelected = leads.length > 0 && selected.size === leads.length
+
+  function toggleAll() {
+    if (allSelected) {
+      setSelected(new Set())
+    } else {
+      setSelected(new Set(leads.map((l) => l.id)))
+    }
+  }
+
+  function toggleOne(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  async function deleteSelected() {
+    if (selected.size === 0) return
+    const confirmMsg = `¿Eliminar ${selected.size} lead${selected.size > 1 ? 's' : ''}? Esta acción no se puede deshacer.`
+    if (!confirm(confirmMsg)) return
+
+    setDeleting(true)
+    const res = await fetch('/api/portal/leads', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: Array.from(selected) }),
+    })
+
+    if (res.ok) {
+      setSelected(new Set())
+      router.refresh()
+    } else {
+      alert('Error al eliminar los leads. Intenta de nuevo.')
+    }
+    setDeleting(false)
+  }
+
   return (
     <div>
-      {/* Filters + Add button bar */}
+      {/* Filters + action bar */}
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <div className="flex items-center gap-1.5 text-sm text-gray-500">
           <Filter className="h-4 w-4" />
@@ -76,6 +119,17 @@ export default function LeadTable({ leads, staleLeadIds, employee, activities }:
 
         <div className="flex-1" />
 
+        {isAdmin && selected.size > 0 && (
+          <button
+            onClick={deleteSelected}
+            disabled={deleting}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-50"
+          >
+            <Trash2 className="h-4 w-4" />
+            {deleting ? 'Eliminando…' : `Eliminar (${selected.size})`}
+          </button>
+        )}
+
         <button
           onClick={() => setShowAddModal(true)}
           className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gold text-white text-sm font-semibold hover:bg-gold/90 transition-colors shadow-sm"
@@ -97,6 +151,17 @@ export default function LeadTable({ leads, staleLeadIds, employee, activities }:
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50 text-left">
+                  {isAdmin && (
+                    <th className="px-3 py-3 w-8">
+                      <input
+                        type="checkbox"
+                        checked={allSelected}
+                        onChange={toggleAll}
+                        className="h-4 w-4 rounded border-gray-300 text-navy focus:ring-navy/20 cursor-pointer"
+                        title={allSelected ? 'Deseleccionar todos' : 'Seleccionar todos'}
+                      />
+                    </th>
+                  )}
                   <th className="px-4 py-3 font-semibold text-gray-600 whitespace-nowrap">Nombre</th>
                   <th className="px-4 py-3 font-semibold text-gray-600 whitespace-nowrap">Teléfono</th>
                   <th className="px-4 py-3 font-semibold text-gray-600 whitespace-nowrap hidden md:table-cell">Programa</th>
@@ -109,13 +174,26 @@ export default function LeadTable({ leads, staleLeadIds, employee, activities }:
               <tbody className="divide-y divide-gray-50">
                 {leads.map((lead) => {
                   const isStale = staleSet.has(lead.id)
+                  const isChecked = selected.has(lead.id)
                   return (
                     <tr
                       key={lead.id}
-                      onClick={() => router.push(`/portal/leads/${lead.id}`)}
-                      className={`hover:bg-gray-50 transition-colors cursor-pointer ${isStale ? 'bg-amber-50/40' : ''}`}
+                      className={`hover:bg-gray-50 transition-colors ${isStale ? 'bg-amber-50/40' : ''} ${isChecked ? 'bg-blue-50/50' : ''}`}
                     >
-                      <td className="px-4 py-3 font-medium text-gray-900 whitespace-nowrap">
+                      {isAdmin && (
+                        <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => toggleOne(lead.id)}
+                            className="h-4 w-4 rounded border-gray-300 text-navy focus:ring-navy/20 cursor-pointer"
+                          />
+                        </td>
+                      )}
+                      <td
+                        className="px-4 py-3 font-medium text-gray-900 whitespace-nowrap cursor-pointer"
+                        onClick={() => router.push(`/portal/leads/${lead.id}`)}
+                      >
                         <div className="flex items-center gap-2">
                           {isStale && (
                             <span title="Seguimiento pendiente (7+ días sin actividad)">
@@ -125,22 +203,41 @@ export default function LeadTable({ leads, staleLeadIds, employee, activities }:
                           {lead.nombre} {lead.apellido}
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-gray-600 font-mono text-xs whitespace-nowrap">
+                      <td
+                        className="px-4 py-3 text-gray-600 font-mono text-xs whitespace-nowrap cursor-pointer"
+                        onClick={() => router.push(`/portal/leads/${lead.id}`)}
+                      >
                         {formatPhone(lead.telefono)}
                       </td>
-                      <td className="px-4 py-3 text-gray-600 max-w-[180px] truncate hidden md:table-cell" title={lead.programa_interes ?? ''}>
+                      <td
+                        className="px-4 py-3 text-gray-600 max-w-[180px] truncate hidden md:table-cell cursor-pointer"
+                        title={lead.programa_interes ?? ''}
+                        onClick={() => router.push(`/portal/leads/${lead.id}`)}
+                      >
                         {lead.programa_interes ?? '—'}
                       </td>
-                      <td className="px-4 py-3 text-gray-600 whitespace-nowrap hidden sm:table-cell">
+                      <td
+                        className="px-4 py-3 text-gray-600 whitespace-nowrap hidden sm:table-cell cursor-pointer"
+                        onClick={() => router.push(`/portal/leads/${lead.id}`)}
+                      >
                         {lead.campus ?? '—'}
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
+                      <td
+                        className="px-4 py-3 whitespace-nowrap cursor-pointer"
+                        onClick={() => router.push(`/portal/leads/${lead.id}`)}
+                      >
                         <LeadStatusBadge status={lead.status} />
                       </td>
-                      <td className="px-4 py-3 text-gray-400 text-xs whitespace-nowrap hidden lg:table-cell">
+                      <td
+                        className="px-4 py-3 text-gray-400 text-xs whitespace-nowrap hidden lg:table-cell cursor-pointer"
+                        onClick={() => router.push(`/portal/leads/${lead.id}`)}
+                      >
                         {formatDate(lead.created_at)}
                       </td>
-                      <td className="px-4 py-3">
+                      <td
+                        className="px-4 py-3 cursor-pointer"
+                        onClick={() => router.push(`/portal/leads/${lead.id}`)}
+                      >
                         <ChevronRight className="h-4 w-4 text-gray-300" />
                       </td>
                     </tr>
