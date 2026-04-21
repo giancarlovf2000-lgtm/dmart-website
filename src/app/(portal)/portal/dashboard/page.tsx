@@ -15,7 +15,7 @@ function getAdminClient() {
 }
 
 interface DashboardPageProps {
-  searchParams: { status?: string; campus?: string; page?: string }
+  searchParams: { status?: string; campus?: string; page?: string; source?: string }
 }
 
 export default async function DashboardPage({ searchParams }: DashboardPageProps) {
@@ -44,18 +44,27 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   // Build lead query with filters — no row limit (up to 2000)
   const status = searchParams.status
   const campus = searchParams.campus
+  const source = searchParams.source
 
   let leadsQuery = adminClient
     .from('leads')
-    .select('id, created_at, nombre, apellido, telefono, campus, programa_interes, status, last_action_at, assignment_source, lead_source_text, activity_id, assigned_to')
+    .select('id, created_at, nombre, apellido, telefono, campus, programa_interes, status, source, last_action_at, assignment_source, lead_source_text, activity_id, assigned_to')
     .order('last_action_at', { ascending: false })
     .range(0, 1999)
 
   if (!isAdmin) leadsQuery = leadsQuery.eq('assigned_to', user.id)
   if (status) leadsQuery = leadsQuery.eq('status', status)
   if (campus) leadsQuery = leadsQuery.eq('campus', campus)
+  if (source) leadsQuery = leadsQuery.eq('source', source)
 
   const { data: leads } = await leadsQuery
+
+  // Distinct sources for filter dropdown
+  let sourcesQuery = adminClient.from('leads').select('source').not('source', 'is', null)
+  if (!isAdmin) sourcesQuery = sourcesQuery.eq('assigned_to', user.id)
+  const { data: sourceRows } = await sourcesQuery
+  const uniqueSources = Array.from(new Set((sourceRows ?? []).map((r) => r.source as string).filter(Boolean))).sort()
+  const sources = uniqueSources
 
   // Stats counts — all 12 statuses
   let statsQuery = adminClient.from('leads').select('status', { count: 'exact', head: false })
@@ -174,6 +183,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           staleLeadIds={staleLeadIds}
           employee={employee as Employee}
           activities={(activities ?? []) as Activity[]}
+          sources={sources}
+          currentSource={source ?? ''}
         />
       </div>
     </div>

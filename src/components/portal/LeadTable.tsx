@@ -20,6 +20,8 @@ interface LeadTableProps {
   staleLeadIds: string[]
   employee: Pick<Employee, 'full_name' | 'campus' | 'role'>
   activities: Pick<Activity, 'id' | 'name'>[]
+  sources?: string[]
+  currentSource?: string
 }
 
 function formatDate(dateStr: string) {
@@ -28,7 +30,7 @@ function formatDate(dateStr: string) {
   })
 }
 
-export default function LeadTable({ leads, staleLeadIds, employee, activities }: LeadTableProps) {
+export default function LeadTable({ leads, staleLeadIds, employee, activities, sources = [], currentSource = '' }: LeadTableProps) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -117,6 +119,17 @@ export default function LeadTable({ leads, staleLeadIds, employee, activities }:
           <option value="Vega Alta">Vega Alta</option>
         </select>
 
+        {sources.length > 0 && (
+          <select
+            value={currentSource}
+            onChange={(e) => updateFilter('source', e.target.value)}
+            className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-navy/20"
+          >
+            <option value="">Todos los orígenes</option>
+            {sources.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+        )}
+
         <div className="flex-1" />
 
         {isAdmin && selected.size > 0 && (
@@ -167,6 +180,7 @@ export default function LeadTable({ leads, staleLeadIds, employee, activities }:
                   <th className="px-4 py-3 font-semibold text-gray-600 whitespace-nowrap hidden md:table-cell">Programa</th>
                   <th className="px-4 py-3 font-semibold text-gray-600 whitespace-nowrap hidden sm:table-cell">Recinto</th>
                   <th className="px-4 py-3 font-semibold text-gray-600 whitespace-nowrap">Estado</th>
+                  <th className="px-4 py-3 font-semibold text-gray-600 whitespace-nowrap hidden xl:table-cell">Origen</th>
                   <th className="px-4 py-3 font-semibold text-gray-600 whitespace-nowrap hidden lg:table-cell">Fecha</th>
                   <th className="px-4 py-3 w-8"></th>
                 </tr>
@@ -190,10 +204,7 @@ export default function LeadTable({ leads, staleLeadIds, employee, activities }:
                           />
                         </td>
                       )}
-                      <td
-                        className="px-4 py-3 font-medium text-gray-900 whitespace-nowrap cursor-pointer"
-                        onClick={() => router.push(`/portal/leads/${lead.id}`)}
-                      >
+                      <td className="px-4 py-3 font-medium text-gray-900 whitespace-nowrap cursor-pointer" onClick={() => router.push(`/portal/leads/${lead.id}`)}>
                         <div className="flex items-center gap-2">
                           {isStale && (
                             <span title="Seguimiento pendiente (7+ días sin actividad)">
@@ -203,41 +214,25 @@ export default function LeadTable({ leads, staleLeadIds, employee, activities }:
                           {lead.nombre} {lead.apellido}
                         </div>
                       </td>
-                      <td
-                        className="px-4 py-3 text-gray-600 font-mono text-xs whitespace-nowrap cursor-pointer"
-                        onClick={() => router.push(`/portal/leads/${lead.id}`)}
-                      >
+                      <td className="px-4 py-3 text-gray-600 font-mono text-xs whitespace-nowrap cursor-pointer" onClick={() => router.push(`/portal/leads/${lead.id}`)}>
                         {formatPhone(lead.telefono)}
                       </td>
-                      <td
-                        className="px-4 py-3 text-gray-600 max-w-[180px] truncate hidden md:table-cell cursor-pointer"
-                        title={lead.programa_interes ?? ''}
-                        onClick={() => router.push(`/portal/leads/${lead.id}`)}
-                      >
+                      <td className="px-4 py-3 text-gray-600 max-w-[180px] truncate hidden md:table-cell cursor-pointer" title={lead.programa_interes ?? ''} onClick={() => router.push(`/portal/leads/${lead.id}`)}>
                         {lead.programa_interes ?? '—'}
                       </td>
-                      <td
-                        className="px-4 py-3 text-gray-600 whitespace-nowrap hidden sm:table-cell cursor-pointer"
-                        onClick={() => router.push(`/portal/leads/${lead.id}`)}
-                      >
+                      <td className="px-4 py-3 text-gray-600 whitespace-nowrap hidden sm:table-cell cursor-pointer" onClick={() => router.push(`/portal/leads/${lead.id}`)}>
                         {lead.campus ?? '—'}
                       </td>
-                      <td
-                        className="px-4 py-3 whitespace-nowrap cursor-pointer"
-                        onClick={() => router.push(`/portal/leads/${lead.id}`)}
-                      >
+                      <td className="px-4 py-3 whitespace-nowrap cursor-pointer" onClick={() => router.push(`/portal/leads/${lead.id}`)}>
                         <LeadStatusBadge status={lead.status} />
                       </td>
-                      <td
-                        className="px-4 py-3 text-gray-400 text-xs whitespace-nowrap hidden lg:table-cell cursor-pointer"
-                        onClick={() => router.push(`/portal/leads/${lead.id}`)}
-                      >
+                      <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap hidden xl:table-cell cursor-pointer max-w-[120px] truncate" title={lead.source ?? ''} onClick={() => router.push(`/portal/leads/${lead.id}`)}>
+                        {lead.source ?? '—'}
+                      </td>
+                      <td className="px-4 py-3 text-gray-400 text-xs whitespace-nowrap hidden lg:table-cell cursor-pointer" onClick={() => router.push(`/portal/leads/${lead.id}`)}>
                         {formatDate(lead.created_at)}
                       </td>
-                      <td
-                        className="px-4 py-3 cursor-pointer"
-                        onClick={() => router.push(`/portal/leads/${lead.id}`)}
-                      >
+                      <td className="px-4 py-3 cursor-pointer" onClick={() => router.push(`/portal/leads/${lead.id}`)}>
                         <ChevronRight className="h-4 w-4 text-gray-300" />
                       </td>
                     </tr>

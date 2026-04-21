@@ -132,10 +132,16 @@ export async function POST(request: NextRequest) {
       const emailRaw = (row.email ?? '').trim().toLowerCase()
       const email = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailRaw) ? emailRaw : ''
 
-      // Parse date
+      // Parse date — handle ISO, US (M/D/YYYY), EU (D/M/YYYY), and long formats
       let createdAt: string | null = null
       if (row.lead_date) {
-        const d = new Date(row.lead_date)
+        const raw = row.lead_date.trim()
+        let d = new Date(raw)
+        if (isNaN(d.getTime())) {
+          // Try DD/MM/YYYY (European) by swapping day/month
+          const parts = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
+          if (parts) d = new Date(`${parts[3]}-${parts[2].padStart(2, '0')}-${parts[1].padStart(2, '0')}`)
+        }
         if (!isNaN(d.getTime())) createdAt = d.toISOString()
       }
 
