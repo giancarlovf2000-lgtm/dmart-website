@@ -132,17 +132,19 @@ export async function POST(request: NextRequest) {
       const emailRaw = (row.email ?? '').trim().toLowerCase()
       const email = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailRaw) ? emailRaw : ''
 
-      // Parse date — handle ISO, US (M/D/YYYY), EU (D/M/YYYY), and long formats
+      // Parse date — Airtable exports as "M/D/YYYY H:MMam" or "M/D/YYYY H:MMpm"
       let createdAt: string | null = null
       if (row.lead_date) {
         const raw = row.lead_date.trim()
-        let d = new Date(raw)
-        if (isNaN(d.getTime())) {
+        // Normalize lowercase am/pm without space → "7:59am" → "7:59 AM"
+        const normalized = raw.replace(/(\d)(am|pm)\b/gi, (_, d, ap) => `${d} ${ap.toUpperCase()}`)
+        let parsed = new Date(normalized)
+        if (isNaN(parsed.getTime())) {
           // Try DD/MM/YYYY (European) by swapping day/month
-          const parts = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
-          if (parts) d = new Date(`${parts[3]}-${parts[2].padStart(2, '0')}-${parts[1].padStart(2, '0')}`)
+          const parts = normalized.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/)
+          if (parts) parsed = new Date(`${parts[3]}-${parts[2].padStart(2, '0')}-${parts[1].padStart(2, '0')}`)
         }
-        if (!isNaN(d.getTime())) createdAt = d.toISOString()
+        if (!isNaN(parsed.getTime())) createdAt = parsed.toISOString()
       }
 
       // Map status
@@ -174,7 +176,8 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Build lead record
+      // Build lead record — omit created_at here; we override it via UPDATE below
+      // to bypass any BEFORE INSERT trigger that resets it to now()
       const leadRecord: Record<string, unknown> = {
         nombre: nombre.slice(0, 100),
         apellido: apellido.slice(0, 100),
@@ -187,10 +190,6 @@ export async function POST(request: NextRequest) {
         assignment_source: 'import',
         assigned_to: assignedTo,
         last_action_at: createdAt ?? new Date().toISOString(),
-      }
-
-      if (createdAt) {
-        leadRecord.created_at = createdAt
       }
 
       const { data: inserted, error: insertError } = await admin
@@ -206,6 +205,14 @@ export async function POST(request: NextRequest) {
       }
 
       const leadId = inserted.id
+
+      // Override created_at via UPDATE — works even if INSERT trigger resets it
+      if (createdAt) {
+        await admin
+          .from('leads')
+          .update({ created_at: createdAt })
+          .eq('id', leadId)
+      }
 
       // Insert seguimiento note if present
       if (row.seguimiento && row.seguimiento.trim()) {
