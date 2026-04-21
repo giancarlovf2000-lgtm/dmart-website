@@ -83,7 +83,7 @@ export type CommunicationType =
 
 export type ActionType = 'status_change' | 'note_added' | 'lead_created' | 'lead_assigned'
 
-export type AssignmentSource = 'website' | 'manual'
+export type AssignmentSource = 'website' | 'manual' | 'import'
 
 export type EmployeeRole = 'admin' | 'empleado'
 

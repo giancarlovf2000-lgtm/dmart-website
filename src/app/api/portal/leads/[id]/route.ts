@@ -46,5 +46,38 @@ export async function GET(
     .eq('lead_id', params.id)
     .order('created_at', { ascending: false })
 
-  return NextResponse.json({ lead, history: history ?? [] })
+  return NextResponse.json({ lead, history: history ?? [], currentEmployeeRole: employee.role })
+}
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const supabase = await createServerSupabase()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
+
+  const admin = getAdminClient()
+
+  const { data: employee } = await admin
+    .from('employees')
+    .select('id, role')
+    .eq('id', user.id)
+    .single()
+
+  if (!employee || employee.role !== 'admin') {
+    return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
+  }
+
+  const { error } = await admin
+    .from('leads')
+    .delete()
+    .eq('id', params.id)
+
+  if (error) {
+    console.error('[leads DELETE] error:', error)
+    return NextResponse.json({ error: 'Error al eliminar el lead.' }, { status: 500 })
+  }
+
+  return NextResponse.json({ success: true })
 }

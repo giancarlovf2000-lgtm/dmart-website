@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Phone, Mail, MapPin, BookOpen, Clock, Calendar, User, AlertCircle } from 'lucide-react'
+import { ArrowLeft, Phone, Mail, MapPin, BookOpen, Clock, Calendar, User, AlertCircle, Trash2 } from 'lucide-react'
 import LeadStatusBadge from '@/components/portal/LeadStatusBadge'
 import StatusChangeModal from '@/components/portal/StatusChangeModal'
 import type { Lead, LeadHistory } from '@/lib/types'
@@ -29,6 +29,8 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showStatusModal, setShowStatusModal] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   async function load() {
     setLoading(true)
@@ -41,7 +43,20 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
     const data = await res.json()
     setLead(data.lead)
     setHistory(data.history)
+    setIsAdmin(data.currentEmployeeRole === 'admin')
     setLoading(false)
+  }
+
+  async function handleDelete() {
+    if (!confirm('¿Estás seguro de que quieres eliminar este lead? Esta acción no se puede deshacer.')) return
+    setDeleting(true)
+    const res = await fetch(`/api/portal/leads/${params.id}`, { method: 'DELETE' })
+    if (res.ok) {
+      router.push('/portal/dashboard')
+    } else {
+      alert('Error al eliminar el lead. Intenta de nuevo.')
+      setDeleting(false)
+    }
   }
 
   useEffect(() => { load() }, [params.id])
@@ -89,12 +104,24 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
             <ArrowLeft className="h-4 w-4" />
             Volver
           </button>
-          <button
-            onClick={() => setShowStatusModal(true)}
-            className="px-4 py-2 rounded-xl bg-navy text-white text-sm font-semibold hover:bg-navy/90 transition-colors"
-          >
-            Cambiar Estado
-          </button>
+          <div className="flex items-center gap-2">
+            {isAdmin && (
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-red-200 text-red-600 text-sm font-medium hover:bg-red-50 transition-colors disabled:opacity-50"
+              >
+                <Trash2 className="h-4 w-4" />
+                {deleting ? 'Eliminando…' : 'Eliminar'}
+              </button>
+            )}
+            <button
+              onClick={() => setShowStatusModal(true)}
+              className="px-4 py-2 rounded-xl bg-navy text-white text-sm font-semibold hover:bg-navy/90 transition-colors"
+            >
+              Cambiar Estado
+            </button>
+          </div>
         </div>
       </div>
 
