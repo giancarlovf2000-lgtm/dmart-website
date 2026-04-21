@@ -5,7 +5,7 @@ import { promoteNewLeadsToCritico, getStaleLeadIds } from '@/lib/portal/alerts'
 import PortalHeader from '@/components/portal/PortalHeader'
 import LeadTable from '@/components/portal/LeadTable'
 import type { Lead, Employee, Activity } from '@/lib/types'
-import { AlertTriangle, Users, Calendar, GraduationCap, Flame } from 'lucide-react'
+import { AlertTriangle, Users, Calendar, GraduationCap, Flame, Clock, Phone, CalendarX2, RotateCcw, FileText, BookOpen, Timer, XCircle } from 'lucide-react'
 
 function getAdminClient() {
   return createClient(
@@ -91,26 +91,21 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     .eq('employee_id', user.id)
     .gte('month', monthStart.toISOString().slice(0, 10))
 
-  const keyStats = [
-    { label: 'Nuevo Lead', value: counts.nuevo, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
-    { label: 'Crítico', value: counts.critico, icon: Flame, color: 'text-red-600', bg: 'bg-red-50' },
-    { label: 'Cita Programada', value: counts.cita, icon: Calendar, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-    { label: 'Matriculado', value: counts.matriculado, icon: GraduationCap, color: 'text-green-600', bg: 'bg-green-50' },
-  ]
+  const currentStatusFilter = searchParams.status ?? ''
 
-  const allStats: { label: string; value: number }[] = [
-    { label: 'Nuevo Lead', value: counts.nuevo },
-    { label: 'Crítico', value: counts.critico },
-    { label: 'Contacto Inicial', value: counts.contacto_inicial },
-    { label: 'Contacto Establecido', value: counts.contacto_establecido },
-    { label: 'Cita Programada', value: counts.cita },
-    { label: 'No Asistió a la Cita', value: counts.no_asistio },
-    { label: 'Reagendado', value: counts.reagendado },
-    { label: 'En Espera de Documentos', value: counts.documentos },
-    { label: 'Orientado', value: counts.orientado },
-    { label: 'Seguimiento a Futuro', value: counts.futuro },
-    { label: 'Matriculado', value: counts.matriculado },
-    { label: 'Desinteresado / Rechazado', value: counts.desinteresado },
+  const allStats = [
+    { label: 'Nuevo Lead',                            filterValue: 'Nuevo Lead',                                    value: counts.nuevo,              icon: Users,       color: 'text-blue-600',   iconBg: 'bg-blue-50' },
+    { label: 'Crítico',                               filterValue: 'Crítico',                                       value: counts.critico,            icon: Flame,       color: 'text-red-600',    iconBg: 'bg-red-50' },
+    { label: 'Contacto Inicial',                      filterValue: 'Contacto Inicial (Pendiente de Respuesta)',      value: counts.contacto_inicial,   icon: Clock,       color: 'text-orange-500', iconBg: 'bg-orange-50' },
+    { label: 'Contacto Establecido',                  filterValue: 'Contacto Establecido',                          value: counts.contacto_establecido, icon: Phone,     color: 'text-teal-600',   iconBg: 'bg-teal-50' },
+    { label: 'Cita Programada',                       filterValue: 'Cita Programada',                               value: counts.cita,               icon: Calendar,    color: 'text-indigo-600', iconBg: 'bg-indigo-50' },
+    { label: 'No Asistió a la Cita',                  filterValue: 'No Asistió a la Cita',                          value: counts.no_asistio,         icon: CalendarX2,  color: 'text-rose-500',   iconBg: 'bg-rose-50' },
+    { label: 'Reagendado',                            filterValue: 'Reagendado',                                    value: counts.reagendado,         icon: RotateCcw,   color: 'text-amber-600',  iconBg: 'bg-amber-50' },
+    { label: 'En Espera de Documentos',               filterValue: 'En Espera de Documentos',                       value: counts.documentos,         icon: FileText,    color: 'text-purple-600', iconBg: 'bg-purple-50' },
+    { label: 'Orientado',                             filterValue: 'Orientado (En Proceso de Matricularse)',         value: counts.orientado,          icon: BookOpen,    color: 'text-emerald-600',iconBg: 'bg-emerald-50' },
+    { label: 'Seguimiento a Futuro',                  filterValue: 'Seguimiento a Futuro',                          value: counts.futuro,             icon: Timer,       color: 'text-slate-500',  iconBg: 'bg-slate-50' },
+    { label: 'Matriculado',                           filterValue: 'Matriculado',                                   value: counts.matriculado,        icon: GraduationCap, color: 'text-green-600',iconBg: 'bg-green-50' },
+    { label: 'Desinteresado / Rechazado',             filterValue: 'Desinteresado / Rechazado',                     value: counts.desinteresado,      icon: XCircle,     color: 'text-gray-500',   iconBg: 'bg-gray-100' },
   ]
 
   return (
@@ -134,27 +129,32 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           </div>
         )}
 
-        {/* Key stats — 4 large cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
-          {keyStats.map(({ label, value, icon: Icon, color, bg }) => (
-            <div key={label} className="bg-white rounded-xl border border-gray-200 p-4">
-              <div className={`inline-flex p-2 rounded-lg ${bg} mb-2`}>
-                <Icon className={`h-4 w-4 ${color}`} />
-              </div>
-              <p className="text-2xl font-bold text-gray-900">{value}</p>
-              <p className="text-xs text-gray-500 mt-0.5">{label}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* All 12 statuses — compact grid */}
+        {/* All 12 statuses — clickable filter cards */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-6">
-          {allStats.map(({ label, value }) => (
-            <div key={label} className="bg-white rounded-lg border border-gray-100 px-3 py-2 flex items-center justify-between gap-2">
-              <p className="text-xs text-gray-500 leading-tight truncate" title={label}>{label}</p>
-              <p className="text-sm font-bold text-gray-800 flex-shrink-0">{value}</p>
-            </div>
-          ))}
+          {allStats.map(({ label, filterValue, value, icon: Icon, color, iconBg }) => {
+            const isActive = currentStatusFilter === filterValue
+            const href = isActive ? '/portal/dashboard' : `/portal/dashboard?status=${encodeURIComponent(filterValue)}`
+            return (
+              <a
+                key={label}
+                href={href}
+                title={isActive ? `Quitar filtro: ${label}` : `Filtrar por: ${label}`}
+                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border transition-all ${
+                  isActive
+                    ? 'bg-navy text-white border-navy shadow-sm'
+                    : 'bg-white border-gray-200 hover:border-navy/40 hover:shadow-sm'
+                }`}
+              >
+                <div className={`flex-shrink-0 p-1 rounded-md ${isActive ? 'bg-white/20' : iconBg}`}>
+                  <Icon className={`h-3.5 w-3.5 ${isActive ? 'text-white' : color}`} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className={`text-xs leading-tight truncate ${isActive ? 'text-white/90' : 'text-gray-500'}`}>{label}</p>
+                  <p className={`text-sm font-bold leading-tight ${isActive ? 'text-white' : 'text-gray-800'}`}>{value}</p>
+                </div>
+              </a>
+            )
+          })}
         </div>
 
         {/* Lead table with filters */}

@@ -88,16 +88,16 @@ export async function POST(request: NextRequest) {
 
   const admin = getAdminClient()
 
-  // Fetch all active employees for name lookup
+  // Fetch all active employees for name lookup (include campus for lead assignment)
   const { data: employees } = await admin
     .from('employees')
-    .select('id, full_name')
+    .select('id, full_name, campus')
     .eq('active', true)
 
-  // Build normalized name → UUID map
-  const employeeMap = new Map<string, string>()
+  // Build normalized name → employee record map
+  const employeeMap = new Map<string, { id: string; campus: string[] }>()
   employees?.forEach((e) => {
-    employeeMap.set(normalize(e.full_name), e.id)
+    employeeMap.set(normalize(e.full_name), { id: e.id, campus: e.campus ?? [] })
   })
 
   let imported = 0
@@ -146,18 +146,25 @@ export async function POST(request: NextRequest) {
       // Resolve representante
       const rawRep = normalize(row.representante ?? '')
       let assignedTo: string | null = null
+      let assignedCampus: string | null = null
       let redirectedFrom: string | null = null
 
       if (rawRep) {
         const redirectTarget = FORMER_EMPLOYEE_REDIRECTS[rawRep]
         if (redirectTarget) {
           // Former employee — redirect to Carmen Peña
-          assignedTo = employeeMap.get(redirectTarget) ?? null
-          if (assignedTo) {
+          const emp = employeeMap.get(redirectTarget)
+          if (emp) {
+            assignedTo = emp.id
+            assignedCampus = emp.campus[0] ?? null
             redirectedFrom = row.representante?.trim() ?? null
           }
         } else {
-          assignedTo = employeeMap.get(rawRep) ?? null
+          const emp = employeeMap.get(rawRep)
+          if (emp) {
+            assignedTo = emp.id
+            assignedCampus = emp.campus[0] ?? null
+          }
         }
       }
 
@@ -167,7 +174,7 @@ export async function POST(request: NextRequest) {
         apellido: apellido.slice(0, 100),
         email: email.slice(0, 254),
         telefono: telefono.slice(0, 20),
-        campus: null,
+        campus: assignedCampus,
         programa_interes: row.interest ? row.interest.trim().slice(0, 200) : null,
         source: row.from ? row.from.trim().slice(0, 200) : 'Importado de Airtable',
         status,
@@ -207,7 +214,7 @@ export async function POST(request: NextRequest) {
 
       // Insert redirect note if former employee was remapped
       if (redirectedFrom && assignedTo) {
-        const carmenName = employees?.find((e) => e.id === assignedTo)?.full_name ?? 'Carmen Peña'
+        const carmenName = employees?.find((e: { id: string; full_name: string }) => e.id === assignedTo)?.full_name ?? 'Carmen Peña'
         await admin.from('lead_history').insert({
           lead_id: leadId,
           employee_id: null,
