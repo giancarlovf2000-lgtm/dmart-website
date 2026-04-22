@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   UserPlus, Building2, CheckCircle, XCircle, AlertCircle, X, Upload,
-  FileText, Users, ClipboardList,
+  FileText, Users, ClipboardList, CalendarDays, MapPin,
 } from 'lucide-react'
 import PortalHeader from '@/components/portal/PortalHeader'
 import Button from '@/components/ui/Button'
@@ -437,6 +437,152 @@ interface AdminReport {
   employee: { full_name: string; campus: string[] } | null
 }
 
+// ─── Activities Panel ────────────────────────────────────────────────────────
+
+const ACTIVITY_TYPE_LABELS: Record<string, string> = {
+  feria: 'Feria',
+  visita_escuela: 'Visita a Escuela',
+  evento_comunitario: 'Evento Comunitario',
+  otro: 'Otro',
+}
+
+interface AdminActivity {
+  id: string
+  employee_id: string
+  employee_name: string | null
+  month: string
+  name: string
+  type: string
+  description: string | null
+  activity_date: string | null
+  location: string | null
+  planned_leads: number | null
+  actual_leads: number | null
+  status: 'planificada' | 'terminada'
+  created_at: string
+}
+
+function firstOfMonth() {
+  const d = new Date()
+  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10)
+}
+
+function ActivitiesPanel() {
+  const [activities, setActivities] = useState<AdminActivity[]>([])
+  const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState('')
+
+  const currentMonth = firstOfMonth()
+
+  useEffect(() => {
+    fetch(`/api/portal/admin/activities?month=${currentMonth}`)
+      .then(async (r) => {
+        const d = await r.json()
+        if (!r.ok) { setFetchError(d.error ?? 'Error al cargar actividades.'); setLoading(false); return }
+        setActivities(d.activities ?? [])
+        setLoading(false)
+      })
+      .catch(() => { setFetchError('Error de conexión.'); setLoading(false) })
+  }, [currentMonth])
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-xl border border-gray-200 p-12 flex justify-center">
+        <div className="animate-spin h-7 w-7 rounded-full border-4 border-navy border-t-transparent" />
+      </div>
+    )
+  }
+
+  if (fetchError) {
+    return (
+      <div className="bg-white rounded-xl border border-red-100 p-10 text-center">
+        <AlertCircle className="h-8 w-8 text-red-400 mx-auto mb-2" />
+        <p className="text-sm text-red-600">{fetchError}</p>
+      </div>
+    )
+  }
+
+  if (activities.length === 0) {
+    return (
+      <div className="bg-white rounded-xl border border-gray-200 p-14 text-center">
+        <CalendarDays className="h-10 w-10 text-gray-300 mx-auto mb-3" />
+        <p className="font-medium text-gray-500">No hay actividades planificadas este mes.</p>
+      </div>
+    )
+  }
+
+  // Group by employee
+  const byEmployee = new Map<string, AdminActivity[]>()
+  activities.forEach((a) => {
+    const key = a.employee_name ?? a.employee_id
+    if (!byEmployee.has(key)) byEmployee.set(key, [])
+    byEmployee.get(key)!.push(a)
+  })
+
+  return (
+    <div className="space-y-6">
+      {Array.from(byEmployee.entries()).map(([empName, acts]) => (
+        <div key={empName}>
+          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">{empName}</h3>
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-100 bg-gray-50">
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Actividad</th>
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden sm:table-cell">Tipo</th>
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden md:table-cell">Fecha · Lugar</th>
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Leads</th>
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Estado</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {acts.map((act) => (
+                  <tr key={act.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3">
+                      <p className="font-medium text-gray-900">{act.name}</p>
+                      {act.description && <p className="text-xs text-gray-400 truncate max-w-[200px]">{act.description}</p>}
+                    </td>
+                    <td className="px-4 py-3 text-gray-600 hidden sm:table-cell text-xs">
+                      {ACTIVITY_TYPE_LABELS[act.type] ?? act.type}
+                    </td>
+                    <td className="px-4 py-3 hidden md:table-cell">
+                      <div className="space-y-0.5">
+                        {act.activity_date && (
+                          <p className="text-xs text-gray-600 flex items-center gap-1">
+                            <CalendarDays className="h-3 w-3 text-gray-400" />
+                            {new Date(act.activity_date + 'T00:00:00').toLocaleDateString('es-PR', { month: 'short', day: 'numeric' })}
+                          </p>
+                        )}
+                        {act.location && (
+                          <p className="text-xs text-gray-600 flex items-center gap-1">
+                            <MapPin className="h-3 w-3 text-gray-400" />
+                            {act.location}
+                          </p>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-gray-600">
+                      <span>{act.actual_leads ?? '—'} / {act.planned_leads ?? '—'}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      {act.status === 'terminada'
+                        ? <span className="inline-flex items-center gap-1 text-xs text-green-700"><CheckCircle className="h-3.5 w-3.5" />Terminada</span>
+                        : <span className="inline-flex items-center gap-1 text-xs text-blue-600">Planificada</span>
+                      }
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ─── Reports Panel ───────────────────────────────────────────────────────────
+
 function ReportsPanel() {
   const [reports, setReports] = useState<AdminReport[]>([])
   const [loading, setLoading] = useState(true)
@@ -574,7 +720,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [showImport, setShowImport] = useState(false)
-  const [activeTab, setActiveTab] = useState<'empleados' | 'informes'>('empleados')
+  const [activeTab, setActiveTab] = useState<'empleados' | 'actividades' | 'informes'>('empleados')
 
   async function loadEmployees() {
     const res = await fetch('/api/portal/admin/employees')
@@ -637,8 +783,9 @@ export default function AdminPage() {
         {/* Tabs */}
         <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-xl w-fit">
           {([
-            { key: 'empleados', label: 'Empleados', icon: Users },
-            { key: 'informes',  label: 'Informes de Cierre', icon: ClipboardList },
+            { key: 'empleados',   label: 'Empleados',          icon: Users },
+            { key: 'actividades', label: 'Actividades',         icon: CalendarDays },
+            { key: 'informes',    label: 'Informes de Cierre',  icon: ClipboardList },
           ] as const).map(({ key, label, icon: Icon }) => (
             <button
               key={key}
@@ -715,6 +862,9 @@ export default function AdminPage() {
             </div>
           )
         )}
+
+        {/* Activities tab */}
+        {activeTab === 'actividades' && <ActivitiesPanel />}
 
         {/* Reports tab */}
         {activeTab === 'informes' && <ReportsPanel />}
