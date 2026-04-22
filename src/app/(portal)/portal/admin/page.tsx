@@ -1,10 +1,10 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import {
   UserPlus, Building2, CheckCircle, XCircle, AlertCircle, X, Upload,
-  FileText, Users, ClipboardList, CalendarDays, MapPin,
+  FileText, Users, ClipboardList, CalendarDays, MapPin, BarChart3,
+  GraduationCap, TrendingUp, Zap,
 } from 'lucide-react'
 import PortalHeader from '@/components/portal/PortalHeader'
 import Button from '@/components/ui/Button'
@@ -25,6 +25,12 @@ const SCORE_CONFIG = {
 
 function monthLabel(dateStr: string) {
   return new Date(dateStr + 'T00:00:00').toLocaleDateString('es-PR', { month: 'long', year: 'numeric' })
+}
+
+function firstOfMonth(offset = 0) {
+  const d = new Date()
+  d.setMonth(d.getMonth() - offset, 1)
+  return d.toISOString().slice(0, 10)
 }
 
 // ─── Create Employee Modal ───────────────────────────────────────────────────
@@ -462,11 +468,6 @@ interface AdminActivity {
   created_at: string
 }
 
-function firstOfMonth() {
-  const d = new Date()
-  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10)
-}
-
 function ActivitiesPanel() {
   const [activities, setActivities] = useState<AdminActivity[]>([])
   const [loading, setLoading] = useState(true)
@@ -713,6 +714,210 @@ function ReportsPanel() {
   )
 }
 
+// ─── Summary Panel (Admin monthly report) ───────────────────────────────────
+
+const SCORE_CONFIG_SUMMARY = {
+  excelente: { label: 'Excelente',  bg: 'bg-green-100', text: 'text-green-700' },
+  bueno:     { label: 'Bueno',      bg: 'bg-blue-100',  text: 'text-blue-700' },
+  basico:    { label: 'Básico',     bg: 'bg-amber-100', text: 'text-amber-700' },
+  deficiente:{ label: 'Deficiente', bg: 'bg-red-100',   text: 'text-red-700' },
+}
+
+interface EmpStat {
+  id: string
+  full_name: string
+  campus: string[]
+  active: boolean
+  leads_count: number
+  matriculados_count: number
+  activities_planned: number
+  activities_completed: number
+  report_submitted: boolean
+  performance_score: string | null
+  report_notes: string | null
+}
+
+interface SummaryTotals {
+  total_leads: number
+  total_matriculados: number
+  total_activities_planned: number
+  total_activities_completed: number
+  reports_submitted: number
+  total_employees: number
+}
+
+interface SummaryData {
+  month: string
+  totals: SummaryTotals
+  employees: EmpStat[]
+}
+
+function SummaryPanel() {
+  const [selectedMonth, setSelectedMonth] = useState(firstOfMonth())
+  const [data, setData] = useState<SummaryData | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  async function generate() {
+    setLoading(true)
+    setError('')
+    setData(null)
+    try {
+      const res = await fetch(`/api/portal/admin/summary?month=${selectedMonth}`)
+      const d = await res.json()
+      if (!res.ok) { setError(d.error ?? 'Error al generar el informe.'); setLoading(false); return }
+      setData(d)
+    } catch {
+      setError('Error de conexión.')
+    }
+    setLoading(false)
+  }
+
+  // Month options: current + 5 previous months
+  const monthOptions: string[] = []
+  for (let i = 0; i < 6; i++) {
+    const d = new Date()
+    d.setDate(1)
+    d.setMonth(d.getMonth() - i)
+    monthOptions.push(new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10))
+  }
+
+  return (
+    <div className="space-y-5">
+      {/* Controls */}
+      <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <h2 className="text-sm font-bold text-gray-900 mb-1">Informe General del Mes</h2>
+        <p className="text-xs text-gray-500 mb-4">
+          Resumen de actividades, leads y matriculados de todos los representantes para el mes seleccionado.
+        </p>
+        <div className="flex items-center gap-3 flex-wrap">
+          <select
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+            className="form-input w-auto text-sm"
+          >
+            {monthOptions.map((m) => (
+              <option key={m} value={m} className="capitalize">{monthLabel(m)}</option>
+            ))}
+          </select>
+          <button
+            onClick={generate}
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-navy text-white text-sm font-semibold hover:bg-navy/90 transition-colors disabled:opacity-40"
+          >
+            <Zap className="h-4 w-4" />
+            {loading ? 'Generando…' : 'Generar Informe'}
+          </button>
+        </div>
+
+        {error && (
+          <div className="mt-4 p-3 rounded-lg bg-red-50 border border-red-200 flex gap-2 items-start">
+            <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-red-700">{error}</p>
+          </div>
+        )}
+      </div>
+
+      {data && (
+        <>
+          {/* Global totals */}
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4 capitalize">
+              {monthLabel(data.month)} · Resumen general
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              {[
+                { icon: Users,         label: 'Representantes',    value: data.totals.total_employees,             color: 'text-navy' },
+                { icon: TrendingUp,    label: 'Total Leads',       value: data.totals.total_leads,                 color: 'text-blue-600' },
+                { icon: GraduationCap, label: 'Matriculados',      value: data.totals.total_matriculados,          color: 'text-green-600' },
+                { icon: CalendarDays,  label: 'Actividades Plan.', value: data.totals.total_activities_planned,    color: 'text-indigo-600' },
+                { icon: CheckCircle,   label: 'Actividades Term.', value: data.totals.total_activities_completed,  color: 'text-emerald-600' },
+                { icon: ClipboardList, label: 'Informes Enviados', value: data.totals.reports_submitted,           color: 'text-amber-600' },
+              ].map(({ icon: Icon, label, value, color }) => (
+                <div key={label} className="bg-gray-50 rounded-xl p-3 text-center">
+                  <Icon className={`h-5 w-5 mx-auto mb-1 ${color}`} />
+                  <p className="text-xl font-bold text-gray-900">{value}</p>
+                  <p className="text-xs text-gray-500 leading-tight">{label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Per-employee breakdown */}
+          <div className="space-y-3">
+            {data.employees
+              .sort((a, b) => b.leads_count - a.leads_count)
+              .map((emp) => {
+                const scoreCfg = emp.performance_score
+                  ? SCORE_CONFIG_SUMMARY[emp.performance_score as keyof typeof SCORE_CONFIG_SUMMARY]
+                  : null
+                return (
+                  <div key={emp.id} className="bg-white rounded-xl border border-gray-200 p-5">
+                    {/* Employee header */}
+                    <div className="flex items-start justify-between gap-3 mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-full bg-navy/10 text-navy flex items-center justify-center text-sm font-bold flex-shrink-0">
+                          {emp.full_name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-semibold text-gray-900 text-sm">{emp.full_name}</p>
+                            {!emp.active && (
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">Inactivo</span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                            {emp.campus.map((c) => (
+                              <span key={c} className="text-xs px-2 py-0.5 rounded-full bg-navy/10 text-navy font-medium">{c}</span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {scoreCfg ? (
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${scoreCfg.bg} ${scoreCfg.text}`}>
+                            {scoreCfg.label}
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-1 rounded-full text-xs bg-gray-100 text-gray-500">
+                            Sin informe
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Stats grid */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {[
+                        { label: 'Leads Generados',   value: emp.leads_count,            icon: TrendingUp,    color: 'text-blue-600' },
+                        { label: 'Matriculados',       value: emp.matriculados_count,      icon: GraduationCap, color: 'text-green-600' },
+                        { label: 'Actividades Plan.',  value: emp.activities_planned,      icon: CalendarDays,  color: 'text-indigo-600' },
+                        { label: 'Actividades Term.',  value: emp.activities_completed,    icon: CheckCircle,   color: 'text-emerald-600' },
+                      ].map(({ label, value, icon: Icon, color }) => (
+                        <div key={label} className="bg-gray-50 rounded-xl p-3 text-center">
+                          <Icon className={`h-4 w-4 mx-auto mb-1 ${color}`} />
+                          <p className="text-xl font-bold text-gray-900">{value}</p>
+                          <p className="text-xs text-gray-500 leading-tight">{label}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {emp.report_notes && (
+                      <div className="mt-3 bg-gray-50 rounded-xl px-4 py-3">
+                        <p className="text-xs font-semibold text-gray-500 mb-0.5">Notas del representante</p>
+                        <p className="text-sm text-gray-700">{emp.report_notes}</p>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 // ─── Main Admin Page ─────────────────────────────────────────────────────────
 
 export default function AdminPage() {
@@ -720,7 +925,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [showImport, setShowImport] = useState(false)
-  const [activeTab, setActiveTab] = useState<'empleados' | 'actividades' | 'informes'>('actividades')
+  const [activeTab, setActiveTab] = useState<'empleados' | 'actividades' | 'informes' | 'informe_general'>('actividades')
 
   async function loadEmployees() {
     const res = await fetch('/api/portal/admin/employees')
@@ -783,9 +988,10 @@ export default function AdminPage() {
         {/* Tabs */}
         <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-xl w-fit">
           {([
-            { key: 'empleados',   label: 'Empleados',          icon: Users },
-            { key: 'actividades', label: 'Actividades',         icon: CalendarDays },
-            { key: 'informes',    label: 'Informes de Cierre',  icon: ClipboardList },
+            { key: 'empleados',       label: 'Empleados',          icon: Users },
+            { key: 'actividades',     label: 'Actividades',         icon: CalendarDays },
+            { key: 'informes',        label: 'Informes Enviados',   icon: ClipboardList },
+            { key: 'informe_general', label: 'Informe General',     icon: BarChart3 },
           ] as const).map(({ key, label, icon: Icon }) => (
             <button
               key={key}
@@ -868,6 +1074,9 @@ export default function AdminPage() {
 
         {/* Reports tab */}
         {activeTab === 'informes' && <ReportsPanel />}
+
+        {/* General summary tab */}
+        {activeTab === 'informe_general' && <SummaryPanel />}
       </div>
 
       {showModal && (
