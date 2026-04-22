@@ -108,8 +108,16 @@ export default function ReportesPage() {
       fetch(`/api/portal/activities?month=${currentMonth}`),
       fetch('/api/portal/reports'), // all months for history
     ])
-    if (actRes.ok) { const d = await actRes.json(); setActivities(d.activities ?? []) }
-    if (repRes.ok) { const d = await repRes.json(); setReports(d.reports ?? []) }
+    if (actRes.ok) {
+      const d = await actRes.json(); setActivities(d.activities ?? [])
+    } else {
+      console.error('[reportes] activities fetch failed:', actRes.status)
+    }
+    if (repRes.ok) {
+      const d = await repRes.json(); setReports(d.reports ?? [])
+    } else {
+      console.error('[reportes] reports fetch failed:', repRes.status)
+    }
     setLoading(false)
   }, [currentMonth])
 
@@ -183,7 +191,7 @@ export default function ReportesPage() {
   }
 
   const performanceReport = reports.find((r) => r.report_type === 'performance' && r.month === currentMonth)
-  const pastReports = reports.filter((r) => r.report_type === 'performance' && r.month !== currentMonth)
+  const allPerformanceReports = reports.filter((r) => r.report_type === 'performance')
   const score = autoStats?.performance_score ?? performanceReport?.performance_score ?? null
   const scoreCfg = score ? SCORE_CONFIG[score] : null
 
@@ -550,24 +558,35 @@ export default function ReportesPage() {
               <p className="text-xs text-gray-400 mt-2">Ambas condiciones (leads Y matriculados) deben cumplirse para la puntuación más alta.</p>
             </div>
 
-            {/* Past reports history */}
-            {pastReports.length > 0 && (
+            {/* All submitted reports history */}
+            {allPerformanceReports.length > 0 && (
               <div className="bg-white rounded-xl border border-gray-200 p-5">
-                <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-4">Historial de Informes Anteriores</p>
-                <div className="space-y-3">
-                  {pastReports.map((r) => {
+                <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-4">
+                  Historial de Informes Enviados
+                </p>
+                <div className="divide-y divide-gray-50">
+                  {allPerformanceReports.map((r) => {
                     const cfg = r.performance_score ? SCORE_CONFIG[r.performance_score] : null
+                    const isCurrentMonth = r.month === currentMonth
                     return (
-                      <div key={r.id} className="flex items-center justify-between gap-3 py-3 border-b border-gray-50 last:border-0">
-                        <div>
-                          <p className="text-sm font-semibold text-gray-800 capitalize">{monthLabel(r.month)}</p>
+                      <div key={r.id} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="text-sm font-semibold text-gray-800 capitalize">{monthLabel(r.month)}</p>
+                            {isCurrentMonth && (
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-navy/10 text-navy font-medium">Este mes</span>
+                            )}
+                          </div>
                           <p className="text-xs text-gray-500 mt-0.5">
                             {r.leads_acquired ?? '—'} leads · {r.leads_enrolled ?? '—'} matriculados · {r.activities_completed ?? '—'} actividades
                           </p>
-                          {r.notes && <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{r.notes}</p>}
+                          {r.notes && <p className="text-xs text-gray-400 mt-0.5 line-clamp-1 italic">{r.notes}</p>}
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            Enviado: {new Date(r.created_at).toLocaleDateString('es-PR', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </p>
                         </div>
                         {cfg && (
-                          <span className={`flex-shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold ${cfg.bg} ${cfg.border} ${cfg.text}`}>
+                          <span className={`flex-shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold ${cfg.bg} ${cfg.text}`}>
                             {cfg.label}
                           </span>
                         )}

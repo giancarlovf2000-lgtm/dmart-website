@@ -426,6 +426,7 @@ function CsvImportModal({ onClose }: { onClose: () => void }) {
 
 interface AdminReport {
   id: string
+  employee_id: string
   month: string
   leads_acquired: number | null
   leads_enrolled: number | null
@@ -433,24 +434,39 @@ interface AdminReport {
   performance_score: 'deficiente' | 'basico' | 'bueno' | 'excelente' | null
   notes: string | null
   created_at: string
-  employees: { full_name: string; campus: string[] } | null
+  employee: { full_name: string; campus: string[] } | null
 }
 
 function ReportsPanel() {
   const [reports, setReports] = useState<AdminReport[]>([])
   const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState('')
   const [expanded, setExpanded] = useState<string | null>(null)
 
   useEffect(() => {
     fetch('/api/portal/admin/reports')
-      .then((r) => r.json())
-      .then((d) => { setReports(d.reports ?? []); setLoading(false) })
+      .then(async (r) => {
+        const d = await r.json()
+        if (!r.ok) { setFetchError(d.error ?? 'Error al cargar los informes.'); setLoading(false); return }
+        setReports(d.reports ?? [])
+        setLoading(false)
+      })
+      .catch(() => { setFetchError('Error de conexión.'); setLoading(false) })
   }, [])
 
   if (loading) {
     return (
       <div className="bg-white rounded-xl border border-gray-200 p-12 flex justify-center">
         <div className="animate-spin h-7 w-7 rounded-full border-4 border-navy border-t-transparent" />
+      </div>
+    )
+  }
+
+  if (fetchError) {
+    return (
+      <div className="bg-white rounded-xl border border-red-100 p-10 text-center">
+        <AlertCircle className="h-8 w-8 text-red-400 mx-auto mb-2" />
+        <p className="text-sm text-red-600">{fetchError}</p>
       </div>
     )
   }
@@ -491,12 +507,12 @@ function ReportsPanel() {
                   >
                     <div className="flex items-center gap-3">
                       <div className="h-9 w-9 rounded-full bg-navy/10 text-navy flex items-center justify-center text-sm font-bold flex-shrink-0">
-                        {report.employees?.full_name.charAt(0).toUpperCase() ?? '?'}
+                        {report.employee?.full_name.charAt(0).toUpperCase() ?? '?'}
                       </div>
                       <div>
-                        <p className="font-semibold text-gray-900 text-sm">{report.employees?.full_name ?? 'Empleado'}</p>
+                        <p className="font-semibold text-gray-900 text-sm">{report.employee?.full_name ?? 'Empleado'}</p>
                         <div className="flex items-center gap-2 mt-0.5">
-                          {report.employees?.campus.map((c) => (
+                          {report.employee?.campus.map((c) => (
                             <span key={c} className="text-xs px-2 py-0.5 rounded-full bg-navy/10 text-navy font-medium">{c}</span>
                           ))}
                         </div>
