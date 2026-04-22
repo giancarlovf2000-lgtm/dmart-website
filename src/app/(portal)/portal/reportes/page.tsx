@@ -106,7 +106,7 @@ export default function ReportesPage() {
   const loadData = useCallback(async () => {
     const [actRes, repRes] = await Promise.all([
       fetch(`/api/portal/activities?month=${currentMonth}`),
-      fetch(`/api/portal/reports?month=${currentMonth}`),
+      fetch('/api/portal/reports'), // all months for history
     ])
     if (actRes.ok) { const d = await actRes.json(); setActivities(d.activities ?? []) }
     if (repRes.ok) { const d = await repRes.json(); setReports(d.reports ?? []) }
@@ -182,7 +182,8 @@ export default function ReportesPage() {
     setSaving(false)
   }
 
-  const performanceReport = reports.find((r) => r.report_type === 'performance')
+  const performanceReport = reports.find((r) => r.report_type === 'performance' && r.month === currentMonth)
+  const pastReports = reports.filter((r) => r.report_type === 'performance' && r.month !== currentMonth)
   const score = autoStats?.performance_score ?? performanceReport?.performance_score ?? null
   const scoreCfg = score ? SCORE_CONFIG[score] : null
 
@@ -548,6 +549,34 @@ export default function ReportesPage() {
               </div>
               <p className="text-xs text-gray-400 mt-2">Ambas condiciones (leads Y matriculados) deben cumplirse para la puntuación más alta.</p>
             </div>
+
+            {/* Past reports history */}
+            {pastReports.length > 0 && (
+              <div className="bg-white rounded-xl border border-gray-200 p-5">
+                <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-4">Historial de Informes Anteriores</p>
+                <div className="space-y-3">
+                  {pastReports.map((r) => {
+                    const cfg = r.performance_score ? SCORE_CONFIG[r.performance_score] : null
+                    return (
+                      <div key={r.id} className="flex items-center justify-between gap-3 py-3 border-b border-gray-50 last:border-0">
+                        <div>
+                          <p className="text-sm font-semibold text-gray-800 capitalize">{monthLabel(r.month)}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {r.leads_acquired ?? '—'} leads · {r.leads_enrolled ?? '—'} matriculados · {r.activities_completed ?? '—'} actividades
+                          </p>
+                          {r.notes && <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{r.notes}</p>}
+                        </div>
+                        {cfg && (
+                          <span className={`flex-shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold ${cfg.bg} ${cfg.border} ${cfg.text}`}>
+                            {cfg.label}
+                          </span>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

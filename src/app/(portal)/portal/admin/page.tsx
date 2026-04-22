@@ -2,7 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { UserPlus, Building2, CheckCircle, XCircle, AlertCircle, X, Upload, FileText } from 'lucide-react'
+import {
+  UserPlus, Building2, CheckCircle, XCircle, AlertCircle, X, Upload,
+  FileText, Users, ClipboardList,
+} from 'lucide-react'
 import PortalHeader from '@/components/portal/PortalHeader'
 import Button from '@/components/ui/Button'
 import type { Employee } from '@/lib/types'
@@ -12,6 +15,19 @@ interface EmployeeWithCount extends Employee {
 }
 
 const CAMPUSES = ['Barranquitas', 'Vega Alta']
+
+const SCORE_CONFIG = {
+  excelente: { label: 'Excelente',  bg: 'bg-green-100', text: 'text-green-700' },
+  bueno:     { label: 'Bueno',      bg: 'bg-blue-100',  text: 'text-blue-700' },
+  basico:    { label: 'Básico',     bg: 'bg-amber-100', text: 'text-amber-700' },
+  deficiente:{ label: 'Deficiente', bg: 'bg-red-100',   text: 'text-red-700' },
+}
+
+function monthLabel(dateStr: string) {
+  return new Date(dateStr + 'T00:00:00').toLocaleDateString('es-PR', { month: 'long', year: 'numeric' })
+}
+
+// ─── Create Employee Modal ───────────────────────────────────────────────────
 
 function CreateEmployeeModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const [form, setForm] = useState({ full_name: '', email: '', password: '', role: 'empleado', campus: [] as string[] })
@@ -115,7 +131,7 @@ function CreateEmployeeModal({ onClose, onCreated }: { onClose: () => void; onCr
   )
 }
 
-// ─── CSV parsing helpers ────────────────────────────────────────────────────
+// ─── CSV parsing helpers ─────────────────────────────────────────────────────
 
 function parseCsvLine(line: string): string[] {
   const fields: string[] = []
@@ -145,7 +161,6 @@ function parseCsv(text: string): { headers: string[]; rows: string[][] } {
   return { headers, rows }
 }
 
-// Detect which CSV header index maps to which field
 interface ColMap {
   full_name: number
   lead_date: number
@@ -182,8 +197,6 @@ function autoDetectColumns(headers: string[]): Partial<ColMap> {
   })
   return map
 }
-
-// ─── CSV Import Modal ────────────────────────────────────────────────────────
 
 const FIELD_LABELS: Record<keyof ColMap, string> = {
   full_name: 'Nombre Completo',
@@ -299,7 +312,6 @@ function CsvImportModal({ onClose }: { onClose: () => void }) {
                 <p className="text-sm text-gray-700 font-medium">{rows.length} filas detectadas</p>
               </div>
 
-              {/* Preview */}
               <div className="mb-5 overflow-x-auto rounded-lg border border-gray-100">
                 <table className="text-xs w-full">
                   <thead>
@@ -317,7 +329,6 @@ function CsvImportModal({ onClose }: { onClose: () => void }) {
                 </table>
               </div>
 
-              {/* Column mapping */}
               <p className="text-sm font-semibold text-gray-700 mb-3">Mapeo de columnas</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {(Object.keys(FIELD_LABELS) as (keyof ColMap)[]).map((field) => (
@@ -411,13 +422,143 @@ function CsvImportModal({ onClose }: { onClose: () => void }) {
   )
 }
 
+// ─── Reports Panel ───────────────────────────────────────────────────────────
+
+interface AdminReport {
+  id: string
+  month: string
+  leads_acquired: number | null
+  leads_enrolled: number | null
+  activities_completed: number | null
+  performance_score: 'deficiente' | 'basico' | 'bueno' | 'excelente' | null
+  notes: string | null
+  created_at: string
+  employees: { full_name: string; campus: string[] } | null
+}
+
+function ReportsPanel() {
+  const [reports, setReports] = useState<AdminReport[]>([])
+  const [loading, setLoading] = useState(true)
+  const [expanded, setExpanded] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch('/api/portal/admin/reports')
+      .then((r) => r.json())
+      .then((d) => { setReports(d.reports ?? []); setLoading(false) })
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-xl border border-gray-200 p-12 flex justify-center">
+        <div className="animate-spin h-7 w-7 rounded-full border-4 border-navy border-t-transparent" />
+      </div>
+    )
+  }
+
+  if (reports.length === 0) {
+    return (
+      <div className="bg-white rounded-xl border border-gray-200 p-14 text-center">
+        <ClipboardList className="h-10 w-10 text-gray-300 mx-auto mb-3" />
+        <p className="font-medium text-gray-500">No hay informes de cierre enviados aún.</p>
+        <p className="text-sm text-gray-400 mt-1">Aparecerán aquí cuando los representantes envíen sus informes mensuales.</p>
+      </div>
+    )
+  }
+
+  // Group by month
+  const byMonth = new Map<string, AdminReport[]>()
+  reports.forEach((r) => {
+    if (!byMonth.has(r.month)) byMonth.set(r.month, [])
+    byMonth.get(r.month)!.push(r)
+  })
+
+  return (
+    <div className="space-y-6">
+      {Array.from(byMonth.entries()).map(([month, monthReports]) => (
+        <div key={month}>
+          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 capitalize">
+            {monthLabel(month)}
+          </h3>
+          <div className="space-y-3">
+            {monthReports.map((report) => {
+              const scoreCfg = report.performance_score ? SCORE_CONFIG[report.performance_score] : null
+              const isExpanded = expanded === report.id
+              return (
+                <div key={report.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                  <button
+                    onClick={() => setExpanded(isExpanded ? null : report.id)}
+                    className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors text-left"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="h-9 w-9 rounded-full bg-navy/10 text-navy flex items-center justify-center text-sm font-bold flex-shrink-0">
+                        {report.employees?.full_name.charAt(0).toUpperCase() ?? '?'}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-900 text-sm">{report.employees?.full_name ?? 'Empleado'}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          {report.employees?.campus.map((c) => (
+                            <span key={c} className="text-xs px-2 py-0.5 rounded-full bg-navy/10 text-navy font-medium">{c}</span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      {scoreCfg && (
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${scoreCfg.bg} ${scoreCfg.text}`}>
+                          {scoreCfg.label}
+                        </span>
+                      )}
+                      <div className="text-right text-xs text-gray-500 hidden sm:block">
+                        <p><span className="font-medium text-gray-700">{report.leads_acquired ?? '—'}</span> leads</p>
+                        <p><span className="font-medium text-gray-700">{report.leads_enrolled ?? '—'}</span> matriculados</p>
+                      </div>
+                      <span className={`text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}>▾</span>
+                    </div>
+                  </button>
+
+                  {isExpanded && (
+                    <div className="px-5 pb-5 border-t border-gray-100">
+                      <div className="grid grid-cols-3 gap-3 mt-4">
+                        {[
+                          { label: 'Leads Adquiridos',     value: report.leads_acquired },
+                          { label: 'Matriculados',          value: report.leads_enrolled },
+                          { label: 'Actividades completadas', value: report.activities_completed },
+                        ].map(({ label, value }) => (
+                          <div key={label} className="bg-gray-50 rounded-xl p-3 text-center">
+                            <p className="text-xl font-bold text-gray-900">{value ?? '—'}</p>
+                            <p className="text-xs text-gray-500 mt-0.5">{label}</p>
+                          </div>
+                        ))}
+                      </div>
+                      {report.notes && (
+                        <div className="mt-4 bg-gray-50 rounded-xl p-4">
+                          <p className="text-xs font-semibold text-gray-500 mb-1">Notas del representante</p>
+                          <p className="text-sm text-gray-700 whitespace-pre-wrap">{report.notes}</p>
+                        </div>
+                      )}
+                      <p className="text-xs text-gray-400 mt-3">
+                        Enviado: {new Date(report.created_at).toLocaleDateString('es-PR', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ─── Main Admin Page ─────────────────────────────────────────────────────────
+
 export default function AdminPage() {
-  const router = useRouter()
-  const [employee, setEmployee] = useState<Employee | null>(null)
   const [employees, setEmployees] = useState<EmployeeWithCount[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [showImport, setShowImport] = useState(false)
+  const [activeTab, setActiveTab] = useState<'empleados' | 'informes'>('empleados')
 
   async function loadEmployees() {
     const res = await fetch('/api/portal/admin/employees')
@@ -439,8 +580,6 @@ export default function AdminPage() {
 
   useEffect(() => { loadEmployees() }, [])
 
-  // Need a way to get current employee info for header
-  // For simplicity, find admin from list
   const adminEmployee = employees.find((e) => e.role === 'admin') as Employee | undefined
 
   return (
@@ -448,93 +587,121 @@ export default function AdminPage() {
       {adminEmployee && <PortalHeader employee={adminEmployee} />}
 
       <div className="max-w-5xl mx-auto px-4 md:px-6 py-6">
+        {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Gestión de Empleados</h1>
+            <h1 className="text-xl font-bold text-gray-900">Administración</h1>
             <p className="text-sm text-gray-500 mt-0.5">{employees.length} empleado{employees.length !== 1 ? 's' : ''} registrado{employees.length !== 1 ? 's' : ''}</p>
           </div>
           <div className="flex gap-3">
             <a href="/portal/dashboard" className="text-sm text-navy hover:underline font-medium py-2">
               ← Dashboard
             </a>
-            <button
-              onClick={() => setShowImport(true)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-navy text-navy text-sm font-semibold hover:bg-navy/5 transition-colors"
-            >
-              <Upload className="h-4 w-4" />
-              Importar CSV
-            </button>
-            <button
-              onClick={() => setShowModal(true)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gold text-white text-sm font-semibold hover:bg-gold/90 transition-colors"
-            >
-              <UserPlus className="h-4 w-4" />
-              Agregar Empleado
-            </button>
+            {activeTab === 'empleados' && (
+              <>
+                <button
+                  onClick={() => setShowImport(true)}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-navy text-navy text-sm font-semibold hover:bg-navy/5 transition-colors"
+                >
+                  <Upload className="h-4 w-4" />
+                  Importar CSV
+                </button>
+                <button
+                  onClick={() => setShowModal(true)}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gold text-white text-sm font-semibold hover:bg-gold/90 transition-colors"
+                >
+                  <UserPlus className="h-4 w-4" />
+                  Agregar Empleado
+                </button>
+              </>
+            )}
           </div>
         </div>
 
-        {loading ? (
-          <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-            <div className="animate-spin h-8 w-8 rounded-full border-4 border-navy border-t-transparent mx-auto" />
-          </div>
-        ) : (
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100 bg-gray-50">
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Empleado</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden sm:table-cell">Recinto(s)</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Rol</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden md:table-cell">Leads este mes</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Estado</th>
-                  <th className="px-4 py-3 w-16"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {employees.map((emp) => (
-                  <tr key={emp.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2.5">
-                        <div className="h-8 w-8 rounded-full bg-navy/10 text-navy flex items-center justify-center text-sm font-bold flex-shrink-0">
-                          {emp.full_name.charAt(0).toUpperCase()}
-                        </div>
-                        <span className="font-medium text-gray-900">{emp.full_name}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 hidden sm:table-cell">
-                      <div className="flex flex-wrap gap-1">
-                        {emp.campus.map((c) => (
-                          <span key={c} className="text-xs px-2 py-0.5 rounded-full bg-navy/10 text-navy font-medium">{c}</span>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-gray-600 capitalize">
-                      {emp.role === 'admin' ? 'Administrador' : 'Consejera'}
-                    </td>
-                    <td className="px-4 py-3 text-gray-600 hidden md:table-cell">
-                      {emp.leads_this_month}
-                    </td>
-                    <td className="px-4 py-3">
-                      {emp.active
-                        ? <span className="flex items-center gap-1 text-xs text-green-700"><CheckCircle className="h-3.5 w-3.5" />Activo</span>
-                        : <span className="flex items-center gap-1 text-xs text-gray-400"><XCircle className="h-3.5 w-3.5" />Inactivo</span>
-                      }
-                    </td>
-                    <td className="px-4 py-3">
-                      <button
-                        onClick={() => toggleActive(emp)}
-                        className="text-xs text-gray-500 hover:text-gray-800 underline"
-                      >
-                        {emp.active ? 'Desactivar' : 'Activar'}
-                      </button>
-                    </td>
+        {/* Tabs */}
+        <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-xl w-fit">
+          {([
+            { key: 'empleados', label: 'Empleados', icon: Users },
+            { key: 'informes',  label: 'Informes de Cierre', icon: ClipboardList },
+          ] as const).map(({ key, label, icon: Icon }) => (
+            <button
+              key={key}
+              onClick={() => setActiveTab(key)}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${activeTab === key ? 'bg-white text-navy shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              <Icon className="h-4 w-4" />
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Employees tab */}
+        {activeTab === 'empleados' && (
+          loading ? (
+            <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+              <div className="animate-spin h-8 w-8 rounded-full border-4 border-navy border-t-transparent mx-auto" />
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-100 bg-gray-50">
+                    <th className="text-left px-4 py-3 font-semibold text-gray-600">Empleado</th>
+                    <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden sm:table-cell">Recinto(s)</th>
+                    <th className="text-left px-4 py-3 font-semibold text-gray-600">Rol</th>
+                    <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden md:table-cell">Leads este mes</th>
+                    <th className="text-left px-4 py-3 font-semibold text-gray-600">Estado</th>
+                    <th className="px-4 py-3 w-16"></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {employees.map((emp) => (
+                    <tr key={emp.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className="h-8 w-8 rounded-full bg-navy/10 text-navy flex items-center justify-center text-sm font-bold flex-shrink-0">
+                            {emp.full_name.charAt(0).toUpperCase()}
+                          </div>
+                          <span className="font-medium text-gray-900">{emp.full_name}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 hidden sm:table-cell">
+                        <div className="flex flex-wrap gap-1">
+                          {emp.campus.map((c) => (
+                            <span key={c} className="text-xs px-2 py-0.5 rounded-full bg-navy/10 text-navy font-medium">{c}</span>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-gray-600 capitalize">
+                        {emp.role === 'admin' ? 'Administrador' : 'Consejera'}
+                      </td>
+                      <td className="px-4 py-3 text-gray-600 hidden md:table-cell">
+                        {emp.leads_this_month}
+                      </td>
+                      <td className="px-4 py-3">
+                        {emp.active
+                          ? <span className="flex items-center gap-1 text-xs text-green-700"><CheckCircle className="h-3.5 w-3.5" />Activo</span>
+                          : <span className="flex items-center gap-1 text-xs text-gray-400"><XCircle className="h-3.5 w-3.5" />Inactivo</span>
+                        }
+                      </td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => toggleActive(emp)}
+                          className="text-xs text-gray-500 hover:text-gray-800 underline"
+                        >
+                          {emp.active ? 'Desactivar' : 'Activar'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )
         )}
+
+        {/* Reports tab */}
+        {activeTab === 'informes' && <ReportsPanel />}
       </div>
 
       {showModal && (
