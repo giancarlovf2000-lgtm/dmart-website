@@ -720,7 +720,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [showImport, setShowImport] = useState(false)
-  const [activeTab, setActiveTab] = useState<'empleados' | 'actividades' | 'informes'>('empleados')
+  const [activeTab, setActiveTab] = useState<'empleados' | 'actividades' | 'informes'>('actividades')
 
   async function loadEmployees() {
     const res = await fetch('/api/portal/admin/employees')

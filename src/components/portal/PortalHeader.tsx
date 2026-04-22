@@ -1,7 +1,6 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
-import { LogOut, Building2 } from 'lucide-react'
+import { LogOut, Building2, LayoutDashboard, ClipboardList } from 'lucide-react'
 import type { Employee } from '@/lib/types'
 
 interface PortalHeaderProps {
@@ -9,8 +8,6 @@ interface PortalHeaderProps {
 }
 
 export default function PortalHeader({ employee }: PortalHeaderProps) {
-  const router = useRouter()
-
   async function handleLogout() {
     await fetch('/api/portal/auth/logout', { method: 'POST' })
     // Hard redirect to ensure the cleared session cookie is re-read by the server
@@ -32,9 +29,9 @@ export default function PortalHeader({ employee }: PortalHeaderProps) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           {employee.campus.length > 0 && (
-            <div className="hidden sm:flex items-center gap-1">
+            <div className="hidden sm:flex items-center gap-1 mr-2">
               {employee.campus.map((c) => (
                 <span
                   key={c}
@@ -45,6 +42,32 @@ export default function PortalHeader({ employee }: PortalHeaderProps) {
                 </span>
               ))}
             </div>
+          )}
+
+          <a
+            href="/portal/dashboard"
+            className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors px-2 py-1.5 rounded-lg hover:bg-gray-100"
+          >
+            <LayoutDashboard className="h-4 w-4" />
+            <span className="hidden sm:inline">Dashboard</span>
+          </a>
+
+          {employee.role === 'admin' ? (
+            <a
+              href="/portal/admin"
+              className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors px-2 py-1.5 rounded-lg hover:bg-gray-100"
+            >
+              <ClipboardList className="h-4 w-4" />
+              <span className="hidden sm:inline">Panel Admin</span>
+            </a>
+          ) : (
+            <a
+              href="/portal/reportes"
+              className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors px-2 py-1.5 rounded-lg hover:bg-gray-100"
+            >
+              <ClipboardList className="h-4 w-4" />
+              <span className="hidden sm:inline">Plan y Reportes</span>
+            </a>
           )}
 
           <button

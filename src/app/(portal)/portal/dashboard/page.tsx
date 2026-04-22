@@ -251,12 +251,13 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                   : `${isAdmin ? 'Todos los leads' : 'Mis leads'} · ${counts.total} total`}
               </h2>
               <div className="flex items-center gap-3">
-                <a href="/portal/reportes" className="text-xs text-navy hover:underline font-medium">
-                  Plan y Reportes →
-                </a>
-                {isAdmin && !showStale && (
+                {isAdmin ? (
                   <a href="/portal/admin" className="text-xs text-navy hover:underline font-medium">
-                    Ver empleados →
+                    Panel Admin →
+                  </a>
+                ) : (
+                  <a href="/portal/reportes" className="text-xs text-navy hover:underline font-medium">
+                    Plan y Reportes →
                   </a>
                 )}
               </div>
