@@ -62,15 +62,18 @@ export async function POST(request: NextRequest) {
 
     const insertClient = getInsertClient()
 
+    let resolvedAssignedTo: string | null = null
+
     if (typeof activity_id === 'string' && activity_id.trim() && insertClient) {
       const { data: act } = await insertClient
         .from('activities')
-        .select('id, name')
+        .select('id, name, employee_id')
         .eq('id', activity_id.trim())
         .single()
       if (act) {
         resolvedActivityId = act.id
         resolvedSource = `Actividad: ${act.name}`.slice(0, 200)
+        resolvedAssignedTo = act.employee_id ?? null
       }
     }
 
@@ -88,6 +91,8 @@ export async function POST(request: NextRequest) {
       utm_campaign: typeof utm_campaign === 'string' ? utm_campaign.trim().slice(0, 200) : null,
       page_source: typeof page_source === 'string' ? page_source.trim().slice(0, 500) : null,
       activity_id: resolvedActivityId,
+      assigned_to: resolvedAssignedTo,
+      assignment_source: resolvedAssignedTo ? 'actividad' : null,
       status: 'Nuevo Lead' as const,
       last_action_at: new Date().toISOString(),
     }
