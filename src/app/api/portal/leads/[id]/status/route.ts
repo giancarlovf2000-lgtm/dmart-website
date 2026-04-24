@@ -15,6 +15,7 @@ const VALID_STATUSES: LeadStatus[] = [
   'Contacto Establecido', 'Cita Programada', 'No Asistió a la Cita',
   'Reagendado', 'En Espera de Documentos', 'Orientado (En Proceso de Matricularse)',
   'Seguimiento a Futuro', 'Matriculado', 'Desinteresado / Rechazado',
+  'Graduado', 'Graduado con Reválida',
 ]
 
 const VALID_COMM_TYPES: CommunicationType[] = [

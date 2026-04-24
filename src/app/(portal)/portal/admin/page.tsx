@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import {
   UserPlus, Building2, CheckCircle, XCircle, AlertCircle, X, Upload,
   FileText, Users, ClipboardList, CalendarDays, MapPin, BarChart3,
-  GraduationCap, TrendingUp, Zap,
+  GraduationCap, TrendingUp, Zap, Briefcase, Phone, Mail,
 } from 'lucide-react'
 import PortalHeader from '@/components/portal/PortalHeader'
 import Button from '@/components/ui/Button'
@@ -918,6 +918,142 @@ function SummaryPanel() {
   )
 }
 
+// ─── Solicitudes Panel ───────────────────────────────────────────────────────
+
+const JOB_STATUS_CONFIG = {
+  pendiente:  { label: 'Pendiente',   bg: 'bg-amber-100',  text: 'text-amber-700' },
+  en_proceso: { label: 'En proceso',  bg: 'bg-blue-100',   text: 'text-blue-700' },
+  completado: { label: 'Completado',  bg: 'bg-green-100',  text: 'text-green-700' },
+  cancelado:  { label: 'Cancelado',   bg: 'bg-gray-100',   text: 'text-gray-500' },
+}
+
+interface JobRequestRow {
+  id: string
+  graduate_id: string
+  client_name: string
+  client_email: string
+  client_phone: string
+  service_description: string
+  preferred_date: string | null
+  status: 'pendiente' | 'en_proceso' | 'completado' | 'cancelado'
+  notes: string | null
+  created_at: string
+  graduate: { full_name: string; program: string } | null
+}
+
+function SolicitudesPanel() {
+  const [requests, setRequests] = useState<JobRequestRow[]>([])
+  const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState('')
+
+  async function load() {
+    const res = await fetch('/api/portal/admin/job-requests')
+    const d = await res.json()
+    if (!res.ok) { setFetchError(d.error ?? 'Error al cargar solicitudes.'); setLoading(false); return }
+    setRequests(d.requests ?? [])
+    setLoading(false)
+  }
+
+  useEffect(() => { load() }, [])
+
+  async function updateStatus(id: string, status: string) {
+    await fetch('/api/portal/admin/job-requests', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, status }),
+    })
+    load()
+  }
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-xl border border-gray-200 p-12 flex justify-center">
+        <div className="animate-spin h-7 w-7 rounded-full border-4 border-navy border-t-transparent" />
+      </div>
+    )
+  }
+
+  if (fetchError) {
+    return (
+      <div className="bg-white rounded-xl border border-red-100 p-10 text-center">
+        <AlertCircle className="h-8 w-8 text-red-400 mx-auto mb-2" />
+        <p className="text-sm text-red-600">{fetchError}</p>
+      </div>
+    )
+  }
+
+  if (requests.length === 0) {
+    return (
+      <div className="bg-white rounded-xl border border-gray-200 p-16 text-center">
+        <Briefcase className="h-10 w-10 text-gray-300 mx-auto mb-3" />
+        <p className="text-gray-500 font-medium">No hay solicitudes de empleo aún.</p>
+        <p className="text-gray-400 text-sm mt-1">Las solicitudes aparecerán aquí cuando alguien contacte a un egresado desde /egresados.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-3">
+      {requests.map((req) => {
+        const cfg = JOB_STATUS_CONFIG[req.status]
+        return (
+          <div key={req.id} className="bg-white rounded-xl border border-gray-200 p-5">
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${cfg.bg} ${cfg.text}`}>{cfg.label}</span>
+                  {req.graduate && (
+                    <span className="text-sm font-semibold text-gray-900">
+                      {req.graduate.full_name}
+                    </span>
+                  )}
+                  {req.graduate && (
+                    <span className="text-xs text-gray-500">{req.graduate.program}</span>
+                  )}
+                </div>
+                <p className="text-xs text-gray-400 mt-1">
+                  {new Date(req.created_at).toLocaleDateString('es-PR', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  {req.preferred_date && ` · Fecha preferida: ${new Date(req.preferred_date + 'T00:00:00').toLocaleDateString('es-PR', { month: 'short', day: 'numeric' })}`}
+                </p>
+              </div>
+              <select
+                value={req.status}
+                onChange={(e) => updateStatus(req.id, e.target.value)}
+                className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-navy/20 flex-shrink-0"
+              >
+                <option value="pendiente">Pendiente</option>
+                <option value="en_proceso">En proceso</option>
+                <option value="completado">Completado</option>
+                <option value="cancelado">Cancelado</option>
+              </select>
+            </div>
+
+            <div className="grid sm:grid-cols-3 gap-3 mb-3">
+              <div className="flex items-center gap-2 text-sm text-gray-700">
+                <Users className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                {req.client_name}
+              </div>
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Mail className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                <a href={`mailto:${req.client_email}`} className="hover:underline truncate">{req.client_email}</a>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Phone className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                <a href={`tel:${req.client_phone}`} className="hover:underline">{req.client_phone}</a>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 rounded-xl px-4 py-3">
+              <p className="text-xs font-semibold text-gray-500 mb-0.5">Descripción del servicio</p>
+              <p className="text-sm text-gray-700">{req.service_description}</p>
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 // ─── Main Admin Page ─────────────────────────────────────────────────────────
 
 export default function AdminPage() {
@@ -925,7 +1061,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [showImport, setShowImport] = useState(false)
-  const [activeTab, setActiveTab] = useState<'empleados' | 'actividades' | 'informes' | 'informe_general'>('actividades')
+  const [activeTab, setActiveTab] = useState<'empleados' | 'actividades' | 'informes' | 'informe_general' | 'solicitudes'>('actividades')
 
   async function loadEmployees() {
     const res = await fetch('/api/portal/admin/employees')
@@ -992,6 +1128,7 @@ export default function AdminPage() {
             { key: 'actividades',     label: 'Actividades',         icon: CalendarDays },
             { key: 'informes',        label: 'Informes Enviados',   icon: ClipboardList },
             { key: 'informe_general', label: 'Informe General',     icon: BarChart3 },
+            { key: 'solicitudes',     label: 'Solicitudes',         icon: Briefcase },
           ] as const).map(({ key, label, icon: Icon }) => (
             <button
               key={key}
@@ -1077,6 +1214,9 @@ export default function AdminPage() {
 
         {/* General summary tab */}
         {activeTab === 'informe_general' && <SummaryPanel />}
+
+        {/* Job requests tab */}
+        {activeTab === 'solicitudes' && <SolicitudesPanel />}
       </div>
 
       {showModal && (

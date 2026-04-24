@@ -14,6 +14,8 @@ const STATUS_CONFIG: Record<LeadStatus, { label: string; className: string }> = 
   'Seguimiento a Futuro':                    { label: 'Seg. Futuro',          className: 'bg-slate-50 text-slate-600 border-slate-200' },
   'Matriculado':                             { label: 'Matriculado',          className: 'bg-green-50 text-green-700 border-green-200' },
   'Desinteresado / Rechazado':               { label: 'Desinteresado',        className: 'bg-gray-100 text-gray-500 border-gray-200' },
+  'Graduado':                                { label: 'Graduado',             className: 'bg-violet-50 text-violet-700 border-violet-200' },
+  'Graduado con Reválida':                   { label: 'Revalidado',           className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
 }
 
 interface LeadStatusBadgeProps {

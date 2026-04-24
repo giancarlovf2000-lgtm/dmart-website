@@ -195,6 +195,9 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
       {showStatusModal && (
         <StatusChangeModal
           leadId={lead.id}
+          leadName={`${lead.nombre} ${lead.apellido}`}
+          leadProgram={lead.programa_interes}
+          leadCampus={lead.campus}
           currentStatus={lead.status}
           onClose={() => { setShowStatusModal(false); load() }}
         />

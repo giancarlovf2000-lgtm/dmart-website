@@ -72,6 +72,8 @@ export type LeadStatus =
   | 'Seguimiento a Futuro'
   | 'Matriculado'
   | 'Desinteresado / Rechazado'
+  | 'Graduado'
+  | 'Graduado con Reválida'
 
 export type CommunicationType =
   | 'Llamada'
@@ -168,6 +170,36 @@ export interface Lead {
 
 export type LeadInsert = Omit<Lead, 'id' | 'created_at' | 'updated_at' | 'status' | 'last_action_at' | 'employee' | 'activity'> & {
   status?: LeadStatus
+}
+
+export interface GraduateProfile {
+  id: string
+  lead_id: string
+  full_name: string
+  program: string
+  campus: string | null
+  specialty: string | null
+  bio: string | null
+  photo_url: string | null
+  graduation_date: string | null
+  available: boolean
+  consent_given: boolean
+  consent_date: string | null
+  created_at: string
+}
+
+export interface JobRequest {
+  id: string
+  graduate_id: string
+  client_name: string
+  client_email: string
+  client_phone: string
+  service_description: string
+  preferred_date: string | null
+  status: 'pendiente' | 'en_proceso' | 'completado' | 'cancelado'
+  notes: string | null
+  created_at: string
+  graduate?: Pick<GraduateProfile, 'full_name' | 'program'>
 }
 
 export interface Document {
