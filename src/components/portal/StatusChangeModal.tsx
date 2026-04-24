@@ -136,7 +136,7 @@ export default function StatusChangeModal({
           body: JSON.stringify({
             lead_id: leadId,
             full_name: leadName,
-            program: leadProgram ?? '',
+            program: leadProgram?.trim() || 'Sin especificar',
             campus: leadCampus ?? null,
             specialty: specialty.trim(),
             bio: bio.trim() || null,
@@ -148,8 +148,10 @@ export default function StatusChangeModal({
         })
         if (!profileRes.ok) {
           const d = await profileRes.json()
-          // Status was already updated — warn but don't block
-          console.error('Graduate profile error:', d.error)
+          setError(`Estado actualizado, pero ocurrió un error al crear el perfil de egresado: ${d.error ?? 'Error desconocido'}. Contacta al administrador.`)
+          setLoading(false)
+          router.refresh()
+          return
         }
       }
 

@@ -23,8 +23,8 @@ export async function POST(request: NextRequest) {
       photo_url, graduation_date, consent_given, consent_date,
     } = body
 
-    if (!lead_id || !full_name || !program) {
-      return NextResponse.json({ error: 'lead_id, full_name y program son requeridos.' }, { status: 400 })
+    if (!lead_id || !full_name) {
+      return NextResponse.json({ error: 'lead_id y full_name son requeridos.' }, { status: 400 })
     }
 
     // Upsert so re-submitting doesn't fail if record already exists
