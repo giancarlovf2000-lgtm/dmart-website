@@ -3,7 +3,7 @@
 import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { X, AlertCircle, Camera } from 'lucide-react'
-import { createClient } from '@supabase/supabase-js'
+import { createClient as createBrowserSupabase } from '@/lib/supabase/client'
 import Button from '@/components/ui/Button'
 import type { LeadStatus, CommunicationType } from '@/lib/types'
 
@@ -74,10 +74,7 @@ export default function StatusChangeModal({
   }
 
   async function uploadPhoto(file: File): Promise<string> {
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+    const supabase = createBrowserSupabase()
     const ext = file.name.split('.').pop()
     const path = `${leadId}-${Date.now()}.${ext}`
     const { error: uploadError } = await supabase.storage
