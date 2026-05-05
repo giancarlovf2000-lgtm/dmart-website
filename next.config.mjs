@@ -11,13 +11,16 @@ const nextConfig = {
     ],
   },
   async headers() {
+    // Allow embedding in SiteForge only. Update SITEFORGE_ORIGIN if the domain changes.
+    const SITEFORGE_ORIGIN = process.env.SITEFORGE_ORIGIN ?? 'https://siteforge-dmart.vercel.app'
     return [
       {
         source: '/(.*)',
         headers: [
           {
-            key: 'X-Frame-Options',
-            value: 'DENY',
+            // frame-ancestors replaces X-Frame-Options in modern browsers
+            key: 'Content-Security-Policy',
+            value: `frame-ancestors 'self' ${SITEFORGE_ORIGIN} http://localhost:3000 http://localhost:3001`,
           },
           {
             key: 'X-Content-Type-Options',
