@@ -20,7 +20,7 @@ const nextConfig = {
           {
             // frame-ancestors replaces X-Frame-Options in modern browsers
             key: 'Content-Security-Policy',
-            value: `frame-ancestors 'self' ${SITEFORGE_ORIGIN} https://*.gians-projects-b23f7b85.vercel.app http://localhost:3000 http://localhost:3001`,
+            value: `frame-ancestors 'self' ${SITEFORGE_ORIGIN} https://*.vercel.app http://localhost:3000 http://localhost:3001`,
           },
           {
             key: 'X-Content-Type-Options',
