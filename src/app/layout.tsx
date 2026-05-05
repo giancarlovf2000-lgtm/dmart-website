@@ -76,7 +76,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `(function(){
   if(!window.location.search.includes('siteforge=true'))return;
-  var ORIGIN='https://siteforge-dmart.vercel.app';
+  var ORIGIN='*'; // allow any SiteForge URL (preview or production)
   var hovered=null,selected=null;
   var style=document.createElement('style');
   style.textContent='.sf-hover{outline:2px solid #3b82f6!important;outline-offset:2px!important;cursor:crosshair!important;}.sf-selected{outline:3px solid #f59e0b!important;outline-offset:2px!important;}';
