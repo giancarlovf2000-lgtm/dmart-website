@@ -14,7 +14,7 @@ interface CTABannerProps {
 
 export default function CTABanner({
   title = '¿Listo para comenzar tu nueva carrera?',
-  subtitle = 'Habla con un consejero de admisiones hoy mismo. Sin costo, sin compromiso.',
+  subtitle = 'Habla con un representante de admisiones hoy mismo. Sin costo, sin compromiso.',
   primaryLabel = 'Solicitar Información',
   primaryHref = '/contactanos',
   secondaryLabel = 'Llamar Ahora',

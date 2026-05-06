@@ -51,21 +51,25 @@ export default function Footer() {
             </Link>
 
             <p className="text-gray-400 text-sm leading-relaxed mb-6">
-              Institución postsecundaria acreditada en Puerto Rico. Formamos profesionales en Belleza,
+              Institución postsecundaria autorizada en Puerto Rico. Formamos profesionales en Belleza,
               Salud, Comercial y Técnico con programas de calidad.
             </p>
 
             {/* Accreditations */}
             <div className="space-y-2 mb-6">
               <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Acreditaciones</p>
-              {ACCREDITATIONS.map((acc) => (
-                <div key={acc.abbr} className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded bg-gold/10 border border-gold/20 flex items-center justify-center flex-shrink-0">
-                    <span className="text-[7px] font-black text-gold">{acc.abbr.charAt(0)}</span>
-                  </div>
-                  <span className="text-xs text-gray-400">{acc.name}</span>
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded bg-gold/10 border border-gold/20 flex items-center justify-center flex-shrink-0">
+                  <span className="text-[7px] font-black text-gold">A</span>
                 </div>
-              ))}
+                <span className="text-xs text-gray-400">Acreditado por ACCSC</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded bg-gold/10 border border-gold/20 flex items-center justify-center flex-shrink-0">
+                  <span className="text-[7px] font-black text-gold">J</span>
+                </div>
+                <span className="text-xs text-gray-400">Autorizado por Junta de Instituciones Postsecundarias</span>
+              </div>
             </div>
 
             {/* Social */}

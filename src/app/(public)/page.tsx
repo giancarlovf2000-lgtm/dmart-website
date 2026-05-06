@@ -45,7 +45,7 @@ export default async function HomePage() {
 
   const admissionSteps = [
     'Completa el formulario de información',
-    'Habla con un consejero de admisiones',
+    'Habla con un representante de admisiones',
     'Entrega documentos requeridos',
     'Solicita tu ayuda económica (FAFSA)',
     '¡Inicia tus clases!',
@@ -68,7 +68,7 @@ export default async function HomePage() {
               Encuentra Tu Carrera Ideal
             </h2>
             <p className="text-gray-600 text-lg max-w-2xl mx-auto leading-relaxed">
-              Cuatro áreas de estudio diseñadas para conectarte con las industrias de mayor demanda en Puerto Rico.
+              Cuatro áreas de estudio diseñadas para conectarte al mundo laboral con éxito.
             </p>
           </div>
 
@@ -121,7 +121,7 @@ export default async function HomePage() {
           <div className="container-custom">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10">
               <div>
-                <Badge variant="navy" size="md" className="mb-3">Programas Destacados</Badge>
+                
                 <h2 className="text-3xl md:text-4xl font-black text-navy">
                   Programas de Alta Demanda
                 </h2>
@@ -278,7 +278,7 @@ export default async function HomePage() {
             <div>
               <LeadForm
                 title="Solicita Información Gratis"
-                subtitle="Un consejero te contactará dentro de 24 horas."
+                subtitle="Un representante de la institución te contactará dentro de 24 horas."
                 source="home-page"
               />
             </div>

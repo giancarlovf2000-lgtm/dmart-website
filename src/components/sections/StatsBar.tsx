@@ -9,17 +9,17 @@ const stats = [
   {
     icon: BookOpen,
     value: '10+',
-    label: 'Programas Acreditados',
+    label: 'Programas Autorizados',
   },
   {
     icon: GraduationCap,
-    value: '56',
-    label: 'Semanas de Duración',
+    value: 'En Pocas Semanas',
+    label: 'Te Gradúas',
   },
   {
     icon: Calendar,
-    value: '3',
-    label: 'Acreditaciones Activas',
+    value: 'Autorizada y',
+    label: 'Acreditada',
   },
 ]
 
