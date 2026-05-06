@@ -36,7 +36,7 @@ export default function Hero({
           <div className="inline-flex items-center gap-2 bg-gold/10 border border-gold/20 rounded-full px-4 py-1.5 mb-6">
             <span className="w-2 h-2 bg-gold rounded-full animate-pulse" />
             <span className="text-gold text-sm font-semibold tracking-wide">
-              Institución Postsecundaria Acreditada · Puerto Rico
+              Institución Postsecundaria Acreditada · ACCSC
             </span>
           </div>
 
