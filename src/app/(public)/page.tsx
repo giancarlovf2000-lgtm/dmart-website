@@ -177,7 +177,7 @@ export default async function HomePage() {
                 <span className="text-gold text-sm font-semibold">Disponible los Sábados</span>
               </div>
               <h2 className="text-3xl md:text-4xl font-black text-white mb-4">
-                Privados Sabatinos — Cursos de Tecnología y Marketing
+                Programas Privados Cortos
               </h2>
               <p className="text-gray-300 text-lg leading-relaxed mb-6">
                 Cursos especializados en habilidades digitales del mundo moderno: Mercadeo Digital,
