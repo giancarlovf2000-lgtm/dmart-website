@@ -18,8 +18,8 @@ const stats = [
   },
   {
     icon: Calendar,
-    value: 'Autorizada y',
-    label: 'Acreditada',
+    value: 'Autorizada y Acreditada',
+    label: '',
   },
 ]
 
