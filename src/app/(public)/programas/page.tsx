@@ -48,8 +48,8 @@ export default function ProgramasPage() {
               Nuestros Programas
             </h1>
             <p className="text-gray-300 text-xl leading-relaxed">
-              Programas acreditados en Belleza, Salud, Comercial y Técnico. Encuentra el programa
-              que transformará tu carrera.
+              Programas autorizados en Belleza, Salud, Comercial y Técnico. Encuentra el programa
+              que transformará tu vida.
             </p>
           </div>
         </div>
@@ -201,13 +201,13 @@ export default function ProgramasPage() {
       <section className="py-12 bg-gray-50">
         <div className="container-custom text-center">
           <p className="text-gray-600 mb-4">
-            ¿Buscas cursos cortos? Explora nuestros <strong>Privados Sabatinos</strong> — tecnología y marketing los sábados.
+            ¿Buscas cursos cortos? Explora nuestros <strong>Programas Privados Cortos</strong> — Tecnología, Marketing y muchos más que serán de tu interés. ¡Atrévete!
           </p>
           <Link
             href="/privados-sabatinos"
             className="inline-flex items-center gap-2 text-gold font-bold hover:text-gold-dark transition-colors"
           >
-            Ver Privados Sabatinos <ArrowRight className="h-4 w-4" />
+            Ver Programas Privados Cortos <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
       </section>

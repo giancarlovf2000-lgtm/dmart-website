@@ -13,7 +13,7 @@ const programDropdown = [
   { label: 'Salud', href: '/categorias/salud', description: 'Enfermería Práctica' },
   { label: 'Comercial', href: '/categorias/comercial', description: 'Administración de Oficina' },
   { label: 'Técnico', href: '/categorias/tecnico', description: 'Electricidad, Mecánica, Refrigeración' },
-  { label: 'Privados Sabatinos', href: '/privados-sabatinos', description: 'Cursos cortos los sábados' },
+  { label: 'Programas Privados Cortos', href: '/privados-sabatinos', description: 'Cursos cortos los sábados' },
 ]
 
 const navLinks = [

@@ -71,16 +71,16 @@ export const ALL_PROGRAMS = [
   'Enfermería Práctica',
   'Administración de Sistemas de Oficina',
   'Técnico de Electricidad con PLC y Energía Renovable',
-  'Técnico de Mecánica Automotriz',
+  'Técnico de Mecánica Automotriz con Fuel Injection',
   'Técnico de Refrigeración y Aire Acondicionado con PLC y Energía Renovable',
-  'Mercadeo Digital (Privado Sabatino)',
-  'Marketing de Influencers y Personal Branding (Privado Sabatino)',
-  'Diseño Gráfico Básico (Privado Sabatino)',
-  'Desarrollo de Páginas Web con WordPress (Privado Sabatino)',
-  'Producción de Videos y Podcasting (Privado Sabatino)',
-  'Creación de Contenido en Redes Sociales (Privado Sabatino)',
-  'Inteligencia Artificial Aplicada (Privado Sabatino)',
-  'Ciberseguridad Básica y Protección de Datos (Privado Sabatino)',
+  'Mercadeo Digital (Programa Privado Corto)',
+  'Marketing de Influencers y Personal Branding (Programa Privado Corto)',
+  'Diseño Gráfico Básico (Programa Privado Corto)',
+  'Desarrollo de Páginas Web con WordPress (Programa Privado Corto)',
+  'Producción de Videos y Podcasting (Programa Privado Corto)',
+  'Creación de Contenido en Redes Sociales (Programa Privado Corto)',
+  'Inteligencia Artificial Aplicada (Programa Privado Corto)',
+  'Ciberseguridad Básica y Protección de Datos (Programa Privado Corto)',
   'No sé aún',
 ]
 
@@ -115,7 +115,7 @@ export const ACCREDITATIONS = [
 ]
 
 /**
- * Saturday private courses (Privados Sabatinos)
+ * Saturday private courses (Programas Privados Cortos)
  */
 export const PRIVADOS_SABATINOS = [
   {

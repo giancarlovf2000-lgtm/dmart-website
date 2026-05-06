@@ -19,7 +19,7 @@ const footerPrograms = [
 const footerLinks = [
   { label: 'Inicio', href: '/' },
   { label: 'Programas', href: '/programas' },
-  { label: 'Privados Sabatinos', href: '/privados-sabatinos' },
+  { label: 'Programas Privados Cortos', href: '/privados-sabatinos' },
   { label: 'Recintos', href: '/recintos' },
   { label: 'Admisiones', href: '/admisiones' },
   { label: 'Servicios Estudiantiles', href: '/servicios-estudiantiles' },
@@ -51,7 +51,7 @@ export default function Footer() {
             </Link>
 
             <p className="text-gray-400 text-sm leading-relaxed mb-6">
-              Institución postsecundaria autorizada en Puerto Rico. Formamos profesionales en Belleza,
+              Institución postsecundaria autorizada a operar en Puerto Rico. Formamos profesionales en Belleza,
               Salud, Comercial y Técnico con programas de calidad.
             </p>
 
@@ -125,7 +125,7 @@ export default function Footer() {
                   className="flex items-center gap-1.5 text-sm text-gold/80 hover:text-gold transition-colors group font-semibold"
                 >
                   <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
-                  Privados Sabatinos
+                  Programas Privados Cortos
                 </Link>
               </li>
             </ul>

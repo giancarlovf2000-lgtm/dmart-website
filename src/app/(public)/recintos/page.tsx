@@ -160,7 +160,7 @@ export default async function RecintosPage() {
                 {[
                   'Cosmetología', 'Barbería y Estilismo', 'Técnica de Uñas', 'Estética y Maquillaje',
                   'Supermaster', 'Enfermería Práctica', 'Administración de Sistemas de Oficina',
-                  'Técnico de Electricidad con PLC', 'Técnico de Mecánica Automotriz',
+                  'Técnico de Electricidad con PLC', 'Técnico de Mecánica Automotriz con Fuel Injection',
                   'Técnico de Refrigeración y A/C',
                 ].map((p) => (
                   <li key={p} className="flex items-center gap-2 text-sm text-gray-600">
