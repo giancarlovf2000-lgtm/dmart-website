@@ -13,8 +13,8 @@ const stats = [
   },
   {
     icon: GraduationCap,
-    value: 'En Pocas Semanas',
-    label: 'Te Gradúas',
+    value: 'En Pocas Semanas Te Gradúas',
+    label: '',
   },
   {
     icon: Calendar,
