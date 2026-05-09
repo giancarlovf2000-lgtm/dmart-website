@@ -9,7 +9,7 @@ interface HeroProps {
 }
 
 export default function Hero({
-  title = "Tu Carrera Tu Futuro Empieza Aquí",
+  title = "Tu Conexión Al Futuro",
   subtitle = "Programas vocacionales acreditados en Belleza, Salud, Comercial y Técnico. Con recintos en Barranquitas y Vega Alta, Puerto Rico.",
   showCampuses = true,
 }: HeroProps) {
