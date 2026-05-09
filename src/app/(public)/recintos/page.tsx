@@ -160,8 +160,8 @@ export default async function RecintosPage() {
                 {[
                   'Cosmetología', 'Barbería y Estilismo', 'Técnica de Uñas', 'Estética y Maquillaje',
                   'Supermaster', 'Enfermería Práctica', 'Administración de Sistemas de Oficina',
-                  'Técnico de Electricidad con PLC', 'Técnico de Mecánica Automotriz con Fuel Injection',
-                  'Técnico de Refrigeración y A/C',
+                  'Técnico de Electricidad con PLC y Energía Renovable', 'Técnico de Mecánica Automotriz con Fuel Injection',
+                  'Técnico de Refrigeración con A/C, PLC y Energía Renovable',
                 ].map((p) => (
                   <li key={p} className="flex items-center gap-2 text-sm text-gray-600">
                     <span className="w-1.5 h-1.5 bg-gold rounded-full flex-shrink-0" />
@@ -180,7 +180,7 @@ export default async function RecintosPage() {
                 {[
                   'Cosmetología', 'Barbería y Estilismo', 'Técnica de Uñas', 'Estética y Maquillaje',
                   'Supermaster', 'Enfermería Práctica', 'Administración de Sistemas de Oficina',
-                  'Técnico de Electricidad con PLC', 'Técnico de Refrigeración y A/C',
+                  'Técnico de Electricidad con PLC y Energía Renovable', 'Técnico de Refrigeración con A/C, PLC y Energía Renovable',
                 ].map((p) => (
                   <li key={p} className="flex items-center gap-2 text-sm text-gray-600">
                     <span className="w-1.5 h-1.5 bg-gold rounded-full flex-shrink-0" />

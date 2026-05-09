@@ -10,10 +10,10 @@ const footerPrograms = [
   { label: 'Estética y Maquillaje', href: '/programas/estetica-y-maquillaje' },
   { label: 'Supermaster', href: '/programas/supermaster' },
   { label: 'Enfermería Práctica', href: '/programas/enfermeria-practica' },
-  { label: 'Administración de Oficina', href: '/programas/administracion-de-sistemas-de-oficina' },
-  { label: 'Técnico de Electricidad', href: '/programas/tecnico-de-electricidad' },
-  { label: 'Mecánica Automotriz', href: '/programas/tecnico-de-mecanica-automotriz' },
-  { label: 'Refrigeración y A/C', href: '/programas/tecnico-de-refrigeracion' },
+  { label: 'Administración de Sistemas de Oficina', href: '/programas/administracion-de-sistemas-de-oficina' },
+  { label: 'Técnico de Electricidad con PLC y Energía Renovable', href: '/programas/tecnico-de-electricidad' },
+  { label: 'Técnico de Mecánica Automotriz con Fuel Injection', href: '/programas/tecnico-de-mecanica-automotriz' },
+  { label: 'Técnico de Refrigeración con A/C, PLC y Energía Renovable', href: '/programas/tecnico-de-refrigeracion' },
 ]
 
 const footerLinks = [

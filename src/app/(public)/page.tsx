@@ -12,7 +12,7 @@ import { STATIC_CATEGORIES, STATIC_PROGRAMS } from '@/lib/utils'
 export const metadata: Metadata = {
   title: "D'Mart Institute — Tu Carrera Comienza Aquí",
   description:
-    "Programas vocacionales acreditados en Puerto Rico. Cosmetología, Enfermería Práctica, Técnico de Electricidad y más. Recintos en Barranquitas y Vega Alta.",
+    "Programas vocacionales acreditados en Puerto Rico. Cosmetología, Enfermería Práctica, Técnico de Electricidad con PLC y Energía Renovable y más. Recintos en Barranquitas y Vega Alta.",
 }
 
 const categoryIcons: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -174,25 +174,24 @@ export default async function HomePage() {
             <div className="flex-1">
               <div className="inline-flex items-center gap-2 bg-gold/10 border border-gold/20 rounded-full px-4 py-1.5 mb-5">
                 <Calendar className="h-4 w-4 text-gold" />
-                <span className="text-gold text-sm font-semibold">Disponible los Sábados</span>
+                <span className="text-gold text-sm font-semibold">Disponibles Lunes a Sábados</span>
               </div>
               <h2 className="text-3xl md:text-4xl font-black text-white mb-4">
                 Programas Privados Cortos
               </h2>
               <p className="text-gray-300 text-lg leading-relaxed mb-6">
-                Cursos especializados en habilidades digitales del mundo moderno: Mercadeo Digital,
-                Inteligencia Artificial, Diseño Gráfico, Redes Sociales y más. Aprende los sábados.
+                Cursos especializados en belleza, salud, gastronomía y más. Programas cortos diseñados para tu desarrollo profesional.
               </p>
               <Link
                 href="/privados-sabatinos"
                 className="inline-flex items-center gap-2 bg-gold text-navy font-bold px-6 py-3 rounded-xl hover:bg-gold-dark transition-colors"
               >
-                Ver Cursos Sabatinos
+                Ver Programas Privados Cortos
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
             <div className="flex-1 grid grid-cols-2 gap-3 w-full max-w-sm">
-              {['Mercadeo Digital', 'Inteligencia Artificial', 'Diseño Gráfico', 'Ciberseguridad', 'Producción de Videos', 'WordPress'].map((course) => (
+              {['Maquillaje', 'Técnica de Uñas', 'Masaje Terapéutico', 'Facturación a Planes Médicos', 'Repostería', 'Corte y Estilo de Caballeros'].map((course) => (
                 <div key={course} className="bg-white/5 border border-white/10 rounded-xl p-3">
                   <p className="text-white text-sm font-semibold">{course}</p>
                 </div>

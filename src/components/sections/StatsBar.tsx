@@ -36,7 +36,7 @@ export default function StatsBar() {
                   <Icon className="h-6 w-6 text-gold" />
                 </div>
                 <div className="text-3xl md:text-4xl font-black text-white mb-1">{stat.value}</div>
-                <div className="text-sm text-gray-400 font-black">{stat.label}</div>
+                <div className="text-3xl md:text-4xl text-gray-400 font-black">{stat.label}</div>
               </div>
             )
           })}

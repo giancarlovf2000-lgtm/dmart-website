@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils'
 const programDropdown = [
   { label: 'Belleza', href: '/categorias/belleza', description: 'Cosmetología, Barbería, Uñas y más' },
   { label: 'Salud', href: '/categorias/salud', description: 'Enfermería Práctica' },
-  { label: 'Comercial', href: '/categorias/comercial', description: 'Administración de Oficina' },
+  { label: 'Comercial', href: '/categorias/comercial', description: 'Administración de Sistemas de Oficina' },
   { label: 'Técnico', href: '/categorias/tecnico', description: 'Electricidad, Mecánica, Refrigeración' },
   { label: 'Programas Privados Cortos', href: '/privados-sabatinos', description: 'Cursos cortos los sábados' },
 ]
