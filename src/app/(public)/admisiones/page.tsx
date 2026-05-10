@@ -14,7 +14,7 @@ const steps = [
   {
     number: 1,
     title: 'Solicita Información',
-    desc: 'Completa nuestro formulario en línea o llama a cualquiera de nuestros recintos. Un consejero de admisiones te contactará dentro de 24 horas.',
+    desc: 'Completa nuestro formulario en línea o llama a cualquiera de nuestros recintos. Un representante de admisiones te contactará dentro de 24 horas.',
     icon: Phone,
   },
   {
@@ -26,50 +26,30 @@ const steps = [
   {
     number: 3,
     title: 'Completa la Solicitud',
-    desc: 'Entrega tu solicitud de admisión junto con los documentos requeridos. Nuestro equipo te guía en cada paso.',
+    desc: 'Completa tu solicitud de admisión junto con los documentos requeridos. Nuestro equipo te guía en cada paso.',
     icon: FileText,
   },
   {
     number: 4,
     title: 'Solicita Ayuda Económica',
-    desc: 'Si calificas, solicita el FAFSA y otras formas de asistencia económica. Nuestro equipo de Asistencia Económica te ayudará.',
+    desc: 'Si calificas, solicita el FAFSA y otras formas de asistencia económica. Nuestro equipo de Asistencia Económica te brindará asistencia para que puedas completar la solicitud.',
     icon: DollarSign,
   },
   {
     number: 5,
     title: '¡Comienza tus Clases!',
-    desc: 'Una vez completado el proceso, recibirás tu carta de aceptación y podrás matricularte para comenzar tu nueva carrera.',
+    desc: 'Una vez completado el proceso, recibirás tu carta de aceptación.',
     icon: CheckCircle,
   },
 ]
 
 const requirements = [
-  'Diploma de escuela superior o equivalente (GED)',
-  'Acta de nacimiento certificada',
-  'Tarjeta de Seguro Social',
-  'Foto de identificación con foto válida',
-  'Formulario de solicitud de admisión completado y firmado',
-  'Entrevista personal con el consejero de admisiones',
-  'FAFSA completado (si solicita asistencia económica)',
+  'Transcripción de crédito',
+  'Certificación de vacunas',
+  'Cuota de admisión',
 ]
 
-const financialAidOptions = [
-  {
-    name: 'Pell Grant Federal',
-    desc: 'Beca federal para estudiantes que demuestran necesidad económica. No hay que devolver el dinero.',
-    type: 'Beca',
-  },
-  {
-    name: 'Préstamos Estudiantiles Federales',
-    desc: 'Préstamos con tasas de interés favorables a través del programa de ayuda federal.',
-    type: 'Préstamo',
-  },
-  {
-    name: 'Programas de Asistencia Estatal',
-    desc: 'Programas adicionales de asistencia disponibles para residentes de Puerto Rico.',
-    type: 'Asistencia',
-  },
-]
+const financialAidOptions: { name: string; desc: string; type: string }[] = []
 
 export default function AdmisionesPage() {
   return (
@@ -84,7 +64,7 @@ export default function AdmisionesPage() {
             </h1>
             <p className="text-gray-300 text-xl leading-relaxed">
               El camino hacia tu nueva carrera comienza aquí. Nuestro proceso de admisión es
-              sencillo y nuestro equipo te acompaña en cada paso.
+              sencillo y nuestro equipo te acompaña en cada paso. ¡Atrévete!
             </p>
           </div>
         </div>
@@ -174,7 +154,7 @@ export default function AdmisionesPage() {
                 ))}
               </ul>
               <p className="text-sm text-gray-500 mt-4 italic">
-                * Los requisitos específicos pueden variar según el programa. Consulta con tu consejero de admisiones para más detalles.
+                * Los requisitos específicos pueden variar según el programa. Consulta con tu representante de admisiones para más detalles.
               </p>
 
               {/* Financial Aid */}
@@ -185,7 +165,7 @@ export default function AdmisionesPage() {
                 </h3>
                 <p className="text-gray-600 mb-6 text-sm leading-relaxed">
                   D'Mart Institute participa en programas de asistencia económica federal. Nuestro
-                  equipo de Asistencia Económica te guiará en el proceso de solicitud del FAFSA sin costo.
+                  equipo de Asistencia Económica te asistirá en el proceso de solicitud del FAFSA.
                 </p>
                 <div className="space-y-4">
                   {financialAidOptions.map((option) => (
@@ -215,7 +195,7 @@ export default function AdmisionesPage() {
             <div className="lg:sticky lg:top-24 self-start">
               <LeadForm
                 title="Comienza Tu Proceso Hoy"
-                subtitle="Solicita información y un consejero te llamará dentro de 24 horas."
+                subtitle="Solicita información y un representante te llamará dentro de 24 horas."
                 source="admisiones-page"
               />
             </div>

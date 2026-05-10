@@ -8,7 +8,7 @@ const footerPrograms = [
   { label: 'Barbería y Estilismo', href: '/programas/barberia-y-estilismo' },
   { label: 'Técnica de Uñas', href: '/programas/tecnica-de-unas' },
   { label: 'Estética y Maquillaje', href: '/programas/estetica-y-maquillaje' },
-  { label: 'Supermaster', href: '/programas/supermaster' },
+  { label: 'Súper Master', href: '/programas/supermaster' },
   { label: 'Enfermería Práctica', href: '/programas/enfermeria-practica' },
   { label: 'Administración de Sistemas de Oficina', href: '/programas/administracion-de-sistemas-de-oficina' },
   { label: 'Técnico de Electricidad con PLC y Energía Renovable', href: '/programas/tecnico-de-electricidad' },

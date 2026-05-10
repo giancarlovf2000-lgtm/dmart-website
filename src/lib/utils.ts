@@ -485,12 +485,12 @@ export const FAQ_DATA = [
   {
     id: 1,
     question: '¿Cuáles son los requisitos de admisión?',
-    answer: 'Para admisión se requiere: diploma de escuela superior o GED, formulario de solicitud completado, entrevista con el consejero de admisiones, y documentos de identificación. Los requisitos específicos pueden variar según el programa. Contáctanos para más información.',
+    answer: 'Para admisión se requiere: diploma de escuela superior o GED, formulario de solicitud completado, entrevista con el representante de admisiones, y documentos de identificación. Los requisitos específicos pueden variar según el programa. Contáctanos para más información.',
   },
   {
     id: 2,
     question: '¿Ofrecen ayuda económica?',
-    answer: 'Sí. D\'Mart Institute participa en programas de asistencia económica federal incluyendo el Pell Grant y préstamos estudiantiles. Nuestro equipo de Asistencia Económica te guiará en todo el proceso de solicitud del FAFSA y otras ayudas disponibles.',
+    answer: 'Sí. D\'Mart Institute participa en programas de asistencia económica federal incluyendo el Pell Grant y préstamos estudiantiles. Nuestro equipo de Asistencia Económica te asistirá en todo el proceso de solicitud del FAFSA y otras ayudas disponibles.',
   },
   {
     id: 3,
@@ -520,7 +520,7 @@ export const FAQ_DATA = [
   {
     id: 8,
     question: '¿Cómo puedo comenzar el proceso de matrícula?',
-    answer: 'El proceso es sencillo: (1) Completa el formulario de información en nuestra página web, (2) Un consejero te contactará para programar una visita o entrevista, (3) Completa la solicitud de admisión y documentos requeridos, (4) Solicita tu ayuda económica, (5) ¡Comienza tus clases!',
+    answer: 'El proceso es sencillo: (1) Completa el formulario de información en nuestra página web, (2) Un representante te contactará para programar una visita o entrevista, (3) Completa la solicitud de admisión y documentos requeridos, (4) Solicita tu ayuda económica, (5) ¡Comienza tus clases!',
   },
   {
     id: 9,

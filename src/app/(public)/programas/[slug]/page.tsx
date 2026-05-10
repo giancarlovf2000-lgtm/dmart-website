@@ -292,7 +292,7 @@ export default async function ProgramPage({ params }: PageProps) {
                     {[
                       'Diploma de escuela superior o equivalente (GED)',
                       'Formulario de solicitud completado',
-                      'Entrevista con consejero de admisiones',
+                      'Entrevista con representante de admisiones',
                       'Documentos de identificación válidos',
                       'Solicitud de Asistencia Económica (FAFSA) si aplica',
                     ].map((req) => (
@@ -317,7 +317,7 @@ export default async function ProgramPage({ params }: PageProps) {
               <LeadForm
                 defaultProgram={program.name}
                 title="¿Te interesa este programa?"
-                subtitle="Solicita información y un consejero te llamará pronto."
+                subtitle="Solicita información y un representante te llamará pronto."
                 source={`program-${slug}`}
               />
             </div>
@@ -327,7 +327,7 @@ export default async function ProgramPage({ params }: PageProps) {
 
       <CTABanner
         title={`Comienza tu carrera en ${program.name}`}
-        subtitle="Habla con un consejero de admisiones y da el primer paso."
+        subtitle="Habla con un representante de admisiones y da el primer paso."
         primaryLabel="Solicitar Información"
         primaryHref="/contactanos"
       />
