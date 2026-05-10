@@ -181,6 +181,13 @@ export const PRIVADOS_SABATINOS = [
     icon: 'Flower2',
     tag: 'Arte',
   },
+  {
+    id: 10,
+    title: 'Bartending y Mesero',
+    description: 'Domina el arte de la hospitalidad y la mixología. Aprende a crear experiencias memorables detrás de la barra.',
+    icon: 'Wine',
+    tag: 'Gastronomía',
+  },
 ]
 
 /**
@@ -195,7 +202,7 @@ export const STUDENT_SERVICES = [
   },
   {
     id: 2,
-    name: 'Oficina de Retención',
+    name: 'Oficina de Asuntos Estudiantiles',
     description: 'Te ayudamos a superar los desafíos académicos y personales para que puedas completar tu programa exitosamente.',
     icon: 'Users',
   },
@@ -485,12 +492,12 @@ export const FAQ_DATA = [
   {
     id: 1,
     question: '¿Cuáles son los requisitos de admisión?',
-    answer: 'Para admisión se requiere: diploma de escuela superior o GED, formulario de solicitud completado, entrevista con el representante de admisiones, y documentos de identificación. Los requisitos específicos pueden variar según el programa. Contáctanos para más información.',
+    answer: 'Para admisión se requiere: (1) Transcripción de crédito, (2) Certificación de vacunas, (3) Cuota de admisión. Los requisitos específicos pueden variar según el programa. Contáctanos para más información.',
   },
   {
     id: 2,
     question: '¿Ofrecen ayuda económica?',
-    answer: 'Sí. D\'Mart Institute participa en programas de asistencia económica federal incluyendo el Pell Grant y préstamos estudiantiles. Nuestro equipo de Asistencia Económica te asistirá en todo el proceso de solicitud del FAFSA y otras ayudas disponibles.',
+    answer: 'Sí. D\'Mart Institute participa en programas de asistencia económica federal incluyendo el Pell Grant. Nuestro equipo de Asistencia Económica te asistirá en todo el proceso de solicitud del FAFSA y otras ayudas disponibles.',
   },
   {
     id: 3,

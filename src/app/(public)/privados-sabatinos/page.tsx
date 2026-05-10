@@ -45,17 +45,16 @@ export default function PrivadosSabatinosPage() {
           <div className="max-w-3xl">
             <div className="inline-flex items-center gap-2 bg-gold/10 border border-gold/20 rounded-full px-4 py-1.5 mb-5">
               <Calendar className="h-4 w-4 text-gold" />
-              <span className="text-gold text-sm font-semibold">Disponible los Sábados</span>
+              <span className="text-gold text-sm font-semibold">Disponibles de lunes a sábado</span>
             </div>
             <h1 className="text-4xl md:text-5xl font-black text-white mb-5 leading-tight">
-              Privados Sabatinos
+              Programas Privados Cortos
             </h1>
             <p className="text-gray-300 text-xl leading-relaxed mb-6">
-              Cursos especializados en las habilidades digitales más demandadas del mercado actual.
-              Aprende tecnología, marketing y diseño los sábados, a tu propio ritmo.
+              Cursos especializados en las habilidades con diferentes áreas. Ven Oriéntate
             </p>
             <div className="flex flex-wrap gap-3">
-              {['Mercadeo Digital', 'IA', 'Diseño Gráfico', 'WordPress', 'Ciberseguridad'].map((tag) => (
+              {['Maquillaje', 'Técnica de Uñas', 'Masaje Terapéutico', 'Facturación a Planes Médicos', 'Repostería', 'Corte y Estilo de Caballeros', 'Corte y Estilo de Damas', 'Lenguaje de Señas', 'Floristería', 'Bartending y Mesero'].map((tag) => (
                 <span key={tag} className="bg-white/10 text-white text-xs font-semibold px-3 py-1 rounded-full border border-white/10">
                   {tag}
                 </span>
@@ -70,7 +69,7 @@ export default function PrivadosSabatinosPage() {
         <div className="container-custom">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
-              { icon: Calendar, title: 'Solo los Sábados', desc: 'Cursos diseñados para profesionales y emprendedores con horario flexible.' },
+              { icon: Calendar, title: 'Lunes a viernes (nocturno) y Sábados', desc: 'Cursos diseñados para profesionales y emprendedores con horario flexible.' },
               { icon: Clock, title: 'Corta Duración', desc: 'Aprende habilidades prácticas y aplicables sin comprometer tu semana laboral.' },
               { icon: TrendingUp, title: 'Alta Demanda', desc: 'Tecnologías y habilidades que el mercado laboral actual más solicita.' },
             ].map((item) => {
@@ -95,9 +94,9 @@ export default function PrivadosSabatinosPage() {
       <section className="section-padding">
         <div className="container-custom">
           <div className="text-center mb-12">
-            <Badge variant="gold" size="md" className="mb-4">8 Cursos Disponibles</Badge>
+            <Badge variant="gold" size="md" className="mb-4">10 Programas Disponibles</Badge>
             <h2 className="text-3xl md:text-4xl font-black text-navy mb-4">
-              Cursos Sabatinos
+              Programas Cortos
             </h2>
             <p className="text-gray-600 text-lg max-w-2xl mx-auto">
               Todos los cursos están disponibles en ambos recintos. Para información sobre
@@ -156,7 +155,7 @@ export default function PrivadosSabatinosPage() {
             <div>
               <Badge variant="navy" size="md" className="mb-4">¿Para Quién?</Badge>
               <h2 className="text-3xl md:text-4xl font-black text-navy mb-5">
-                Los Privados Sabatinos Son Para Ti Si...
+                Los Programas Cortos Privados Son Para Ti Si...
               </h2>
               <ul className="space-y-4">
                 {[
@@ -177,7 +176,7 @@ export default function PrivadosSabatinosPage() {
               </ul>
               <div className="mt-8 p-4 bg-gold-50 border border-gold/20 rounded-xl">
                 <p className="text-sm text-gray-700 leading-relaxed">
-                  <strong className="text-navy">Nota:</strong> Los Privados Sabatinos son cursos
+                  <strong className="text-navy">Nota:</strong> Los Programas Cortos Privados son cursos
                   independientes de los programas regulares de D'Mart Institute. No hay información
                   pública de precios — contáctanos para detalles.
                 </p>
@@ -198,8 +197,8 @@ export default function PrivadosSabatinosPage() {
       </section>
 
       <CTABanner
-        title="Inscríbete en un Privado Sabatino"
-        subtitle="Habla con un consejero y comienza a aprender habilidades del futuro."
+        title="Matricúlate en uno de nuestros Programas Cortos Privados"
+        subtitle="Habla con nuestros representantes de admisiones y comienza a desarrollar tus habilidades."
         primaryLabel="Solicitar Información"
         primaryHref="/contactanos"
       />

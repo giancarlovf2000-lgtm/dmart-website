@@ -82,7 +82,7 @@ export default function PreguntasFrecuentesPage() {
               ¿No Encontraste Tu Respuesta?
             </h2>
             <p className="text-gray-600 text-lg mb-8 leading-relaxed">
-              Nuestro equipo de consejeros está listo para responder todas tus preguntas
+              Nuestro equipo de representantes está listo para responder todas tus preguntas
               de manera personalizada. Llámanos o visítanos en cualquiera de nuestros recintos.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
