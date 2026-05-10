@@ -214,7 +214,7 @@ export const STUDENT_SERVICES = [
   {
     id: 5,
     name: 'Asistencia Económica',
-    description: 'Explora opciones de ayuda económica federal y estatal para financiar tu educación, incluyendo PELL Grant y préstamos.',
+    description: 'Explora opciones de ayuda económica federal y estatal para financiar tu educación, incluyendo PELL Grant y otras ayudas si cualificas.',
     icon: 'DollarSign',
   },
   {

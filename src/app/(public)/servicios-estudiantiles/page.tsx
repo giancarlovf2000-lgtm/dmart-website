@@ -28,6 +28,7 @@ const serviceDetails: Record<number, { details: string[]; contact?: string }> = 
       'Impresoras y escáneres disponibles',
       'Tutorías académicas',
       'Materiales de estudio complementarios',
+      'Biblioteca virtual',
     ],
   },
   2: {
@@ -36,7 +37,6 @@ const serviceDetails: Record<number, { details: string[]; contact?: string }> = 
       'Seguimiento del progreso estudiantil',
       'Apoyo en situaciones personales',
       'Mediación de conflictos',
-      'Recursos de salud mental',
     ],
   },
   3: {
@@ -47,6 +47,7 @@ const serviceDetails: Record<number, { details: string[]; contact?: string }> = 
       'Conexión con empleadores de la industria',
       'Seguimiento post-graduación',
     ],
+    contact: '* La institución no garantiza empleo, pero te ayuda en la búsqueda del mismo.',
   },
   4: {
     details: [
@@ -60,8 +61,7 @@ const serviceDetails: Record<number, { details: string[]; contact?: string }> = 
   5: {
     details: [
       'Orientación sobre el FAFSA',
-      'Gestión de Pell Grant y préstamos',
-      'Información sobre becas disponibles',
+      'Información sobre ayudas disponibles',
       'Planes de pago alternativos',
       'Revisión de elegibilidad',
     ],
@@ -72,7 +72,6 @@ const serviceDetails: Record<number, { details: string[]; contact?: string }> = 
       'Planes de pago',
       'Facturación y estados de cuenta',
       'Información sobre costos del programa',
-      'Recibo de cheques de ayuda económica',
     ],
   },
 }
@@ -126,14 +125,19 @@ export default function ServiciosEstudiantilesPage() {
                   <div className="p-6">
                     <p className="text-gray-600 text-sm leading-relaxed mb-5">{service.description}</p>
                     {details && (
-                      <ul className="space-y-2">
-                        {details.details.map((d) => (
-                          <li key={d} className="flex items-start gap-2 text-xs text-gray-500">
-                            <span className="w-1.5 h-1.5 bg-gold rounded-full flex-shrink-0 mt-1.5" />
-                            {d}
-                          </li>
-                        ))}
-                      </ul>
+                      <>
+                        <ul className="space-y-2">
+                          {details.details.map((d) => (
+                            <li key={d} className="flex items-start gap-2 text-xs text-gray-500">
+                              <span className="w-1.5 h-1.5 bg-gold rounded-full flex-shrink-0 mt-1.5" />
+                              {d}
+                            </li>
+                          ))}
+                        </ul>
+                        {details.contact && (
+                          <p className="text-xs text-gray-500 italic mt-4">{details.contact}</p>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
@@ -154,13 +158,11 @@ export default function ServiciosEstudiantilesPage() {
               </h2>
               <p className="text-gray-600 text-lg leading-relaxed mb-6">
                 Nuestro equipo de Asistencia Económica trabaja contigo para identificar todas las
-                opciones de financiamiento disponibles para tu educación. Desde el Pell Grant hasta
-                préstamos estudiantiles federales.
+                opciones de financiamiento disponibles para tu educación.
               </p>
               <ul className="space-y-3 mb-8">
                 {[
                   'Pell Grant (beca federal sin devolución)',
-                  'Préstamos Estudiantiles Federales',
                   'Programas de asistencia estatal',
                   'Planes de pago flexibles',
                 ].map((item) => (
@@ -190,7 +192,6 @@ export default function ServiciosEstudiantilesPage() {
                   'Completa la solicitud FAFSA con tu información financiera',
                   'Indica D\'Mart Institute como tu institución',
                   'Nuestro equipo revisará tu elegibilidad',
-                  'Recibe tu paquete de ayuda económica',
                 ].map((step, i) => (
                   <div key={step} className="flex items-start gap-3">
                     <div className="w-6 h-6 bg-gold/20 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
