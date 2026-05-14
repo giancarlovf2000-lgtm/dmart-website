@@ -312,7 +312,7 @@ export default function LeadForm({
             className="text-base"
           >
             <Send className="h-5 w-5" />
-            {status === 'loading' ? 'Enviando…' : 'Solicitar Información Gratis'}
+            {status === 'loading' ? 'Enviando…' : 'Solicitar Información'}
           </Button>
         </div>
       </form>
