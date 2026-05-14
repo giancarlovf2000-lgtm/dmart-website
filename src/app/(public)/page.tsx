@@ -276,7 +276,7 @@ export default async function HomePage() {
             {/* Lead form */}
             <div>
               <LeadForm
-                title="Solicita Información Gratis"
+                title="Solicita Información"
                 subtitle="Un representante de la institución te contactará dentro de 24 horas."
                 source="home-page"
               />

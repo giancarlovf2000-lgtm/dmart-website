@@ -155,11 +155,11 @@ export default function Navbar() {
           {/* Desktop CTA */}
           <div className="hidden lg:flex items-center gap-3">
             <a
-              href="tel:7878576929"
+              href="tel:7877107001"
               className="flex items-center gap-1.5 text-sm font-semibold text-gray-600 hover:text-gold transition-colors"
             >
               <Phone className="h-3.5 w-3.5" />
-              <span>(787) 857-6929</span>
+              <span>(787) 710-7001</span>
             </a>
             <Link href="/admisiones">
               <Button variant="gold" size="sm">

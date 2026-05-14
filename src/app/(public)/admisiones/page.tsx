@@ -45,7 +45,7 @@ const steps = [
 
 const requirements = [
   'Transcripción de crédito',
-  'Certificación de vacunas',
+  'Certificado de Inmunización para menores de 21 años',
   'Cuota de admisión',
 ]
 
