@@ -19,8 +19,8 @@ export default async function SobreNosotrosPage() {
     { title: 'Compromiso Estudiantil', desc: 'El éxito de cada estudiante es nuestra prioridad número uno.' },
     { title: 'Integridad', desc: 'Actuamos con honestidad y transparencia en todas nuestras operaciones.' },
     { title: 'Innovación', desc: 'Actualizamos continuamente nuestros programas con las últimas tendencias de la industria.' },
-    { title: 'Comunidad', desc: 'Somos parte activa de las comunidades de Barranquitas y Vega Alta.' },
-    { title: 'Inclusión', desc: 'Brindamos oportunidades educativas accesibles para todos los puertorriqueños.' },
+    { title: 'Comunidad', desc: 'Somos parte activa de las comunidades de Barranquitas, Vega Alta y pueblos limítrofes.' },
+    { title: 'Inclusión', desc: 'Brindamos oportunidades educativas accesibles para todos.' },
   ]
 
   return (

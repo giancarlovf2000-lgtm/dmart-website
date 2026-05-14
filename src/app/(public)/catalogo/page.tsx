@@ -40,7 +40,7 @@ const placeholderDocs: DisplayDoc[] = [
   {
     id: '2',
     title: 'Folleto de Programas de Belleza',
-    description: 'Información detallada sobre los programas de Cosmetología, Barbería, Técnica de Uñas, Estética y Maquillaje.',
+    description: 'Información detallada sobre los programas de Cosmetología, Barbería, Técnica de Uñas, Estética, Maquillaje y Super Master.',
     category: 'folleto',
     language: 'es',
     sort_order: 2,
@@ -48,7 +48,7 @@ const placeholderDocs: DisplayDoc[] = [
   {
     id: '3',
     title: 'Folleto de Programas Técnicos',
-    description: 'Información sobre los programas de Electricidad, Mecánica Automotriz y Refrigeración y Aire Acondicionado.',
+    description: 'Información sobre los programas de Técnico de Electricidad con PLC y Energía Renovable, Técnico de Mecánica Automotriz con Fuel Injection, Técnico de Refrigeración con A/C, PLC y Energía Renovable.',
     category: 'folleto',
     language: 'es',
     sort_order: 3,
@@ -56,7 +56,7 @@ const placeholderDocs: DisplayDoc[] = [
   {
     id: '4',
     title: 'Folleto de Enfermería Práctica',
-    description: 'Información detallada sobre el programa de Enfermería Práctica, requisitos y oportunidades de carrera.',
+    description: 'Información detallada sobre el programa de Enfermería Práctica, requisitos y oportunidades de empleo.',
     category: 'folleto',
     language: 'es',
     sort_order: 4,
@@ -182,8 +182,7 @@ export default async function CatalogoPage() {
               ¿Necesitas el Catálogo Físico?
             </h2>
             <p className="text-gray-300 text-lg mb-8 max-w-2xl mx-auto">
-              Contáctanos y con gusto te enviamos una copia física del catálogo institucional
-              o programa las información que necesitas directamente con un consejero.
+              Contáctanos y te comunicaremos con un representante para brindarte la información que necesitas.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a
