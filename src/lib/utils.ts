@@ -101,16 +101,19 @@ export const ACCREDITATIONS = [
     name: 'Junta de Instituciones Postsecundarias',
     abbr: 'JIP',
     description: 'Autorizada por la Junta de Instituciones Postsecundarias de Puerto Rico',
+    logo: '/jip-logo.png',
   },
   {
     name: 'ACCSC',
     abbr: 'ACCSC',
     description: 'Accrediting Commission of Career Schools and Colleges',
+    logo: '/accsc-logo.png',
   },
   {
     name: 'Departamento de Educación Federal',
     abbr: 'U.S. ED',
     description: 'Autorizada por el Departamento de Educación Federal (U.S. Department of Education)',
+    logo: '/used-logo.png',
   },
 ]
 

@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { ShieldCheck } from 'lucide-react'
 import { ACCREDITATIONS } from '@/lib/utils'
 
@@ -21,11 +22,14 @@ export default function AccreditationBar() {
           <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-8 flex-wrap justify-center md:justify-start">
             {ACCREDITATIONS.map((acc) => (
               <div key={acc.abbr} className="flex items-center gap-3">
-                {/* Logo placeholder — replace with actual logo Image when available */}
-                <div className="w-10 h-10 rounded-lg bg-navy/5 border border-navy/10 flex items-center justify-center flex-shrink-0">
-                  <span className="text-[9px] font-black text-navy leading-tight text-center px-0.5">
-                    {acc.abbr}
-                  </span>
+                <div className="w-12 h-12 flex items-center justify-center flex-shrink-0">
+                  <Image
+                    src={acc.logo}
+                    alt={acc.name}
+                    width={48}
+                    height={48}
+                    className="w-12 h-12 object-contain"
+                  />
                 </div>
                 <div>
                   <p className="text-xs font-bold text-navy leading-tight">{acc.name}</p>
