@@ -152,17 +152,28 @@ export default async function ProgramPage({ params }: PageProps) {
       </section>
 
       {/* Stats bar */}
-      {(program.duration_weeks || program.credits || program.hours) && (
+      {(program.duration_months || program.duration_weeks || program.credits || program.hours) && (
         <section className="bg-white border-b border-gray-100">
           <div className="container-custom py-6">
             <div className="flex flex-wrap gap-8">
+              {program.duration_months && (
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gold/10 rounded-xl flex items-center justify-center">
+                    <Calendar className="h-5 w-5 text-gold" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide">Duración</p>
+                    <p className="text-lg font-black text-navy">{program.duration_months} meses</p>
+                  </div>
+                </div>
+              )}
               {program.duration_weeks && (
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-gold/10 rounded-xl flex items-center justify-center">
                     <Clock className="h-5 w-5 text-gold" />
                   </div>
                   <div>
-                    <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide">Duración</p>
+                    <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide">Semanas</p>
                     <p className="text-lg font-black text-navy">{program.duration_weeks} semanas</p>
                   </div>
                 </div>

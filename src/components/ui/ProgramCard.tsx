@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Clock, BookOpen, Award, ArrowRight } from 'lucide-react'
+import { Clock, BookOpen, Award, ArrowRight, Calendar } from 'lucide-react'
 import Badge from './Badge'
 import { cn } from '@/lib/utils'
 interface ProgramCardProps {
@@ -9,6 +9,7 @@ interface ProgramCardProps {
     slug: string
     description?: string | null
     duration_weeks?: number | null
+    duration_months?: number | null
     credits?: number | null
     hours?: number | null
     category?: { name: string; slug: string } | null
@@ -84,8 +85,14 @@ export default function ProgramCard({ program, variant = 'default', className }:
         )}
 
         {/* Stats */}
-        {(program.duration_weeks || program.credits || program.hours) && (
+        {(program.duration_months || program.duration_weeks || program.credits || program.hours) && (
           <div className="flex flex-wrap gap-3 mb-4">
+            {program.duration_months && (
+              <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                <Calendar className="h-3.5 w-3.5 text-gold" />
+                <span>{program.duration_months} meses</span>
+              </div>
+            )}
             {program.duration_weeks && (
               <div className="flex items-center gap-1.5 text-xs text-gray-500">
                 <Clock className="h-3.5 w-3.5 text-gold" />

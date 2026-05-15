@@ -37,6 +37,7 @@ export interface Program {
   slug: string
   description: string | null
   duration_weeks: number | null
+  duration_months: number | null
   credits: number | null
   hours: number | null
   schedule_options: string[] | null
