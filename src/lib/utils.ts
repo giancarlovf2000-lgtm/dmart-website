@@ -137,7 +137,7 @@ export const PRIVADOS_SABATINOS = [
   },
   {
     id: 3,
-    title: 'Masaje Terapéutico',
+    title: 'Terapia de Masaje y Tratamiento Corporal',
     description: 'Tus manos como instrumento de sanación. Aprende el arte ancestral de aliviar tensiones y restaurar el equilibrio corporal.',
     icon: 'Heart',
     tag: 'Salud',

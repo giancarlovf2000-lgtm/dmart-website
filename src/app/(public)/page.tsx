@@ -191,7 +191,7 @@ export default async function HomePage() {
               </Link>
             </div>
             <div className="flex-1 grid grid-cols-2 gap-3 w-full max-w-sm">
-              {['Maquillaje', 'Técnica de Uñas', 'Masaje Terapéutico', 'Facturación a Planes Médicos', 'Repostería', 'Corte y Estilo de Caballeros'].map((course) => (
+              {['Maquillaje', 'Técnica de Uñas', 'Terapia de Masaje y Tratamiento Corporal', 'Facturación a Planes Médicos', 'Repostería', 'Corte y Estilo de Caballeros'].map((course) => (
                 <div key={course} className="bg-white/5 border border-white/10 rounded-xl p-3">
                   <p className="text-white text-sm font-semibold">{course}</p>
                 </div>
