@@ -51,7 +51,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     supervisedIds = (supervised ?? []).map((e: { id: string }) => e.id)
   }
 
-  const employeeIdFilter = isAdmin ? undefined : isSupervisor ? undefined : user.id
+  const employeeIdFilter = isAdmin ? undefined : isSupervisor ? supervisedIds : user!.id
 
   await promoteNewLeadsToCritico(employeeIdFilter)
   const staleLeadIds = await getStaleLeadIds(employeeIdFilter)

@@ -9,7 +9,7 @@ function getServiceClient() {
 
 // Promotes "Nuevo Lead" leads to "Crítico" if untouched for 24+ hours.
 // Runs on dashboard load.
-export async function promoteNewLeadsToCritico(employeeId?: string) {
+export async function promoteNewLeadsToCritico(employeeId?: string | string[]) {
   const supabase = getServiceClient()
 
   let query = supabase
@@ -18,7 +18,10 @@ export async function promoteNewLeadsToCritico(employeeId?: string) {
     .eq('status', 'Nuevo Lead')
     .lt('last_action_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
 
-  if (employeeId) {
+  if (Array.isArray(employeeId)) {
+    if (employeeId.length === 0) return
+    query = query.in('assigned_to', employeeId)
+  } else if (employeeId) {
     query = query.eq('assigned_to', employeeId)
   }
 
@@ -47,7 +50,7 @@ export async function promoteNewLeadsToCritico(employeeId?: string) {
 
 // Returns lead IDs that have been in their current status for 7+ days
 // (for any non-terminal, non-new status). Used for visual "Seguimiento pendiente" alerts.
-export async function getStaleLeadIds(employeeId?: string): Promise<string[]> {
+export async function getStaleLeadIds(employeeId?: string | string[]): Promise<string[]> {
   const supabase = getServiceClient()
 
   let query = supabase
@@ -56,7 +59,10 @@ export async function getStaleLeadIds(employeeId?: string): Promise<string[]> {
     .lt('last_action_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
     .not('status', 'in', '("Nuevo Lead","Crítico","Matriculado","Desinteresado / Rechazado")')
 
-  if (employeeId) {
+  if (Array.isArray(employeeId)) {
+    if (employeeId.length === 0) return []
+    query = query.in('assigned_to', employeeId)
+  } else if (employeeId) {
     query = query.eq('assigned_to', employeeId)
   }
 
