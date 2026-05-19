@@ -183,6 +183,7 @@ function EditEmployeeModal({ employee, allEmployees, onClose, onSaved }: {
     campus: (employee.campus as string[]).slice(),
     supervisee_ids: currentSupervisees,
   })
+  const [newPassword, setNewPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -202,12 +203,16 @@ function EditEmployeeModal({ employee, allEmployees, onClose, onSaved }: {
     e.preventDefault()
     setError('')
     if (form.campus.length === 0) { setError('Selecciona al menos un recinto.'); return }
+    if (newPassword && newPassword.length < 8) { setError('La contraseña debe tener al menos 8 caracteres.'); return }
     setLoading(true)
+
+    const body: Record<string, unknown> = { role: form.role, campus: form.campus, supervisee_ids: form.supervisee_ids }
+    if (newPassword) body.password = newPassword
 
     const res = await fetch(`/api/portal/admin/employees/${employee.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ role: form.role, campus: form.campus, supervisee_ids: form.supervisee_ids }),
+      body: JSON.stringify(body),
     })
 
     if (!res.ok) {
@@ -290,6 +295,19 @@ function EditEmployeeModal({ employee, allEmployees, onClose, onSaved }: {
                 </button>
               ))}
             </div>
+          </div>
+
+          <div className="pt-2 border-t border-gray-100">
+            <label className="form-label">Nueva Contraseña <span className="text-gray-400 font-normal">(opcional)</span></label>
+            <input
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              className="form-input"
+              placeholder="Dejar en blanco para no cambiar · mín. 8 caracteres"
+              minLength={8}
+              autoComplete="new-password"
+            />
           </div>
 
           <div className="flex gap-3 pt-2">

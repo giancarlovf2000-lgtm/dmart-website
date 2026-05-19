@@ -34,6 +34,15 @@ export async function PATCH(
   const admin = getAdminClient()
   const id = params.id
 
+  // Change password via Supabase Auth admin API if provided
+  if (body.password) {
+    const password = String(body.password)
+    if (password.length < 8)
+      return NextResponse.json({ error: 'La contraseña debe tener al menos 8 caracteres.' }, { status: 400 })
+    const { error: pwErr } = await admin.auth.admin.updateUserById(id, { password })
+    if (pwErr) return NextResponse.json({ error: 'Error al cambiar la contraseña.' }, { status: 500 })
+  }
+
   const updates: Record<string, unknown> = {}
   if (body.full_name !== undefined) updates.full_name = body.full_name.trim()
   if (body.campus !== undefined) updates.campus = body.campus
