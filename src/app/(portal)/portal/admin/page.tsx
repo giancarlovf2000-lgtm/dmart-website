@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import {
   UserPlus, Building2, CheckCircle, XCircle, AlertCircle, X, Upload,
   FileText, Users, ClipboardList, CalendarDays, MapPin, BarChart3,
-  GraduationCap, TrendingUp, Zap, Briefcase, Phone, Mail,
+  GraduationCap, TrendingUp, Zap, Briefcase, Phone, Mail, Pencil,
 } from 'lucide-react'
 import PortalHeader from '@/components/portal/PortalHeader'
 import Button from '@/components/ui/Button'
@@ -35,8 +35,8 @@ function firstOfMonth(offset = 0) {
 
 // ─── Create Employee Modal ───────────────────────────────────────────────────
 
-function CreateEmployeeModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
-  const [form, setForm] = useState({ full_name: '', email: '', password: '', role: 'empleado', campus: [] as string[] })
+function CreateEmployeeModal({ onClose, onCreated, allEmployees }: { onClose: () => void; onCreated: () => void; allEmployees: EmployeeWithCount[] }) {
+  const [form, setForm] = useState({ full_name: '', email: '', password: '', role: 'empleado', campus: [] as string[], supervisee_ids: [] as string[] })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -44,6 +44,12 @@ function CreateEmployeeModal({ onClose, onCreated }: { onClose: () => void; onCr
     setForm((prev) => ({
       ...prev,
       campus: prev.campus.includes(c) ? prev.campus.filter((x) => x !== c) : [...prev.campus, c],
+    }))
+
+  const toggleSupervisee = (id: string) =>
+    setForm((prev) => ({
+      ...prev,
+      supervisee_ids: prev.supervisee_ids.includes(id) ? prev.supervisee_ids.filter((x) => x !== id) : [...prev.supervisee_ids, id],
     }))
 
   async function handleSubmit(e: React.FormEvent) {
@@ -69,17 +75,19 @@ function CreateEmployeeModal({ onClose, onCreated }: { onClose: () => void; onCr
     onClose()
   }
 
+  const empleados = allEmployees.filter((e) => e.role === 'empleado' && e.active)
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
           <h2 className="text-base font-bold text-gray-900">Agregar Empleado</h2>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100">
             <X className="h-4 w-4 text-gray-500" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
           {error && (
             <div className="p-3 rounded-lg bg-red-50 border border-red-200 flex gap-2 items-start">
               <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0 mt-0.5" />
@@ -101,11 +109,35 @@ function CreateEmployeeModal({ onClose, onCreated }: { onClose: () => void; onCr
           </div>
           <div>
             <label className="form-label">Rol</label>
-            <select value={form.role} onChange={(e) => setForm((p) => ({ ...p, role: e.target.value }))} className="form-input">
-              <option value="empleado">Consejera de Admisiones</option>
+            <select value={form.role} onChange={(e) => setForm((p) => ({ ...p, role: e.target.value as typeof p.role, supervisee_ids: [] }))} className="form-input">
+              <option value="empleado">Representante de Admisiones</option>
+              <option value="supervisor">Supervisor de Admisiones</option>
               <option value="admin">Administrador</option>
             </select>
           </div>
+          {form.role === 'supervisor' && (
+            <div>
+              <label className="form-label">Empleados a supervisar</label>
+              {empleados.length === 0 ? (
+                <p className="text-xs text-gray-400 mt-1">No hay representantes activos disponibles.</p>
+              ) : (
+                <div className="mt-1 space-y-1 max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-2">
+                  {empleados.map((emp) => (
+                    <label key={emp.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-50 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={form.supervisee_ids.includes(emp.id)}
+                        onChange={() => toggleSupervisee(emp.id)}
+                        className="rounded border-gray-300 text-navy"
+                      />
+                      <span className="text-sm text-gray-800">{emp.full_name}</span>
+                      <span className="text-xs text-gray-400 ml-auto">{(emp.campus as string[]).join(', ')}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           <div>
             <label className="form-label">Recinto(s) <span className="text-red-500">*</span></label>
             <div className="flex gap-3 mt-1">
@@ -129,6 +161,143 @@ function CreateEmployeeModal({ onClose, onCreated }: { onClose: () => void; onCr
             </button>
             <Button type="submit" variant="gold" size="sm" loading={loading} className="flex-1">
               Crear Empleado
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// ─── Edit Employee Modal ─────────────────────────────────────────────────────
+
+function EditEmployeeModal({ employee, allEmployees, onClose, onSaved }: {
+  employee: EmployeeWithCount
+  allEmployees: EmployeeWithCount[]
+  onClose: () => void
+  onSaved: () => void
+}) {
+  const currentSupervisees = allEmployees.filter((e) => e.supervisor_id === employee.id).map((e) => e.id)
+  const [form, setForm] = useState({
+    role: employee.role,
+    campus: (employee.campus as string[]).slice(),
+    supervisee_ids: currentSupervisees,
+  })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const toggleCampus = (c: string) =>
+    setForm((prev) => ({
+      ...prev,
+      campus: prev.campus.includes(c) ? prev.campus.filter((x) => x !== c) : [...prev.campus, c],
+    }))
+
+  const toggleSupervisee = (id: string) =>
+    setForm((prev) => ({
+      ...prev,
+      supervisee_ids: prev.supervisee_ids.includes(id) ? prev.supervisee_ids.filter((x) => x !== id) : [...prev.supervisee_ids, id],
+    }))
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError('')
+    if (form.campus.length === 0) { setError('Selecciona al menos un recinto.'); return }
+    setLoading(true)
+
+    const res = await fetch(`/api/portal/admin/employees/${employee.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role: form.role, campus: form.campus, supervisee_ids: form.supervisee_ids }),
+    })
+
+    if (!res.ok) {
+      const data = await res.json()
+      setError(data.error ?? 'Error al actualizar el empleado.')
+      setLoading(false)
+      return
+    }
+
+    onSaved()
+    onClose()
+  }
+
+  const empleados = allEmployees.filter((e) => e.id !== employee.id && e.role !== 'admin' && e.active)
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
+          <div>
+            <h2 className="text-base font-bold text-gray-900">Editar Empleado</h2>
+            <p className="text-xs text-gray-500 mt-0.5">{employee.full_name}</p>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100">
+            <X className="h-4 w-4 text-gray-500" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
+          {error && (
+            <div className="p-3 rounded-lg bg-red-50 border border-red-200 flex gap-2 items-start">
+              <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+          )}
+
+          <div>
+            <label className="form-label">Rol</label>
+            <select value={form.role} onChange={(e) => setForm((p) => ({ ...p, role: e.target.value as typeof p.role, supervisee_ids: [] }))} className="form-input">
+              <option value="empleado">Representante de Admisiones</option>
+              <option value="supervisor">Supervisor de Admisiones</option>
+              <option value="admin">Administrador</option>
+            </select>
+          </div>
+          {form.role === 'supervisor' && (
+            <div>
+              <label className="form-label">Empleados a supervisar</label>
+              {empleados.length === 0 ? (
+                <p className="text-xs text-gray-400 mt-1">No hay representantes activos disponibles.</p>
+              ) : (
+                <div className="mt-1 space-y-1 max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-2">
+                  {empleados.map((emp) => (
+                    <label key={emp.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-50 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={form.supervisee_ids.includes(emp.id)}
+                        onChange={() => toggleSupervisee(emp.id)}
+                        className="rounded border-gray-300 text-navy"
+                      />
+                      <span className="text-sm text-gray-800">{emp.full_name}</span>
+                      <span className="text-xs text-gray-400 ml-auto">{(emp.campus as string[]).join(', ')}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          <div>
+            <label className="form-label">Recinto(s) <span className="text-red-500">*</span></label>
+            <div className="flex gap-3 mt-1">
+              {CAMPUSES.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => toggleCampus(c)}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${form.campus.includes(c) ? 'bg-navy text-white border-navy' : 'bg-white text-gray-700 border-gray-200 hover:border-navy/40'}`}
+                >
+                  <Building2 className="h-3.5 w-3.5" />
+                  {c}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+              Cancelar
+            </button>
+            <Button type="submit" variant="gold" size="sm" loading={loading} className="flex-1">
+              Guardar Cambios
             </Button>
           </div>
         </form>
@@ -1061,6 +1230,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [showImport, setShowImport] = useState(false)
+  const [editEmployee, setEditEmployee] = useState<EmployeeWithCount | null>(null)
   const [activeTab, setActiveTab] = useState<'empleados' | 'actividades' | 'informes' | 'informe_general' | 'solicitudes'>('actividades')
 
   async function loadEmployees() {
@@ -1157,7 +1327,7 @@ export default function AdminPage() {
                     <th className="text-left px-4 py-3 font-semibold text-gray-600">Rol</th>
                     <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden md:table-cell">Leads este mes</th>
                     <th className="text-left px-4 py-3 font-semibold text-gray-600">Estado</th>
-                    <th className="px-4 py-3 w-16"></th>
+                    <th className="px-4 py-3 w-32"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
@@ -1178,8 +1348,15 @@ export default function AdminPage() {
                           ))}
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-gray-600 capitalize">
-                        {emp.role === 'admin' ? 'Administrador' : 'Consejera'}
+                      <td className="px-4 py-3 text-gray-600">
+                        <div>
+                          <span>{emp.role === 'admin' ? 'Administrador' : emp.role === 'supervisor' ? 'Supervisor de Adm.' : 'Representante'}</span>
+                          {emp.role === 'supervisor' && (
+                            <p className="text-xs text-indigo-500 mt-0.5">
+                              Supervisando: {employees.filter((e) => e.supervisor_id === emp.id).length}
+                            </p>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-3 text-gray-600 hidden md:table-cell">
                         {emp.leads_this_month}
@@ -1191,12 +1368,21 @@ export default function AdminPage() {
                         }
                       </td>
                       <td className="px-4 py-3">
-                        <button
-                          onClick={() => toggleActive(emp)}
-                          className="text-xs text-gray-500 hover:text-gray-800 underline"
-                        >
-                          {emp.active ? 'Desactivar' : 'Activar'}
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setEditEmployee(emp)}
+                            className="p-1.5 rounded-lg text-gray-400 hover:text-navy hover:bg-navy/10 transition-colors"
+                            title="Editar"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={() => toggleActive(emp)}
+                            className="text-xs text-gray-500 hover:text-gray-800 underline"
+                          >
+                            {emp.active ? 'Desactivar' : 'Activar'}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -1223,6 +1409,16 @@ export default function AdminPage() {
         <CreateEmployeeModal
           onClose={() => setShowModal(false)}
           onCreated={loadEmployees}
+          allEmployees={employees}
+        />
+      )}
+
+      {editEmployee && (
+        <EditEmployeeModal
+          employee={editEmployee}
+          allEmployees={employees}
+          onClose={() => setEditEmployee(null)}
+          onSaved={loadEmployees}
         />
       )}
 

@@ -39,7 +39,19 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   if (!employee || !employee.active) redirect('/portal/login')
 
   const isAdmin = employee.role === 'admin'
-  const employeeIdFilter = isAdmin ? undefined : user.id
+  const isSupervisor = employee.role === 'supervisor'
+
+  // Get supervised employee IDs (for supervisor role)
+  let supervisedIds: string[] = []
+  if (isSupervisor) {
+    const { data: supervised } = await adminClient
+      .from('employees')
+      .select('id')
+      .eq('supervisor_id', user.id)
+    supervisedIds = (supervised ?? []).map((e: { id: string }) => e.id)
+  }
+
+  const employeeIdFilter = isAdmin ? undefined : isSupervisor ? undefined : user.id
 
   await promoteNewLeadsToCritico(employeeIdFilter)
   const staleLeadIds = await getStaleLeadIds(employeeIdFilter)
@@ -50,6 +62,13 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const campus        = searchParams.campus
   const source        = searchParams.source
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function applyRoleFilter(query: any) {
+    if (isAdmin) return query
+    if (isSupervisor) return supervisedIds.length > 0 ? query.in('assigned_to', supervisedIds) : query.eq('id', 'no-match')
+    return query.eq('assigned_to', user!.id)
+  }
+
   // ── Leads query (filtered, for the table) ──────────────────────────────────
   let leadsQuery = adminClient
     .from('leads')
@@ -57,7 +76,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     .order('last_action_at', { ascending: false })
     .range(0, 1999)
 
-  if (!isAdmin) leadsQuery = leadsQuery.eq('assigned_to', user.id)
+  leadsQuery = applyRoleFilter(leadsQuery)
   if (status)   leadsQuery = leadsQuery.eq('status', status)
   if (campus)   leadsQuery = leadsQuery.eq('campus', campus)
   if (source)   leadsQuery = leadsQuery.eq('source', source)
@@ -68,7 +87,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   // ── Stats query ────────────────────────────────────────────────────────────
   let statsQuery = adminClient.from('leads').select('status', { count: 'exact', head: false })
-  if (!isAdmin) statsQuery = statsQuery.eq('assigned_to', user.id)
+  statsQuery = applyRoleFilter(statsQuery)
   const { data: allLeads } = await statsQuery
 
   const countByStatus = (s: string) => allLeads?.filter((l) => l.status === s).length ?? 0
@@ -93,7 +112,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     .from('leads')
     .select('id, nombre, apellido, email, telefono')
     .range(0, 1999)
-  if (!isAdmin) dupLeadsQuery = dupLeadsQuery.eq('assigned_to', user.id)
+  dupLeadsQuery = applyRoleFilter(dupLeadsQuery)
 
   const [{ data: dupLeadsRaw }, { data: dismissedPairs }] = await Promise.all([
     dupLeadsQuery,
@@ -107,7 +126,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   // ── Sources for filter dropdown ────────────────────────────────────────────
   let sourcesQuery = adminClient.from('leads').select('source').not('source', 'is', null)
-  if (!isAdmin) sourcesQuery = sourcesQuery.eq('assigned_to', user.id)
+  sourcesQuery = applyRoleFilter(sourcesQuery)
   const { data: sourceRows } = await sourcesQuery
   const sources = Array.from(new Set((sourceRows ?? []).map((r) => r.source as string).filter(Boolean))).sort()
 
@@ -248,7 +267,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
               <h2 className="text-sm font-semibold text-gray-700">
                 {showStale
                   ? `Seguimiento pendiente · ${staleLeadIds.length} leads`
-                  : `${isAdmin ? 'Todos los leads' : 'Mis leads'} · ${counts.total} total`}
+                  : `${isAdmin ? 'Todos los leads' : isSupervisor ? 'Leads de mi equipo' : 'Mis leads'} · ${counts.total} total`}
               </h2>
               <div className="flex items-center gap-3">
                 {isAdmin ? (
@@ -257,7 +276,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                   </a>
                 ) : (
                   <a href="/portal/reportes" className="text-xs text-navy hover:underline font-medium">
-                    Plan y Reportes →
+                    {isSupervisor ? 'Reportes del Equipo →' : 'Plan y Reportes →'}
                   </a>
                 )}
               </div>

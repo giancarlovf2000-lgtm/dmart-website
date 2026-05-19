@@ -97,6 +97,8 @@ export async function POST(request: NextRequest) {
     )
   }
 
+  const validRole = ['admin', 'supervisor', 'empleado'].includes(role) ? role : 'empleado'
+
   // Create employee profile
   const { data: employee, error: empError } = await adminClient
     .from('employees')
@@ -104,7 +106,7 @@ export async function POST(request: NextRequest) {
       id: authData.user.id,
       full_name: full_name.trim(),
       campus,
-      role: role === 'admin' ? 'admin' : 'empleado',
+      role: validRole,
     })
     .select()
     .single()
@@ -114,6 +116,15 @@ export async function POST(request: NextRequest) {
     await adminClient.auth.admin.deleteUser(authData.user.id)
     console.error('Employee insert error:', empError)
     return NextResponse.json({ error: 'Error al crear el perfil del empleado.' }, { status: 500 })
+  }
+
+  // If supervisor, assign supervisees
+  const superviseeIds: string[] = body.supervisee_ids ?? []
+  if (validRole === 'supervisor' && superviseeIds.length > 0) {
+    await adminClient
+      .from('employees')
+      .update({ supervisor_id: authData.user.id })
+      .in('id', superviseeIds)
   }
 
   return NextResponse.json({ employee }, { status: 201 })

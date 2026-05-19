@@ -24,7 +24,7 @@ export default function PortalHeader({ employee }: PortalHeaderProps) {
           <div>
             <p className="text-sm font-semibold text-gray-900">{employee.full_name}</p>
             <p className="text-xs text-gray-500 capitalize">
-              {employee.role === 'admin' ? 'Administrador' : 'Consejera de Admisiones'}
+              {employee.role === 'admin' ? 'Administrador' : employee.role === 'supervisor' ? 'Supervisor de Admisiones' : 'Representante de Admisiones'}
             </p>
           </div>
         </div>

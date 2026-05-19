@@ -42,7 +42,15 @@ export async function GET(request: NextRequest) {
     .order('last_action_at', { ascending: false })
     .range(offset, offset + pageSize - 1)
 
-  if (employee.role !== 'admin') query = query.eq('assigned_to', user.id)
+  if (employee.role === 'admin') {
+    // no filter — sees all leads
+  } else if (employee.role === 'supervisor') {
+    const { data: team } = await admin.from('employees').select('id').eq('supervisor_id', user.id)
+    const teamIds = (team ?? []).map((e: { id: string }) => e.id)
+    query = teamIds.length > 0 ? query.in('assigned_to', teamIds) : query.eq('id', 'no-match')
+  } else {
+    query = query.eq('assigned_to', user.id)
+  }
   if (status) query = query.eq('status', status)
   if (campus) query = query.eq('campus', campus)
 

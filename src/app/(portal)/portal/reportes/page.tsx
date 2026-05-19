@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import {
   Plus, CheckCircle, AlertCircle, MapPin, Calendar,
-  QrCode, Flag, Trash2, Zap, TrendingUp, Users, GraduationCap,
+  QrCode, Flag, Trash2, Zap, TrendingUp, Users, GraduationCap, Printer,
 } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import type { Activity, MonthlyReport } from '@/lib/types'
@@ -77,10 +77,26 @@ interface AutoStats {
   performance_score: 'deficiente' | 'basico' | 'bueno' | 'excelente'
 }
 
+interface TeamReport {
+  id: string
+  employee_id: string
+  month: string
+  leads_acquired: number | null
+  leads_enrolled: number | null
+  activities_completed: number | null
+  performance_score: 'deficiente' | 'basico' | 'bueno' | 'excelente' | null
+  notes: string | null
+  created_at: string
+  employee: { full_name: string; campus: string[] } | null
+}
+
 export default function ReportesPage() {
   const [activities, setActivities] = useState<Activity[]>([])
   const [reports, setReports] = useState<MonthlyReport[]>([])
-  const [activeTab, setActiveTab] = useState<'plan' | 'cierre'>('plan')
+  const [role, setRole] = useState<string>('empleado')
+  const [teamReports, setTeamReports] = useState<TeamReport[]>([])
+  const [teamMembers, setTeamMembers] = useState<{ id: string; full_name: string; campus: string[] }[]>([])
+  const [activeTab, setActiveTab] = useState<'plan' | 'cierre' | 'equipo'>('plan')
   const [showNewActivity, setShowNewActivity] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -91,6 +107,8 @@ export default function ReportesPage() {
   const [notes, setNotes] = useState('')
   const [terminating, setTerminating] = useState<string | null>(null)
   const [origin, setOrigin] = useState('')
+  const [teamMonth, setTeamMonth] = useState(firstOfMonth(new Date()))
+  const [loadingTeam, setLoadingTeam] = useState(false)
 
   useEffect(() => {
     if (typeof window !== 'undefined') setOrigin(window.location.origin)
@@ -114,12 +132,31 @@ export default function ReportesPage() {
       console.error('[reportes] activities fetch failed:', actRes.status)
     }
     if (repRes.ok) {
-      const d = await repRes.json(); setReports(d.reports ?? [])
+      const d = await repRes.json()
+      setReports(d.reports ?? [])
+      if (d.role) setRole(d.role)
     } else {
       console.error('[reportes] reports fetch failed:', repRes.status)
     }
     setLoading(false)
   }, [currentMonth])
+
+  const loadTeamReports = useCallback(async (month: string) => {
+    setLoadingTeam(true)
+    const res = await fetch(`/api/portal/reports?team=1&month=${month}`)
+    if (res.ok) {
+      const d = await res.json()
+      setTeamReports(d.reports ?? [])
+      setTeamMembers(d.team_members ?? [])
+    }
+    setLoadingTeam(false)
+  }, [])
+
+  useEffect(() => {
+    if (role === 'supervisor' && activeTab === 'equipo') {
+      loadTeamReports(teamMonth)
+    }
+  }, [role, activeTab, teamMonth, loadTeamReports])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -211,11 +248,15 @@ export default function ReportesPage() {
 
         {/* Tabs */}
         <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-xl w-fit">
-          {(['plan', 'cierre'] as const).map((tab) => (
-            <button key={tab} onClick={() => setActiveTab(tab)}
-              className={`px-5 py-2 rounded-lg text-sm font-semibold transition-colors ${activeTab === tab ? 'bg-white text-navy shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+          {([
+            { key: 'plan',   label: 'Plan del Mes' },
+            { key: 'cierre', label: 'Informe de Cierre' },
+            ...(role === 'supervisor' ? [{ key: 'equipo', label: 'Equipo' }] : []),
+          ] as { key: 'plan' | 'cierre' | 'equipo'; label: string }[]).map(({ key, label }) => (
+            <button key={key} onClick={() => setActiveTab(key)}
+              className={`px-5 py-2 rounded-lg text-sm font-semibold transition-colors ${activeTab === key ? 'bg-white text-navy shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
             >
-              {tab === 'plan' ? 'Plan del Mes' : 'Informe de Cierre'}
+              {label}
             </button>
           ))}
         </div>
@@ -598,7 +639,129 @@ export default function ReportesPage() {
             )}
           </div>
         )}
+
+        {/* ── EQUIPO TAB (supervisor only) ─────────────────────────── */}
+        {activeTab === 'equipo' && role === 'supervisor' && (
+          <div className="space-y-5">
+            {/* Controls */}
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-3">
+                <select
+                  value={teamMonth}
+                  onChange={(e) => setTeamMonth(e.target.value)}
+                  className="form-input w-auto text-sm"
+                >
+                  {Array.from({ length: 6 }, (_, i) => {
+                    const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - i)
+                    const v = new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10)
+                    return <option key={v} value={v}>{monthLabel(v)}</option>
+                  })}
+                </select>
+                <span className="text-xs text-gray-400">{teamMembers.length} representante{teamMembers.length !== 1 ? 's' : ''}</span>
+              </div>
+              <button
+                onClick={() => window.print()}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors print:hidden"
+              >
+                <Printer className="h-4 w-4" />
+                Imprimir
+              </button>
+            </div>
+
+            {loadingTeam ? (
+              <div className="bg-white rounded-xl border border-gray-200 p-12 flex justify-center">
+                <div className="animate-spin h-6 w-6 rounded-full border-4 border-navy border-t-transparent" />
+              </div>
+            ) : teamReports.length === 0 ? (
+              <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+                <Users className="h-10 w-10 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500 font-medium">No hay informes de cierre para este mes.</p>
+                <p className="text-xs text-gray-400 mt-1">Los representantes de tu equipo aún no han enviado su informe de {monthLabel(teamMonth)}.</p>
+              </div>
+            ) : (
+              <div id="team-reports-print" className="space-y-3">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider print:block hidden">
+                  Informes del Equipo · {monthLabel(teamMonth)}
+                </p>
+                {teamReports.map((report) => {
+                  const scoreCfg = report.performance_score ? SCORE_CONFIG[report.performance_score] : null
+                  return (
+                    <div key={report.id} className={`bg-white rounded-xl border p-5 ${scoreCfg ? scoreCfg.border : 'border-gray-200'}`}>
+                      <div className="flex items-start justify-between gap-3 mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-full bg-navy/10 text-navy flex items-center justify-center text-sm font-bold flex-shrink-0">
+                            {report.employee?.full_name.charAt(0).toUpperCase() ?? '?'}
+                          </div>
+                          <div>
+                            <p className="font-semibold text-gray-900 text-sm">{report.employee?.full_name ?? 'Empleado'}</p>
+                            <div className="flex gap-1 mt-0.5 flex-wrap">
+                              {report.employee?.campus.map((c) => (
+                                <span key={c} className="text-xs px-2 py-0.5 rounded-full bg-navy/10 text-navy font-medium">{c}</span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                        {scoreCfg && (
+                          <span className={`px-3 py-1 rounded-full text-sm font-bold ${scoreCfg.bg} ${scoreCfg.text}`}>
+                            {scoreCfg.label}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-3 mb-3">
+                        {[
+                          { label: 'Leads Adquiridos',       value: report.leads_acquired },
+                          { label: 'Matriculados',            value: report.leads_enrolled },
+                          { label: 'Actividades Completadas', value: report.activities_completed },
+                        ].map(({ label, value }) => (
+                          <div key={label} className="bg-gray-50 rounded-xl p-3 text-center">
+                            <p className="text-xl font-bold text-gray-900">{value ?? '—'}</p>
+                            <p className="text-xs text-gray-500 mt-0.5">{label}</p>
+                          </div>
+                        ))}
+                      </div>
+
+                      {report.notes && (
+                        <div className="bg-gray-50 rounded-xl px-4 py-3">
+                          <p className="text-xs font-semibold text-gray-500 mb-0.5">Notas</p>
+                          <p className="text-sm text-gray-700">{report.notes}</p>
+                        </div>
+                      )}
+
+                      <p className="text-xs text-gray-400 mt-2">
+                        Enviado: {new Date(report.created_at).toLocaleDateString('es-PR', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </p>
+                    </div>
+                  )
+                })}
+
+                {/* Show team members who haven't submitted */}
+                {teamMembers.filter((m) => !teamReports.some((r) => r.employee_id === m.id)).length > 0 && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                    <p className="text-xs font-semibold text-amber-800 mb-2">Sin informe enviado:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {teamMembers
+                        .filter((m) => !teamReports.some((r) => r.employee_id === m.id))
+                        .map((m) => (
+                          <span key={m.id} className="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-700">{m.full_name}</span>
+                        ))
+                      }
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
+
+      <style>{`
+        @media print {
+          body > *:not(.min-h-screen) { display: none !important; }
+          nav, header, .print\\:hidden { display: none !important; }
+          .min-h-screen { background: white !important; }
+        }
+      `}</style>
     </div>
   )
 }

@@ -32,6 +32,7 @@ export async function PATCH(
 
   const body = await request.json()
   const admin = getAdminClient()
+  const id = params.id
 
   const updates: Record<string, unknown> = {}
   if (body.full_name !== undefined) updates.full_name = body.full_name.trim()
@@ -42,10 +43,27 @@ export async function PATCH(
   const { data, error } = await admin
     .from('employees')
     .update(updates)
-    .eq('id', params.id)
+    .eq('id', id)
     .select()
     .single()
 
   if (error) return NextResponse.json({ error: 'Error al actualizar el empleado.' }, { status: 500 })
+
+  // Handle supervisor assignment changes
+  if (body.role !== undefined) {
+    if (body.role === 'supervisor') {
+      // Clear previous supervisees for this supervisor
+      await admin.from('employees').update({ supervisor_id: null }).eq('supervisor_id', id)
+      // Assign new supervisees
+      const superviseeIds: string[] = body.supervisee_ids ?? []
+      if (superviseeIds.length > 0) {
+        await admin.from('employees').update({ supervisor_id: id }).in('id', superviseeIds)
+      }
+    } else {
+      // No longer supervisor — clear their supervisees
+      await admin.from('employees').update({ supervisor_id: null }).eq('supervisor_id', id)
+    }
+  }
+
   return NextResponse.json({ employee: data })
 }

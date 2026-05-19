@@ -88,7 +88,7 @@ export type ActionType = 'status_change' | 'note_added' | 'lead_created' | 'lead
 
 export type AssignmentSource = 'website' | 'manual' | 'import'
 
-export type EmployeeRole = 'admin' | 'empleado'
+export type EmployeeRole = 'admin' | 'supervisor' | 'empleado'
 
 export interface Employee {
   id: string
@@ -97,6 +97,7 @@ export interface Employee {
   role: EmployeeRole
   active: boolean
   round_robin_index: number
+  supervisor_id?: string | null
   created_at: string
 }
 
