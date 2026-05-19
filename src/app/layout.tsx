@@ -9,7 +9,7 @@ const inter = Inter({
   weight: ['400', '500', '600', '700', '800', '900'],
 })
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://dmartinstitute.edu'
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.dmartpr.net'
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -44,7 +44,7 @@ export const metadata: Metadata = {
       'Institución postsecundaria acreditada en Puerto Rico. Programas vocacionales en Belleza, Salud, Comercial y Técnico. Recintos en Barranquitas y Vega Alta.',
     images: [
       {
-        url: '/logo.png',
+        url: `${siteUrl}/logo.png`,
         width: 6000,
         height: 3375,
         alt: "D'Mart Institute — Tu Carrera. Tu Futuro. Empieza Aquí.",
@@ -56,7 +56,7 @@ export const metadata: Metadata = {
     title: "D'Mart Institute — Institución Vocacional en Puerto Rico",
     description:
       'Programas acreditados en Belleza, Salud, Comercial y Técnico. Recintos en Barranquitas y Vega Alta, Puerto Rico.',
-    images: ['/logo.png'],
+    images: [`${siteUrl}/logo.png`],
   },
   robots: {
     index: true,
