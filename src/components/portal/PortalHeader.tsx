@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { LogOut, Building2, LayoutDashboard, ClipboardList, BookOpen, X, ChevronRight, ChevronLeft, LayoutGrid, UserPlus, FileText, QrCode, BarChart3, Users, Download, Lock } from 'lucide-react'
+import { LogOut, Building2, LayoutDashboard, ClipboardList, BookOpen, X, ChevronRight, ChevronLeft, LayoutGrid, UserPlus, FileText, QrCode, BarChart3, Users, Download, Lock, AlertTriangle, GitMerge } from 'lucide-react'
 import type { Employee } from '@/lib/types'
 
 interface PortalHeaderProps {
@@ -19,59 +19,83 @@ const STEPS_EMPLEADO: TutorialStep[] = [
   {
     icon: LayoutGrid,
     title: 'Tu Dashboard',
-    description: 'La pantalla principal muestra todos tus leads organizados por estado. Las alertas en rojo son leads que llevan más de 7 días sin actividad — atténdelos primero.',
-    tip: 'Los contadores en la parte superior te muestran cuántos leads tienes en cada etapa del proceso.',
+    description: 'La pantalla principal muestra todos tus leads organizados por estado. Los contadores en la parte superior te muestran cuántos leads tienes en cada etapa del proceso de admisión.',
+    tip: 'Cada vez que cargas el dashboard se revisan automáticamente tus leads para actualizar alertas y estados.',
   },
   {
     icon: UserPlus,
     title: 'Agregar un Lead',
-    description: 'Usa el botón "Nuevo Lead" en el Dashboard para registrar un prospecto manualmente. Completa nombre, apellido, correo, teléfono y selecciona el recinto y programa de interés.',
-    tip: 'Si el lead viene de una actividad (feria, visita escolar), puedes vincularlo directamente al crearla.',
+    description: 'Usa el botón "Nuevo Lead" en el Dashboard para registrar un prospecto manualmente. Completa nombre, apellido, correo, teléfono, recinto y programa de interés.',
+    tip: 'Si el lead viene de una feria u otra actividad, selecciona la actividad en el formulario para que quede vinculado y cuente en tus estadísticas.',
   },
   {
     icon: FileText,
     title: 'Gestionar un Lead',
-    description: 'Haz clic en cualquier lead para ver su perfil completo. Desde ahí puedes cambiar su estado (Nuevo Lead → Interesado → Aplicó → Matriculado, etc.) y agregar notas de seguimiento.',
-    tip: 'Cada cambio de estado queda registrado en el historial del lead con fecha, hora y nombre de quien lo realizó.',
+    description: 'Haz clic en cualquier lead para ver su perfil completo. Desde ahí puedes cambiar su estado (Nuevo Lead → Interesado → Aplicó → Matriculado, etc.) y agregar notas de seguimiento con el tipo de comunicación.',
+    tip: 'Cada cambio de estado queda registrado en el historial con fecha, hora y tu nombre — sirve de evidencia de seguimiento.',
+  },
+  {
+    icon: AlertTriangle,
+    title: 'Estado "Crítico" y Alertas',
+    description: 'Si un lead queda en estado "Nuevo Lead" por más de 24 horas sin que lo atiendas, el sistema lo cambia automáticamente a "Crítico". Los leads en otros estados sin actividad por 7 días o más aparecen marcados con "Seguimiento pendiente" en tu dashboard.',
+    tip: 'Atender un lead es tan simple como entrar a su perfil y hacer cualquier acción — cambiar estado, agregar una nota o registrar una llamada. Eso reinicia el contador.',
+  },
+  {
+    icon: GitMerge,
+    title: 'Leads Duplicados',
+    description: 'El sistema detecta automáticamente cuando tienes dos leads que podrían ser la misma persona — por mismo teléfono, mismo correo electrónico o mismo nombre completo. Cuando hay duplicados, verás una alerta en el dashboard.',
+    tip: 'Al entrar a la alerta de duplicados tienes dos opciones: "Combinar" (une los dos leads en uno, conservando el historial de ambos) o "No son duplicados" (descarta la alerta si en realidad son personas distintas).',
   },
   {
     icon: QrCode,
-    title: 'Plan del Mes',
-    description: 'En "Plan y Reportes" agrega las actividades que vas a realizar este mes — ferias educativas, visitas a escuelas, eventos comunitarios. Cada actividad genera un código QR único.',
-    tip: 'Muestra el código QR en la actividad para que los prospectos llenen el formulario de captación directamente desde su teléfono.',
+    title: 'Código QR para Actividades',
+    description: 'Ve a "Plan y Reportes" → tab "Plan del Mes" y crea una actividad (feria, visita a escuela, etc.). Una vez creada, aparece automáticamente un código QR en la tarjeta de la actividad. Muéstralo en pantalla o imprímelo.',
+    tip: 'Cuando un prospecto escanea el QR con su celular, llena el formulario de captación y el lead queda registrado automáticamente a tu nombre y vinculado a esa actividad.',
   },
   {
     icon: BarChart3,
     title: 'Informe de Cierre',
     description: 'Al final del mes ve a "Plan y Reportes" → "Informe de Cierre". Haz clic en "Generar reporte automático" para calcular tus estadísticas y enviar tu informe al supervisor.',
-    tip: 'Tu puntuación de desempeño se calcula automáticamente según la cantidad de leads generados y matriculados.',
+    tip: 'Tu puntuación: Básico = 100 leads y 10 matriculados · Bueno = 150 y 15 · Excelente = 200 y 20. Ambas condiciones deben cumplirse para la puntuación más alta.',
   },
 ]
 
 const STEPS_SUPERVISOR: TutorialStep[] = [
   {
     icon: LayoutGrid,
-    title: 'Tu Dashboard',
-    description: 'Ves los leads de todo tu equipo en una sola vista — los tuyos y los de cada representante. Las alertas de inactividad aplican a todos los leads del equipo.',
-    tip: 'Puedes filtrar por estado o recinto para enfocarte en leads específicos.',
+    title: 'Tu Dashboard de Equipo',
+    description: 'Ves los leads de todo tu equipo en una sola vista — los tuyos y los de cada representante. Las alertas de inactividad y leads críticos aplican a todos los leads del equipo.',
+    tip: 'Puedes filtrar por estado o recinto. Si ves muchos leads "Críticos" de un representante, es señal de que necesita apoyo.',
+  },
+  {
+    icon: AlertTriangle,
+    title: 'Alertas: Crítico y Seguimiento',
+    description: 'Un lead pasa automáticamente a "Crítico" si lleva más de 24 horas en estado "Nuevo Lead" sin ser atendido. Los leads en estados intermedios sin actividad por 7+ días muestran la alerta "Seguimiento pendiente".',
+    tip: 'Estas alertas aplican a los leads de todo tu equipo. Úsalas para identificar cuál representante tiene leads abandonados y hacer seguimiento.',
+  },
+  {
+    icon: GitMerge,
+    title: 'Duplicados del Equipo',
+    description: 'El sistema detecta leads duplicados por mismo teléfono, correo o nombre en todo tu equipo. Verás la alerta en el dashboard cuando existan pares duplicados.',
+    tip: '"Combinar" une los dos leads en uno conservando el historial completo. "No son duplicados" descarta la alerta — útil si dos personas distintas coinciden en nombre.',
   },
   {
     icon: UserPlus,
     title: 'Agregar y Asignar Leads',
-    description: 'Al crear un nuevo lead aparece el selector "Asignar a". Elige a cuál representante de tu equipo asignárselo. También puedes reasignar leads existentes desde el perfil del lead.',
-    tip: 'Para reasignar, entra al lead y busca el selector "Asignado a" — cambia el nombre y se guarda automáticamente.',
+    description: 'Al crear un nuevo lead aparece el selector "Asignar a". Elige a cuál representante asignárselo. También puedes reasignar leads existentes desde el perfil del lead.',
+    tip: 'Para reasignar un lead existente, entra al perfil del lead y busca el selector "Asignado a" — cambia el nombre y se guarda automáticamente.',
   },
   {
     icon: Download,
     title: 'Reporte del Equipo',
-    description: 'En "Plan y Reportes" → tab "Equipo", selecciona el mes y descarga el reporte completo. El formato CSV es para análisis en Excel; el HTML es para presentar al director del recinto.',
+    description: 'En "Plan y Reportes" → tab "Equipo", selecciona el mes y descarga el reporte completo. CSV es para análisis en Excel; HTML es para presentar al director del recinto.',
     tip: 'El reporte incluye desglose por representante, actividades del mes, programas más solicitados y el historial de seguimiento de cada lead.',
   },
   {
     icon: BarChart3,
     title: 'Tu Informe Personal',
     description: 'Como supervisor también tienes tus propias métricas. Desde "Plan y Reportes" puedes planificar tus actividades y enviar tu propio informe de cierre mensual.',
-    tip: 'Tu informe solo incluye tus leads directos, no los del equipo.',
+    tip: 'Tu informe solo incluye tus leads directos, no los del equipo. Recuerda también crear actividades propias para generar tu código QR de captación.',
   },
 ]
 
