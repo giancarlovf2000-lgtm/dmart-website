@@ -47,7 +47,8 @@ export async function GET(request: NextRequest) {
   } else if (employee.role === 'supervisor') {
     const { data: team } = await admin.from('employees').select('id').eq('supervisor_id', user.id)
     const teamIds = (team ?? []).map((e: { id: string }) => e.id)
-    query = teamIds.length > 0 ? query.in('assigned_to', teamIds) : query.eq('id', 'no-match')
+    const allIds = [user.id, ...teamIds]
+    query = query.in('assigned_to', allIds)
   } else {
     query = query.eq('assigned_to', user.id)
   }
@@ -70,7 +71,7 @@ export async function POST(request: NextRequest) {
   const {
     nombre, apellido, email, telefono,
     campus, programa_interes, horario,
-    activity_id, lead_source_text,
+    activity_id, lead_source_text, assigned_to: requestedAssignee,
   } = body
 
   if (!nombre?.trim() || nombre.trim().length < 2)
@@ -85,6 +86,22 @@ export async function POST(request: NextRequest) {
   const admin = getAdminClient()
   const now = new Date().toISOString()
 
+  // Supervisors and admins can assign to a different employee
+  let finalAssignee = user.id
+  if (requestedAssignee && requestedAssignee !== user.id) {
+    if (employee.role === 'admin') {
+      finalAssignee = requestedAssignee
+    } else if (employee.role === 'supervisor') {
+      const { data: teamCheck } = await admin
+        .from('employees')
+        .select('id')
+        .eq('id', requestedAssignee)
+        .eq('supervisor_id', user.id)
+        .single()
+      if (teamCheck) finalAssignee = requestedAssignee
+    }
+  }
+
   const { data: lead, error } = await admin
     .from('leads')
     .insert({
@@ -97,7 +114,7 @@ export async function POST(request: NextRequest) {
       horario: horario?.trim() || null,
       source: 'portal-manual',
       status: 'Nuevo Lead',
-      assigned_to: user.id,
+      assigned_to: finalAssignee,
       assignment_source: 'manual',
       last_action_at: now,
       activity_id: activity_id || null,

@@ -19,10 +19,11 @@ const ALL_STATUSES: LeadStatus[] = [
 interface LeadTableProps {
   leads: Lead[]
   staleLeadIds: string[]
-  employee: Pick<Employee, 'full_name' | 'campus' | 'role'>
+  employee: Pick<Employee, 'id' | 'full_name' | 'campus' | 'role'>
   activities: Pick<Activity, 'id' | 'name'>[]
   sources?: string[]
   currentSource?: string
+  teamMembers?: { id: string; full_name: string }[]
 }
 
 function formatDate(dateStr: string) {
@@ -31,7 +32,7 @@ function formatDate(dateStr: string) {
   })
 }
 
-export default function LeadTable({ leads, staleLeadIds, employee, activities, sources = [], currentSource = '' }: LeadTableProps) {
+export default function LeadTable({ leads, staleLeadIds, employee, activities, sources = [], currentSource = '', teamMembers = [] }: LeadTableProps) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -247,8 +248,10 @@ export default function LeadTable({ leads, staleLeadIds, employee, activities, s
 
       {showAddModal && (
         <AddLeadModal
+          employeeId={employee.id}
           employeeName={employee.full_name}
           activities={activities}
+          teamMembers={teamMembers}
           onClose={() => setShowAddModal(false)}
         />
       )}

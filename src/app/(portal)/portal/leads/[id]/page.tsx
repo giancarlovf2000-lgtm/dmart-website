@@ -30,6 +30,9 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
   const [error, setError] = useState('')
   const [showStatusModal, setShowStatusModal] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [isSupervisor, setIsSupervisor] = useState(false)
+  const [assignableEmployees, setAssignableEmployees] = useState<{ id: string; full_name: string }[]>([])
+  const [reassigning, setReassigning] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
   async function load() {
@@ -44,7 +47,25 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
     setLead(data.lead)
     setHistory(data.history)
     setIsAdmin(data.currentEmployeeRole === 'admin')
+    setIsSupervisor(data.currentEmployeeRole === 'supervisor')
+    setAssignableEmployees(data.assignableEmployees ?? [])
     setLoading(false)
+  }
+
+  async function handleReassign(newAssigneeId: string) {
+    if (!lead || newAssigneeId === lead.assigned_to) return
+    setReassigning(true)
+    const res = await fetch(`/api/portal/leads/${params.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ assigned_to: newAssigneeId }),
+    })
+    if (res.ok) {
+      await load()
+    } else {
+      alert('Error al reasignar el lead.')
+    }
+    setReassigning(false)
   }
 
   async function handleDelete() {
@@ -143,7 +164,27 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
             <InfoRow icon={Clock} label="Horario" value={lead.horario ?? '—'} />
             <InfoRow icon={BookOpen} label="Programa de Interés" value={lead.programa_interes ?? '—'} />
             <InfoRow icon={Calendar} label="Fecha del Lead" value={formatDateTime(lead.created_at)} />
-            <InfoRow icon={User} label="Asignado a" value={lead.employee?.full_name ?? '—'} />
+            {(isAdmin || isSupervisor) && assignableEmployees.length > 1 ? (
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Asignado a</p>
+                <div className="flex items-center gap-2">
+                  <User className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                  <select
+                    value={lead.assigned_to ?? ''}
+                    onChange={(e) => handleReassign(e.target.value)}
+                    disabled={reassigning}
+                    className="text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-navy/20 disabled:opacity-50"
+                  >
+                    {assignableEmployees.map((e) => (
+                      <option key={e.id} value={e.id}>{e.full_name}</option>
+                    ))}
+                  </select>
+                  {reassigning && <span className="text-xs text-gray-400">Guardando…</span>}
+                </div>
+              </div>
+            ) : (
+              <InfoRow icon={User} label="Asignado a" value={lead.employee?.full_name ?? '—'} />
+            )}
             <InfoRow icon={Calendar} label="Última Actividad" value={formatDateTime(lead.last_action_at)} />
           </div>
         </div>

@@ -41,17 +41,21 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const isAdmin = employee.role === 'admin'
   const isSupervisor = employee.role === 'supervisor'
 
-  // Get supervised employee IDs (for supervisor role)
+  // Get supervised employees (for supervisor role)
   let supervisedIds: string[] = []
+  let supervisedEmployees: { id: string; full_name: string }[] = []
   if (isSupervisor) {
     const { data: supervised } = await adminClient
       .from('employees')
-      .select('id')
+      .select('id, full_name')
       .eq('supervisor_id', user.id)
-    supervisedIds = (supervised ?? []).map((e: { id: string }) => e.id)
+      .eq('active', true)
+    supervisedEmployees = (supervised ?? []) as { id: string; full_name: string }[]
+    supervisedIds = supervisedEmployees.map((e) => e.id)
   }
 
-  const employeeIdFilter = isAdmin ? undefined : isSupervisor ? supervisedIds : user!.id
+  const supervisorIds = isSupervisor ? [user!.id, ...supervisedIds] : []
+  const employeeIdFilter = isAdmin ? undefined : isSupervisor ? supervisorIds : user!.id
 
   await promoteNewLeadsToCritico(employeeIdFilter)
   const staleLeadIds = await getStaleLeadIds(employeeIdFilter)
@@ -65,7 +69,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function applyRoleFilter(query: any) {
     if (isAdmin) return query
-    if (isSupervisor) return supervisedIds.length > 0 ? query.in('assigned_to', supervisedIds) : query.eq('id', 'no-match')
+    if (isSupervisor) return query.in('assigned_to', supervisorIds.length > 0 ? supervisorIds : ['no-match'])
     return query.eq('assigned_to', user!.id)
   }
 
@@ -288,6 +292,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
               activities={(activities ?? []) as Activity[]}
               sources={sources}
               currentSource={source ?? ''}
+              teamMembers={supervisedEmployees}
             />
           </>
         )}

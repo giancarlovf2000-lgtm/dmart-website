@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { X, AlertCircle, User, Mail, Phone, MapPin, BookOpen, Clock } from 'lucide-react'
+import { X, AlertCircle, User, Mail, Phone, MapPin, BookOpen, Clock, Users } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import { ALL_PROGRAMS, cn } from '@/lib/utils'
 import type { Activity } from '@/lib/types'
@@ -11,12 +11,14 @@ const CAMPUSES = ['Barranquitas', 'Vega Alta', 'No tengo preferencia']
 const HORARIOS = ['Diurno', 'Nocturno', 'Sabatino']
 
 interface AddLeadModalProps {
+  employeeId: string
   employeeName: string
   activities: Pick<Activity, 'id' | 'name'>[]
+  teamMembers?: { id: string; full_name: string }[]
   onClose: () => void
 }
 
-export default function AddLeadModal({ employeeName, activities, onClose }: AddLeadModalProps) {
+export default function AddLeadModal({ employeeId, employeeName, activities, teamMembers = [], onClose }: AddLeadModalProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -24,6 +26,7 @@ export default function AddLeadModal({ employeeName, activities, onClose }: AddL
     nombre: '', apellido: '', email: '', telefono: '',
     campus: '', programa_interes: '', horario: '',
     activity_id: '', lead_source_text: '',
+    assigned_to: employeeId,
   })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -53,6 +56,7 @@ export default function AddLeadModal({ employeeName, activities, onClose }: AddL
         ...form,
         activity_id: form.activity_id || null,
         lead_source_text: form.lead_source_text || null,
+        assigned_to: form.assigned_to || null,
       }),
     })
 
@@ -151,6 +155,26 @@ export default function AddLeadModal({ employeeName, activities, onClose }: AddL
               </div>
             </div>
           </div>
+
+          {/* Assign to (supervisor only) */}
+          {teamMembers.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <p className="text-sm font-semibold text-gray-700 mb-3">Asignar a</p>
+              <div className="relative">
+                <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                <select
+                  value={form.assigned_to}
+                  onChange={(e) => setForm((p) => ({ ...p, assigned_to: e.target.value }))}
+                  className={cn(inputClass, 'pl-10 appearance-none')}
+                >
+                  <option value={employeeId}>{employeeName} (yo)</option>
+                  {teamMembers.map((m) => (
+                    <option key={m.id} value={m.id}>{m.full_name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
 
           {/* Lead source */}
           <div className="mt-4 pt-4 border-t border-gray-100">
