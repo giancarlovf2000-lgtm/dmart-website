@@ -42,21 +42,12 @@ export const metadata: Metadata = {
     title: "D'Mart Institute — Tu Carrera. Tu Futuro. Empieza Aquí.",
     description:
       'Institución postsecundaria acreditada en Puerto Rico. Programas vocacionales en Belleza, Salud, Comercial y Técnico. Recintos en Barranquitas y Vega Alta.',
-    images: [
-      {
-        url: `${siteUrl}/logo.png`,
-        width: 6000,
-        height: 3375,
-        alt: "D'Mart Institute — Tu Carrera. Tu Futuro. Empieza Aquí.",
-      },
-    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: "D'Mart Institute — Institución Vocacional en Puerto Rico",
     description:
       'Programas acreditados en Belleza, Salud, Comercial y Técnico. Recintos en Barranquitas y Vega Alta, Puerto Rico.',
-    images: [`${siteUrl}/logo.png`],
   },
   robots: {
     index: true,
