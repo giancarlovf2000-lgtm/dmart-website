@@ -1,84 +1,288 @@
 'use client'
 
-import { LogOut, Building2, LayoutDashboard, ClipboardList } from 'lucide-react'
+import { useState } from 'react'
+import { LogOut, Building2, LayoutDashboard, ClipboardList, BookOpen, X, ChevronRight, ChevronLeft, LayoutGrid, UserPlus, FileText, QrCode, BarChart3, Users, Download, Lock } from 'lucide-react'
 import type { Employee } from '@/lib/types'
 
 interface PortalHeaderProps {
   employee: Pick<Employee, 'full_name' | 'campus' | 'role'>
 }
 
+interface TutorialStep {
+  icon: React.ElementType
+  title: string
+  description: string
+  tip?: string
+}
+
+const STEPS_EMPLEADO: TutorialStep[] = [
+  {
+    icon: LayoutGrid,
+    title: 'Tu Dashboard',
+    description: 'La pantalla principal muestra todos tus leads organizados por estado. Las alertas en rojo son leads que llevan más de 7 días sin actividad — atténdelos primero.',
+    tip: 'Los contadores en la parte superior te muestran cuántos leads tienes en cada etapa del proceso.',
+  },
+  {
+    icon: UserPlus,
+    title: 'Agregar un Lead',
+    description: 'Usa el botón "Nuevo Lead" en el Dashboard para registrar un prospecto manualmente. Completa nombre, apellido, correo, teléfono y selecciona el recinto y programa de interés.',
+    tip: 'Si el lead viene de una actividad (feria, visita escolar), puedes vincularlo directamente al crearla.',
+  },
+  {
+    icon: FileText,
+    title: 'Gestionar un Lead',
+    description: 'Haz clic en cualquier lead para ver su perfil completo. Desde ahí puedes cambiar su estado (Nuevo Lead → Interesado → Aplicó → Matriculado, etc.) y agregar notas de seguimiento.',
+    tip: 'Cada cambio de estado queda registrado en el historial del lead con fecha, hora y nombre de quien lo realizó.',
+  },
+  {
+    icon: QrCode,
+    title: 'Plan del Mes',
+    description: 'En "Plan y Reportes" agrega las actividades que vas a realizar este mes — ferias educativas, visitas a escuelas, eventos comunitarios. Cada actividad genera un código QR único.',
+    tip: 'Muestra el código QR en la actividad para que los prospectos llenen el formulario de captación directamente desde su teléfono.',
+  },
+  {
+    icon: BarChart3,
+    title: 'Informe de Cierre',
+    description: 'Al final del mes ve a "Plan y Reportes" → "Informe de Cierre". Haz clic en "Generar reporte automático" para calcular tus estadísticas y enviar tu informe al supervisor.',
+    tip: 'Tu puntuación de desempeño se calcula automáticamente según la cantidad de leads generados y matriculados.',
+  },
+]
+
+const STEPS_SUPERVISOR: TutorialStep[] = [
+  {
+    icon: LayoutGrid,
+    title: 'Tu Dashboard',
+    description: 'Ves los leads de todo tu equipo en una sola vista — los tuyos y los de cada representante. Las alertas de inactividad aplican a todos los leads del equipo.',
+    tip: 'Puedes filtrar por estado o recinto para enfocarte en leads específicos.',
+  },
+  {
+    icon: UserPlus,
+    title: 'Agregar y Asignar Leads',
+    description: 'Al crear un nuevo lead aparece el selector "Asignar a". Elige a cuál representante de tu equipo asignárselo. También puedes reasignar leads existentes desde el perfil del lead.',
+    tip: 'Para reasignar, entra al lead y busca el selector "Asignado a" — cambia el nombre y se guarda automáticamente.',
+  },
+  {
+    icon: Download,
+    title: 'Reporte del Equipo',
+    description: 'En "Plan y Reportes" → tab "Equipo", selecciona el mes y descarga el reporte completo. El formato CSV es para análisis en Excel; el HTML es para presentar al director del recinto.',
+    tip: 'El reporte incluye desglose por representante, actividades del mes, programas más solicitados y el historial de seguimiento de cada lead.',
+  },
+  {
+    icon: BarChart3,
+    title: 'Tu Informe Personal',
+    description: 'Como supervisor también tienes tus propias métricas. Desde "Plan y Reportes" puedes planificar tus actividades y enviar tu propio informe de cierre mensual.',
+    tip: 'Tu informe solo incluye tus leads directos, no los del equipo.',
+  },
+]
+
+const STEPS_ADMIN: TutorialStep[] = [
+  {
+    icon: Users,
+    title: 'Gestión de Empleados',
+    description: 'En el tab "Empleados" del Panel Admin puedes agregar nuevos empleados, editar su rol (Representante, Supervisor, Admin), asignar recintos y cambiar contraseñas.',
+    tip: 'Para asignar un equipo a un supervisor, edita al empleado, cambia el rol a "Supervisor" y selecciona los representantes que supervisará.',
+  },
+  {
+    icon: Lock,
+    title: 'Cambiar Contraseña',
+    description: 'Al editar cualquier empleado, hay un campo opcional "Nueva Contraseña" al final del formulario. Déjalo en blanco para no cambiarla, o escribe una nueva (mín. 8 caracteres).',
+    tip: 'La contraseña nueva toma efecto inmediatamente — el empleado la necesitará en su próximo inicio de sesión.',
+  },
+  {
+    icon: BarChart3,
+    title: 'Informe General',
+    description: 'El tab "Informe General" genera un resumen ejecutivo del mes: total de leads, matriculados, actividades y desempeño individual de cada representante.',
+    tip: 'Selecciona cualquier mes anterior para ver el historial de rendimiento del equipo.',
+  },
+  {
+    icon: ClipboardList,
+    title: 'Informes de Cierre',
+    description: 'El tab "Informes Enviados" muestra los informes mensuales enviados por todos los representantes — puedes ver sus métricas, puntuación y notas.',
+    tip: 'Si un representante no aparece en la lista, aún no ha enviado su informe del mes.',
+  },
+  {
+    icon: FileText,
+    title: 'Importar Leads (CSV)',
+    description: 'Desde el tab "Empleados" usa el botón "Importar CSV" para cargar leads históricos de Airtable u otras herramientas. El sistema detecta las columnas automáticamente.',
+    tip: 'El importador muestra una vista previa de las primeras filas y te deja mapear las columnas antes de importar.',
+  },
+]
+
+function TutorialModal({ role, onClose }: { role: string; onClose: () => void }) {
+  const steps = role === 'admin' ? STEPS_ADMIN : role === 'supervisor' ? STEPS_SUPERVISOR : STEPS_EMPLEADO
+  const [current, setCurrent] = useState(0)
+  const step = steps[current]
+  const Icon = step.icon
+  const isFirst = current === 0
+  const isLast = current === steps.length - 1
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <div className="flex items-center gap-2">
+            <BookOpen className="h-4 w-4 text-navy" />
+            <span className="text-sm font-bold text-gray-900">Tutorial</span>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+            <X className="h-4 w-4 text-gray-500" />
+          </button>
+        </div>
+
+        {/* Step content */}
+        <div className="px-6 py-6 flex-1">
+          <div className="flex items-center justify-center mb-5">
+            <div className="h-14 w-14 rounded-2xl bg-navy/10 flex items-center justify-center">
+              <Icon className="h-7 w-7 text-navy" />
+            </div>
+          </div>
+
+          <h2 className="text-base font-bold text-gray-900 text-center mb-2">{step.title}</h2>
+          <p className="text-sm text-gray-600 text-center leading-relaxed">{step.description}</p>
+
+          {step.tip && (
+            <div className="mt-4 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
+              <p className="text-xs text-amber-800">
+                <span className="font-semibold">Consejo: </span>{step.tip}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Progress dots */}
+        <div className="flex justify-center gap-1.5 pb-2">
+          {steps.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrent(i)}
+              className={`h-1.5 rounded-full transition-all ${i === current ? 'w-5 bg-navy' : 'w-1.5 bg-gray-200 hover:bg-gray-300'}`}
+            />
+          ))}
+        </div>
+
+        {/* Navigation */}
+        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100">
+          <button
+            onClick={() => setCurrent((c) => c - 1)}
+            disabled={isFirst}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-0 transition-colors"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Anterior
+          </button>
+
+          <span className="text-xs text-gray-400">{current + 1} / {steps.length}</span>
+
+          {isLast ? (
+            <button
+              onClick={onClose}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-navy text-white text-sm font-semibold hover:bg-navy/90 transition-colors"
+            >
+              ¡Listo!
+            </button>
+          ) : (
+            <button
+              onClick={() => setCurrent((c) => c + 1)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold text-navy hover:bg-navy/5 transition-colors"
+            >
+              Siguiente
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function PortalHeader({ employee }: PortalHeaderProps) {
+  const [showTutorial, setShowTutorial] = useState(false)
+
   async function handleLogout() {
     await fetch('/api/portal/auth/logout', { method: 'POST' })
-    // Hard redirect to ensure the cleared session cookie is re-read by the server
     window.location.href = '/portal/login'
   }
 
   return (
-    <header className="bg-white border-b border-gray-200 px-4 md:px-6 py-4">
-      <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="h-8 w-8 rounded-full bg-navy text-white flex items-center justify-center text-sm font-bold flex-shrink-0">
-            {employee.full_name.charAt(0).toUpperCase()}
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-gray-900">{employee.full_name}</p>
-            <p className="text-xs text-gray-500 capitalize">
-              {employee.role === 'admin' ? 'Administrador' : employee.role === 'supervisor' ? 'Supervisor de Admisiones' : 'Representante de Admisiones'}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-1">
-          {employee.campus.length > 0 && (
-            <div className="hidden sm:flex items-center gap-1 mr-2">
-              {employee.campus.map((c) => (
-                <span
-                  key={c}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-navy/10 text-navy"
-                >
-                  <Building2 className="h-3 w-3" />
-                  {c}
-                </span>
-              ))}
+    <>
+      <header className="bg-white border-b border-gray-200 px-4 md:px-6 py-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-full bg-navy text-white flex items-center justify-center text-sm font-bold flex-shrink-0">
+              {employee.full_name.charAt(0).toUpperCase()}
             </div>
-          )}
+            <div>
+              <p className="text-sm font-semibold text-gray-900">{employee.full_name}</p>
+              <p className="text-xs text-gray-500 capitalize">
+                {employee.role === 'admin' ? 'Administrador' : employee.role === 'supervisor' ? 'Supervisor de Admisiones' : 'Representante de Admisiones'}
+              </p>
+            </div>
+          </div>
 
-          <a
-            href="/portal/dashboard"
-            className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors px-2 py-1.5 rounded-lg hover:bg-gray-100"
-          >
-            <LayoutDashboard className="h-4 w-4" />
-            <span className="hidden sm:inline">Dashboard</span>
-          </a>
+          <div className="flex items-center gap-1">
+            {employee.campus.length > 0 && (
+              <div className="hidden sm:flex items-center gap-1 mr-2">
+                {employee.campus.map((c) => (
+                  <span
+                    key={c}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-navy/10 text-navy"
+                  >
+                    <Building2 className="h-3 w-3" />
+                    {c}
+                  </span>
+                ))}
+              </div>
+            )}
 
-          {employee.role === 'admin' ? (
-            <a
-              href="/portal/admin"
+            <button
+              onClick={() => setShowTutorial(true)}
               className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors px-2 py-1.5 rounded-lg hover:bg-gray-100"
             >
-              <ClipboardList className="h-4 w-4" />
-              <span className="hidden sm:inline">Panel Admin</span>
-            </a>
-          ) : (
+              <BookOpen className="h-4 w-4" />
+              <span className="hidden sm:inline">Tutorial</span>
+            </button>
+
             <a
-              href="/portal/reportes"
+              href="/portal/dashboard"
               className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors px-2 py-1.5 rounded-lg hover:bg-gray-100"
             >
-              <ClipboardList className="h-4 w-4" />
-              <span className="hidden sm:inline">Plan y Reportes</span>
+              <LayoutDashboard className="h-4 w-4" />
+              <span className="hidden sm:inline">Dashboard</span>
             </a>
-          )}
 
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors px-2 py-1.5 rounded-lg hover:bg-gray-100"
-          >
-            <LogOut className="h-4 w-4" />
-            <span className="hidden sm:inline">Cerrar sesión</span>
-          </button>
+            {employee.role === 'admin' ? (
+              <a
+                href="/portal/admin"
+                className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors px-2 py-1.5 rounded-lg hover:bg-gray-100"
+              >
+                <ClipboardList className="h-4 w-4" />
+                <span className="hidden sm:inline">Panel Admin</span>
+              </a>
+            ) : (
+              <a
+                href="/portal/reportes"
+                className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors px-2 py-1.5 rounded-lg hover:bg-gray-100"
+              >
+                <ClipboardList className="h-4 w-4" />
+                <span className="hidden sm:inline">Plan y Reportes</span>
+              </a>
+            )}
+
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors px-2 py-1.5 rounded-lg hover:bg-gray-100"
+            >
+              <LogOut className="h-4 w-4" />
+              <span className="hidden sm:inline">Cerrar sesión</span>
+            </button>
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+
+      {showTutorial && (
+        <TutorialModal role={employee.role} onClose={() => setShowTutorial(false)} />
+      )}
+    </>
   )
 }
