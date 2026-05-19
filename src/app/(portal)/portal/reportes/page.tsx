@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import {
   Plus, CheckCircle, AlertCircle, MapPin, Calendar,
-  QrCode, Flag, Trash2, Zap, TrendingUp, Users, GraduationCap, Printer,
+  QrCode, Flag, Trash2, Zap, TrendingUp, Users, GraduationCap, Download,
 } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import type { Activity, MonthlyReport } from '@/lib/types'
@@ -77,25 +77,50 @@ interface AutoStats {
   performance_score: 'deficiente' | 'basico' | 'bueno' | 'excelente'
 }
 
-interface TeamReport {
+interface TeamReportLead {
   id: string
-  employee_id: string
-  month: string
-  leads_acquired: number | null
-  leads_enrolled: number | null
-  activities_completed: number | null
-  performance_score: 'deficiente' | 'basico' | 'bueno' | 'excelente' | null
-  notes: string | null
+  nombre: string
+  apellido: string
+  telefono: string
+  email: string
+  campus: string | null
+  programa_interes: string | null
+  horario: string | null
+  source: string | null
+  lead_source_text: string | null
+  assignment_source: string | null
+  status: string
   created_at: string
-  employee: { full_name: string; campus: string[] } | null
+  last_action_at: string
+  rep_name: string
+  activity_name: string | null
+  history: { action_type: string; old_status: string | null; new_status: string | null; note: string | null; communication_type: string | null; created_at: string; employee_name: string | null }[]
+}
+
+interface TeamReportActivity {
+  id: string
+  name: string
+  type: string
+  activity_date: string | null
+  location: string | null
+  planned_leads: number | null
+  actual_leads: number | null
+  status: string
+  rep_name: string
+}
+
+interface TeamReportData {
+  month: string
+  supervisor_name: string
+  team_members: { id: string; full_name: string; campus: string[] }[]
+  leads: TeamReportLead[]
+  activities: TeamReportActivity[]
 }
 
 export default function ReportesPage() {
   const [activities, setActivities] = useState<Activity[]>([])
   const [reports, setReports] = useState<MonthlyReport[]>([])
   const [role, setRole] = useState<string>('empleado')
-  const [teamReports, setTeamReports] = useState<TeamReport[]>([])
-  const [teamMembers, setTeamMembers] = useState<{ id: string; full_name: string; campus: string[] }[]>([])
   const [activeTab, setActiveTab] = useState<'plan' | 'cierre' | 'equipo'>('plan')
   const [showNewActivity, setShowNewActivity] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -108,7 +133,7 @@ export default function ReportesPage() {
   const [terminating, setTerminating] = useState<string | null>(null)
   const [origin, setOrigin] = useState('')
   const [teamMonth, setTeamMonth] = useState(firstOfMonth(new Date()))
-  const [loadingTeam, setLoadingTeam] = useState(false)
+  const [loadingReport, setLoadingReport] = useState(false)
 
   useEffect(() => {
     if (typeof window !== 'undefined') setOrigin(window.location.origin)
@@ -141,24 +166,128 @@ export default function ReportesPage() {
     setLoading(false)
   }, [currentMonth])
 
-  const loadTeamReports = useCallback(async (month: string) => {
-    setLoadingTeam(true)
-    const res = await fetch(`/api/portal/reports?team=1&month=${month}`)
-    if (res.ok) {
-      const d = await res.json()
-      setTeamReports(d.reports ?? [])
-      setTeamMembers(d.team_members ?? [])
-    }
-    setLoadingTeam(false)
-  }, [])
-
-  useEffect(() => {
-    if (role === 'supervisor' && activeTab === 'equipo') {
-      loadTeamReports(teamMonth)
-    }
-  }, [role, activeTab, teamMonth, loadTeamReports])
-
   useEffect(() => { loadData() }, [loadData])
+
+  function triggerDownload(content: string, filename: string, mime: string) {
+    const blob = new Blob([content], { type: mime })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = filename; a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  function buildCsv(data: TeamReportData): string {
+    const monthLabel = new Date(data.month + 'T00:00:00').toLocaleDateString('es-PR', { month: 'long', year: 'numeric' })
+    const headers = ['Mes', 'Representante', 'Nombre', 'Apellido', 'Teléfono', 'Correo', 'Recinto', 'Programa de Interés', 'Horario', 'Estado Actual', 'Origen Web', 'Fuente Manual', 'Actividad', 'Tipo Ingreso', 'Fecha de Ingreso', 'Última Actividad']
+    const esc = (v: string | null | undefined) => `"${String(v ?? '').replace(/"/g, '""')}"`
+    const rows = data.leads.map((l) => [
+      monthLabel, l.rep_name,
+      l.nombre, l.apellido, l.telefono, l.email,
+      l.campus ?? '', l.programa_interes ?? '', l.horario ?? '',
+      l.status, l.source ?? '', l.lead_source_text ?? '',
+      l.activity_name ?? '',
+      l.assignment_source === 'manual' ? 'Manual' : 'Formulario Web',
+      new Date(l.created_at).toLocaleDateString('es-PR'),
+      new Date(l.last_action_at).toLocaleDateString('es-PR'),
+    ].map(esc).join(','))
+    return [headers.map(esc).join(','), ...rows].join('\r\n')
+  }
+
+  function buildHtml(data: TeamReportData): string {
+    const ml = new Date(data.month + 'T00:00:00').toLocaleDateString('es-PR', { month: 'long', year: 'numeric' })
+    const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+    const total = data.leads.length
+    const matriculados = data.leads.filter((l) => l.status === 'Matriculado').length
+    const manuales = data.leads.filter((l) => l.assignment_source === 'manual').length
+    const deActividades = data.leads.filter((l) => l.activity_name).length
+
+    // Per-rep stats
+    const repMap = new Map<string, { leads: TeamReportLead[]; programs: Map<string, number> }>()
+    for (const tm of data.team_members) {
+      repMap.set(tm.full_name, { leads: [], programs: new Map() })
+    }
+    for (const l of data.leads) {
+      if (!repMap.has(l.rep_name)) repMap.set(l.rep_name, { leads: [], programs: new Map() })
+      const r = repMap.get(l.rep_name)!
+      r.leads.push(l)
+      const prog = l.programa_interes ?? 'No especificado'
+      r.programs.set(prog, (r.programs.get(prog) ?? 0) + 1)
+    }
+
+    const td = (v: string) => `<td>${v}</td>`
+    const th = (v: string) => `<th>${v}</th>`
+
+    const tableStyle = 'border-collapse:collapse;width:100%;font-size:12px;margin-bottom:24px;'
+    const thStyle = 'background:#0a1628;color:#fff;padding:6px 8px;text-align:left;'
+    const tdStyle = 'padding:5px 8px;border-bottom:1px solid #e5e7eb;'
+    const tdAltStyle = 'padding:5px 8px;border-bottom:1px solid #e5e7eb;background:#f9fafb;'
+
+    const activityTypeLabels: Record<string, string> = { feria: 'Feria', visita_escuela: 'Visita a Escuela', evento_comunitario: 'Evento Comunitario', otro: 'Otro' }
+
+    const repRows = Array.from(repMap.entries()).map(([name, d]) => {
+      const topProgs = Array.from(d.programs.entries()).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([p, c]) => `${p} (${c})`).join(', ')
+      const mat = d.leads.filter((l) => l.status === 'Matriculado').length
+      const man = d.leads.filter((l) => l.assignment_source === 'manual').length
+      const act = d.leads.filter((l) => l.activity_name).length
+      return `<tr><td style="${tdStyle}">${name}</td><td style="${tdStyle}">${d.leads.length}</td><td style="${tdStyle}">${man}</td><td style="${tdStyle}">${act}</td><td style="${tdStyle}">${mat}</td><td style="${tdStyle}">${topProgs || '—'}</td></tr>`
+    }).join('')
+
+    const actRows = data.activities.map((a, i) => {
+      const s = i % 2 === 0 ? tdStyle : tdAltStyle
+      return `<tr><td style="${s}">${a.rep_name}</td><td style="${s}">${a.name}</td><td style="${s}">${activityTypeLabels[a.type] ?? a.type}</td><td style="${s}">${a.activity_date ?? '—'}</td><td style="${s}">${a.location ?? '—'}</td><td style="${s}">${a.planned_leads ?? '—'}</td><td style="${s}">${a.actual_leads ?? '—'}</td><td style="${s}">${a.status === 'terminada' ? 'Terminada' : 'Planificada'}</td></tr>`
+    }).join('')
+
+    const leadRows = data.leads.map((l, i) => {
+      const s = i % 2 === 0 ? tdStyle : tdAltStyle
+      const notes = l.history.filter((h) => h.note).map((h) => h.note).join(' | ')
+      return `<tr><td style="${s}">${l.rep_name}</td><td style="${s}">${l.nombre} ${l.apellido}</td><td style="${s}">${l.telefono}</td><td style="${s}">${l.campus ?? '—'}</td><td style="${s}">${l.programa_interes ?? '—'}</td><td style="${s}">${l.status}</td><td style="${s}">${l.source ?? l.lead_source_text ?? '—'}</td><td style="${s}">${new Date(l.created_at).toLocaleDateString('es-PR')}</td><td style="${s}">${notes || '—'}</td></tr>`
+    }).join('')
+
+    return `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><title>Reporte del Equipo — ${cap(ml)}</title>
+<style>body{font-family:Arial,sans-serif;color:#1f2937;margin:32px;} h1{color:#0a1628;} h2{color:#0a1628;border-bottom:2px solid #c9a227;padding-bottom:4px;margin-top:32px;} .summary-grid{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:24px;} .stat{background:#f3f4f6;border-radius:8px;padding:12px 20px;min-width:120px;text-align:center;} .stat-val{font-size:28px;font-weight:bold;color:#0a1628;} .stat-lbl{font-size:12px;color:#6b7280;} table{${tableStyle}} th{${thStyle}} @media print{body{margin:16px;}}</style>
+</head>
+<body>
+<h1>Reporte del Equipo</h1>
+<p style="color:#6b7280;margin-top:-8px;">${cap(ml)} &nbsp;·&nbsp; Supervisor: ${data.supervisor_name}</p>
+
+<h2>Resumen Ejecutivo</h2>
+<div class="summary-grid">
+  <div class="stat"><div class="stat-val">${total}</div><div class="stat-lbl">Leads Totales</div></div>
+  <div class="stat"><div class="stat-val">${matriculados}</div><div class="stat-lbl">Matriculados</div></div>
+  <div class="stat"><div class="stat-val">${manuales}</div><div class="stat-lbl">Ingresados Manual</div></div>
+  <div class="stat"><div class="stat-val">${deActividades}</div><div class="stat-lbl">De Actividades</div></div>
+  <div class="stat"><div class="stat-val">${data.activities.length}</div><div class="stat-lbl">Actividades</div></div>
+  <div class="stat"><div class="stat-val">${data.team_members.length}</div><div class="stat-lbl">Representantes</div></div>
+</div>
+
+<h2>Por Representante</h2>
+<table><thead><tr>${[th('Representante'),th('Leads Totales'),th('Manuales'),th('De Actividades'),th('Matriculados'),th('Top Programas')].join('')}</tr></thead><tbody>${repRows}</tbody></table>
+
+<h2>Actividades del Mes</h2>
+${data.activities.length === 0 ? '<p style="color:#9ca3af">No hubo actividades este mes.</p>' : `<table><thead><tr>${[th('Representante'),th('Actividad'),th('Tipo'),th('Fecha'),th('Lugar'),th('Leads Esp.'),th('Leads Real'),th('Estado')].join('')}</tr></thead><tbody>${actRows}</tbody></table>`}
+
+<h2>Leads Detallados</h2>
+${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads este mes.</p>' : `<table><thead><tr>${[th('Representante'),th('Nombre'),th('Teléfono'),th('Recinto'),th('Programa'),th('Estado'),th('Origen'),th('Fecha Ingreso'),th('Notas / Seguimiento')].join('')}</tr></thead><tbody>${leadRows}</tbody></table>`}
+
+<p style="color:#9ca3af;font-size:11px;margin-top:32px;">Generado el ${new Date().toLocaleDateString('es-PR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} — Data Nest · D'Mart Institute</p>
+</body></html>`
+  }
+
+  async function downloadReport(format: 'csv' | 'html') {
+    setLoadingReport(true)
+    const res = await fetch(`/api/portal/reports/team-report?month=${teamMonth}`)
+    if (!res.ok) { setLoadingReport(false); return }
+    const data: TeamReportData = await res.json()
+    const label = teamMonth.slice(0, 7) // YYYY-MM
+    if (format === 'csv') {
+      triggerDownload(buildCsv(data), `reporte-equipo-${label}.csv`, 'text/csv;charset=utf-8;')
+    } else {
+      triggerDownload(buildHtml(data), `reporte-equipo-${label}.html`, 'text/html;charset=utf-8;')
+    }
+    setLoadingReport(false)
+  }
 
   async function createActivity(e: React.FormEvent) {
     e.preventDefault()
@@ -643,114 +772,56 @@ export default function ReportesPage() {
         {/* ── EQUIPO TAB (supervisor only) ─────────────────────────── */}
         {activeTab === 'equipo' && role === 'supervisor' && (
           <div className="space-y-5">
-            {/* Controls */}
-            <div className="flex items-center justify-between gap-3 flex-wrap">
-              <div className="flex items-center gap-3">
-                <select
-                  value={teamMonth}
-                  onChange={(e) => setTeamMonth(e.target.value)}
-                  className="form-input w-auto text-sm"
-                >
-                  {Array.from({ length: 6 }, (_, i) => {
-                    const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - i)
-                    const v = new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10)
-                    return <option key={v} value={v}>{monthLabel(v)}</option>
-                  })}
-                </select>
-                <span className="text-xs text-gray-400">{teamMembers.length} representante{teamMembers.length !== 1 ? 's' : ''}</span>
+            <div className="bg-white rounded-xl border border-gray-200 p-6">
+              <div className="mb-5">
+                <h2 className="text-sm font-bold text-gray-900">Reporte del Equipo</h2>
+                <p className="text-xs text-gray-500 mt-0.5">Descarga el reporte completo de leads del mes seleccionado.</p>
               </div>
-              <button
-                onClick={() => window.print()}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors print:hidden"
-              >
-                <Printer className="h-4 w-4" />
-                Imprimir
-              </button>
+
+              <div className="flex flex-wrap items-end gap-4">
+                <div>
+                  <label className="form-label">Mes</label>
+                  <select
+                    value={teamMonth}
+                    onChange={(e) => setTeamMonth(e.target.value)}
+                    className="form-input w-auto text-sm"
+                  >
+                    {Array.from({ length: 12 }, (_, i) => {
+                      const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - i)
+                      const v = new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10)
+                      return <option key={v} value={v}>{monthLabel(v)}</option>
+                    })}
+                  </select>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => downloadReport('csv')}
+                    disabled={loadingReport}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-40"
+                  >
+                    <Download className="h-4 w-4" />
+                    {loadingReport ? 'Generando…' : 'Descargar CSV'}
+                  </button>
+                  <button
+                    onClick={() => downloadReport('html')}
+                    disabled={loadingReport}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-navy text-white text-sm font-semibold hover:bg-navy/90 transition-colors disabled:opacity-40"
+                  >
+                    <Download className="h-4 w-4" />
+                    {loadingReport ? 'Generando…' : 'Descargar HTML'}
+                  </button>
+                </div>
+              </div>
             </div>
 
-            {loadingTeam ? (
-              <div className="bg-white rounded-xl border border-gray-200 p-12 flex justify-center">
-                <div className="animate-spin h-6 w-6 rounded-full border-4 border-navy border-t-transparent" />
-              </div>
-            ) : teamReports.length === 0 ? (
-              <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-                <Users className="h-10 w-10 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500 font-medium">No hay informes de cierre para este mes.</p>
-                <p className="text-xs text-gray-400 mt-1">Los representantes de tu equipo aún no han enviado su informe de {monthLabel(teamMonth)}.</p>
-              </div>
-            ) : (
-              <div id="team-reports-print" className="space-y-3">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider print:block hidden">
-                  Informes del Equipo · {monthLabel(teamMonth)}
-                </p>
-                {teamReports.map((report) => {
-                  const scoreCfg = report.performance_score ? SCORE_CONFIG[report.performance_score] : null
-                  return (
-                    <div key={report.id} className={`bg-white rounded-xl border p-5 ${scoreCfg ? scoreCfg.border : 'border-gray-200'}`}>
-                      <div className="flex items-start justify-between gap-3 mb-4">
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-full bg-navy/10 text-navy flex items-center justify-center text-sm font-bold flex-shrink-0">
-                            {report.employee?.full_name.charAt(0).toUpperCase() ?? '?'}
-                          </div>
-                          <div>
-                            <p className="font-semibold text-gray-900 text-sm">{report.employee?.full_name ?? 'Empleado'}</p>
-                            <div className="flex gap-1 mt-0.5 flex-wrap">
-                              {report.employee?.campus.map((c) => (
-                                <span key={c} className="text-xs px-2 py-0.5 rounded-full bg-navy/10 text-navy font-medium">{c}</span>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                        {scoreCfg && (
-                          <span className={`px-3 py-1 rounded-full text-sm font-bold ${scoreCfg.bg} ${scoreCfg.text}`}>
-                            {scoreCfg.label}
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="grid grid-cols-3 gap-3 mb-3">
-                        {[
-                          { label: 'Leads Adquiridos',       value: report.leads_acquired },
-                          { label: 'Matriculados',            value: report.leads_enrolled },
-                          { label: 'Actividades Completadas', value: report.activities_completed },
-                        ].map(({ label, value }) => (
-                          <div key={label} className="bg-gray-50 rounded-xl p-3 text-center">
-                            <p className="text-xl font-bold text-gray-900">{value ?? '—'}</p>
-                            <p className="text-xs text-gray-500 mt-0.5">{label}</p>
-                          </div>
-                        ))}
-                      </div>
-
-                      {report.notes && (
-                        <div className="bg-gray-50 rounded-xl px-4 py-3">
-                          <p className="text-xs font-semibold text-gray-500 mb-0.5">Notas</p>
-                          <p className="text-sm text-gray-700">{report.notes}</p>
-                        </div>
-                      )}
-
-                      <p className="text-xs text-gray-400 mt-2">
-                        Enviado: {new Date(report.created_at).toLocaleDateString('es-PR', { month: 'short', day: 'numeric', year: 'numeric' })}
-                      </p>
-                    </div>
-                  )
-                })}
-
-                {/* Show team members who haven't submitted */}
-                {teamMembers.filter((m) => !teamReports.some((r) => r.employee_id === m.id)).length > 0 && (
-                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-                    <p className="text-xs font-semibold text-amber-800 mb-2">Sin informe enviado:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {teamMembers
-                        .filter((m) => !teamReports.some((r) => r.employee_id === m.id))
-                        .map((m) => (
-                          <span key={m.id} className="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-700">{m.full_name}</span>
-                        ))
-                      }
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+            <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 space-y-1">
+              <p className="text-xs text-amber-800">
+                <span className="font-semibold">CSV</span> — ideal para análisis en Excel o Google Sheets. Una fila por lead con todos los campos.
+              </p>
+              <p className="text-xs text-amber-700">
+                <span className="font-semibold">HTML</span> — reporte formateado listo para imprimir o compartir con el director. Incluye resumen ejecutivo, desglose por representante, actividades y lista completa de leads.
+              </p>
+            </div>
           </div>
         )}
       </div>
