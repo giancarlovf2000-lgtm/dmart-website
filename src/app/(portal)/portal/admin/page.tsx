@@ -179,6 +179,7 @@ function EditEmployeeModal({ employee, allEmployees, onClose, onSaved }: {
 }) {
   const currentSupervisees = allEmployees.filter((e) => e.supervisor_id === employee.id).map((e) => e.id)
   const [form, setForm] = useState({
+    full_name: employee.full_name,
     role: employee.role,
     campus: (employee.campus as string[]).slice(),
     supervisee_ids: currentSupervisees,
@@ -206,7 +207,7 @@ function EditEmployeeModal({ employee, allEmployees, onClose, onSaved }: {
     if (newPassword && newPassword.length < 8) { setError('La contraseña debe tener al menos 8 caracteres.'); return }
     setLoading(true)
 
-    const body: Record<string, unknown> = { role: form.role, campus: form.campus, supervisee_ids: form.supervisee_ids }
+    const body: Record<string, unknown> = { full_name: form.full_name, role: form.role, campus: form.campus, supervisee_ids: form.supervisee_ids }
     if (newPassword) body.password = newPassword
 
     const res = await fetch(`/api/portal/admin/employees/${employee.id}`, {
@@ -248,6 +249,17 @@ function EditEmployeeModal({ employee, allEmployees, onClose, onSaved }: {
               <p className="text-sm text-red-700">{error}</p>
             </div>
           )}
+
+          <div>
+            <label className="form-label">Nombre Completo <span className="text-red-500">*</span></label>
+            <input
+              type="text"
+              required
+              value={form.full_name}
+              onChange={(e) => setForm((p) => ({ ...p, full_name: e.target.value }))}
+              className="form-input"
+            />
+          </div>
 
           <div>
             <label className="form-label">Rol</label>
