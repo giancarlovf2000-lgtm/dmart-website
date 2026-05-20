@@ -59,8 +59,20 @@ export async function PATCH(
   if (leadError || !lead)
     return NextResponse.json({ error: 'Lead no encontrado.' }, { status: 404 })
 
-  if (employee.role !== 'admin' && lead.assigned_to !== user.id)
-    return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
+  if (employee.role !== 'admin') {
+    if (employee.role === 'supervisor') {
+      const { data: teamMember } = await admin
+        .from('employees')
+        .select('id')
+        .eq('id', lead.assigned_to)
+        .eq('supervisor_id', user.id)
+        .single()
+      if (lead.assigned_to !== user.id && !teamMember)
+        return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
+    } else if (lead.assigned_to !== user.id) {
+      return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
+    }
+  }
 
   const now = new Date().toISOString()
 
