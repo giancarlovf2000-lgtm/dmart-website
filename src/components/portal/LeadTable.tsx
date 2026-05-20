@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { AlertTriangle, Plus, ChevronRight, Filter, Trash2 } from 'lucide-react'
+import { AlertTriangle, Plus, ChevronRight, Filter, Trash2, Search } from 'lucide-react'
 import LeadStatusBadge from './LeadStatusBadge'
 import AddLeadModal from './AddLeadModal'
 import type { Lead, Activity, LeadStatus, Employee } from '@/lib/types'
@@ -39,6 +39,7 @@ export default function LeadTable({ leads, staleLeadIds, employee, activities, s
   const [showAddModal, setShowAddModal] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [deleting, setDeleting] = useState(false)
+  const [searchName, setSearchName] = useState('')
 
   const isAdmin = employee.role === 'admin'
   const staleSet = new Set(staleLeadIds)
@@ -53,13 +54,19 @@ export default function LeadTable({ leads, staleLeadIds, employee, activities, s
   const currentStatus = searchParams.get('status') ?? ''
   const currentCampus = searchParams.get('campus') ?? ''
 
-  const allSelected = leads.length > 0 && selected.size === leads.length
+  const filteredLeads = searchName.trim()
+    ? leads.filter((l) =>
+        `${l.nombre} ${l.apellido}`.toLowerCase().includes(searchName.trim().toLowerCase())
+      )
+    : leads
+
+  const allSelected = filteredLeads.length > 0 && selected.size === filteredLeads.length
 
   function toggleAll() {
     if (allSelected) {
       setSelected(new Set())
     } else {
-      setSelected(new Set(leads.map((l) => l.id)))
+      setSelected(new Set(filteredLeads.map((l) => l.id)))
     }
   }
 
@@ -100,6 +107,17 @@ export default function LeadTable({ leads, staleLeadIds, employee, activities, s
         <div className="flex items-center gap-1.5 text-sm text-gray-500">
           <Filter className="h-4 w-4" />
           <span className="hidden sm:inline">Filtrar:</span>
+        </div>
+
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Buscar por nombre…"
+            value={searchName}
+            onChange={(e) => setSearchName(e.target.value)}
+            className="text-sm border border-gray-200 rounded-lg pl-8 pr-3 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-navy/20 w-44"
+          />
         </div>
 
         <select
@@ -155,7 +173,7 @@ export default function LeadTable({ leads, staleLeadIds, employee, activities, s
       </div>
 
       {/* Table */}
-      {leads.length === 0 ? (
+      {filteredLeads.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
           <p className="text-gray-500 font-medium">No hay leads que mostrar.</p>
           <p className="text-sm text-gray-400 mt-1">Ajusta los filtros o agrega un nuevo lead.</p>
@@ -188,7 +206,7 @@ export default function LeadTable({ leads, staleLeadIds, employee, activities, s
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {leads.map((lead) => {
+                {filteredLeads.map((lead) => {
                   const isStale = staleSet.has(lead.id)
                   const isChecked = selected.has(lead.id)
                   return (
