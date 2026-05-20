@@ -81,39 +81,85 @@ export async function PATCH(
   if (!user) return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
 
   const body = await request.json()
-  const { assigned_to: newAssignee } = body
-  if (!newAssignee) return NextResponse.json({ error: 'assigned_to es requerido.' }, { status: 400 })
-
   const admin = getAdminClient()
 
   const { data: employee } = await admin.from('employees').select('id, role, full_name').eq('id', user.id).single()
   if (!employee) return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
 
-  // Validate the target assignee is accessible to this user
-  if (employee.role !== 'admin') {
-    if (employee.role === 'supervisor') {
-      if (newAssignee !== user.id) {
-        const { data: teamCheck } = await admin.from('employees').select('id').eq('id', newAssignee).eq('supervisor_id', user.id).single()
-        if (!teamCheck) return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
+  // ── Reassignment ────────────────────────────────────────────────────────────
+  if (body.assigned_to !== undefined) {
+    const newAssignee: string = body.assigned_to
+
+    if (employee.role !== 'admin') {
+      if (employee.role === 'supervisor') {
+        if (newAssignee !== user.id) {
+          const { data: teamCheck } = await admin.from('employees').select('id').eq('id', newAssignee).eq('supervisor_id', user.id).single()
+          if (!teamCheck) return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
+        }
+      } else {
+        return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
       }
-    } else {
-      return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
     }
+
+    const { data: targetEmp } = await admin.from('employees').select('full_name').eq('id', newAssignee).single()
+
+    const { error } = await admin.from('leads').update({ assigned_to: newAssignee, last_action_at: new Date().toISOString() }).eq('id', params.id)
+    if (error) return NextResponse.json({ error: 'Error al reasignar el lead.' }, { status: 500 })
+
+    await admin.from('lead_history').insert({
+      lead_id: params.id,
+      employee_id: user.id,
+      action_type: 'lead_assigned',
+      note: `Lead reasignado a ${targetEmp?.full_name ?? newAssignee} por ${employee.full_name}`,
+    })
+
+    return NextResponse.json({ success: true })
   }
 
-  const { data: targetEmp } = await admin.from('employees').select('full_name').eq('id', newAssignee).single()
+  // ── Contact info update (telefono / email) ──────────────────────────────────
+  if (body.telefono !== undefined || body.email !== undefined) {
+    // Verify this employee has access to the lead
+    const { data: lead } = await admin.from('leads').select('assigned_to').eq('id', params.id).single()
+    if (!lead) return NextResponse.json({ error: 'Lead no encontrado.' }, { status: 404 })
 
-  const { error } = await admin.from('leads').update({ assigned_to: newAssignee, last_action_at: new Date().toISOString() }).eq('id', params.id)
-  if (error) return NextResponse.json({ error: 'Error al reasignar el lead.' }, { status: 500 })
+    if (employee.role !== 'admin') {
+      if (employee.role === 'supervisor') {
+        const { data: teamMember } = await admin.from('employees').select('id').eq('id', lead.assigned_to).eq('supervisor_id', user.id).single()
+        if (lead.assigned_to !== user.id && !teamMember)
+          return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
+      } else if (lead.assigned_to !== user.id) {
+        return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
+      }
+    }
 
-  await admin.from('lead_history').insert({
-    lead_id: params.id,
-    employee_id: user.id,
-    action_type: 'lead_assigned',
-    note: `Lead reasignado a ${targetEmp?.full_name ?? newAssignee} por ${employee.full_name}`,
-  })
+    const updates: Record<string, unknown> = { last_action_at: new Date().toISOString() }
+    const changes: string[] = []
 
-  return NextResponse.json({ success: true })
+    if (body.telefono !== undefined) {
+      const tel = String(body.telefono).trim()
+      updates.telefono = tel
+      changes.push(`Teléfono actualizado a ${tel}`)
+    }
+    if (body.email !== undefined) {
+      const em = String(body.email).trim().toLowerCase()
+      updates.email = em
+      changes.push(`Correo actualizado a ${em}`)
+    }
+
+    const { error } = await admin.from('leads').update(updates).eq('id', params.id)
+    if (error) return NextResponse.json({ error: 'Error al actualizar el lead.' }, { status: 500 })
+
+    await admin.from('lead_history').insert({
+      lead_id: params.id,
+      employee_id: user.id,
+      action_type: 'note_added',
+      note: changes.join(' · '),
+    })
+
+    return NextResponse.json({ success: true })
+  }
+
+  return NextResponse.json({ error: 'Nada que actualizar.' }, { status: 400 })
 }
 
 export async function DELETE(

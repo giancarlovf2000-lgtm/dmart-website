@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Phone, Mail, MapPin, BookOpen, Clock, Calendar, User, AlertCircle, Trash2 } from 'lucide-react'
+import { ArrowLeft, Phone, Mail, MapPin, BookOpen, Clock, Calendar, User, AlertCircle, Trash2, Pencil, Check, X } from 'lucide-react'
 import LeadStatusBadge from '@/components/portal/LeadStatusBadge'
 import StatusChangeModal from '@/components/portal/StatusChangeModal'
 import type { Lead, LeadHistory } from '@/lib/types'
@@ -34,6 +34,8 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
   const [assignableEmployees, setAssignableEmployees] = useState<{ id: string; full_name: string }[]>([])
   const [reassigning, setReassigning] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [editContact, setEditContact] = useState<{ telefono: string; email: string } | null>(null)
+  const [savingContact, setSavingContact] = useState(false)
 
   async function load() {
     setLoading(true)
@@ -78,6 +80,23 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
       alert('Error al eliminar el lead. Intenta de nuevo.')
       setDeleting(false)
     }
+  }
+
+  async function handleSaveContact() {
+    if (!editContact || !lead) return
+    setSavingContact(true)
+    const res = await fetch(`/api/portal/leads/${params.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ telefono: editContact.telefono, email: editContact.email }),
+    })
+    if (res.ok) {
+      await load()
+      setEditContact(null)
+    } else {
+      alert('Error al guardar los cambios.')
+    }
+    setSavingContact(false)
   }
 
   useEffect(() => { load() }, [params.id])
@@ -158,8 +177,39 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <InfoRow icon={Phone} label="Teléfono" value={formatPhone(lead.telefono)} />
-            <InfoRow icon={Mail} label="Correo" value={lead.email} />
+            {editContact ? (
+              <>
+                <div className="flex items-start gap-2.5">
+                  <Phone className="h-4 w-4 text-gray-400 mt-2.5 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-gray-400 mb-1">Teléfono</p>
+                    <input
+                      type="tel"
+                      value={editContact.telefono}
+                      onChange={(e) => setEditContact((p) => p && ({ ...p, telefono: e.target.value }))}
+                      className="w-full text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-navy/20"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-start gap-2.5">
+                  <Mail className="h-4 w-4 text-gray-400 mt-2.5 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-gray-400 mb-1">Correo</p>
+                    <input
+                      type="email"
+                      value={editContact.email}
+                      onChange={(e) => setEditContact((p) => p && ({ ...p, email: e.target.value }))}
+                      className="w-full text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-navy/20"
+                    />
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <InfoRow icon={Phone} label="Teléfono" value={formatPhone(lead.telefono)} />
+                <InfoRow icon={Mail} label="Correo" value={lead.email} />
+              </>
+            )}
             <InfoRow icon={MapPin} label="Recinto" value={lead.campus ?? '—'} />
             <InfoRow icon={Clock} label="Horario" value={lead.horario ?? '—'} />
             <InfoRow icon={BookOpen} label="Programa de Interés" value={lead.programa_interes ?? '—'} />
@@ -186,6 +236,38 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
               <InfoRow icon={User} label="Asignado a" value={lead.employee?.full_name ?? '—'} />
             )}
             <InfoRow icon={Calendar} label="Última Actividad" value={formatDateTime(lead.last_action_at)} />
+          </div>
+
+          {/* Contact edit controls */}
+          <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-end gap-2">
+            {editContact ? (
+              <>
+                <button
+                  onClick={() => setEditContact(null)}
+                  disabled={savingContact}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-gray-500 hover:bg-gray-100 transition-colors disabled:opacity-50"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSaveContact}
+                  disabled={savingContact}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-navy text-white text-sm font-semibold hover:bg-navy/90 transition-colors disabled:opacity-50"
+                >
+                  <Check className="h-3.5 w-3.5" />
+                  {savingContact ? 'Guardando…' : 'Guardar'}
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => setEditContact({ telefono: lead.telefono ?? '', email: lead.email ?? '' })}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-gray-500 hover:bg-gray-100 transition-colors"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+                Editar contacto
+              </button>
+            )}
           </div>
         </div>
 
