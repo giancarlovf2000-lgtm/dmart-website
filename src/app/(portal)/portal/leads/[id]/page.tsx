@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Phone, Mail, MapPin, BookOpen, Clock, Calendar, User, AlertCircle, Trash2, Pencil, Check, X } from 'lucide-react'
+import { ArrowLeft, Phone, Mail, MapPin, BookOpen, Clock, Calendar, User, AlertCircle, Trash2, Pencil, Check, X, MessageSquarePlus } from 'lucide-react'
 import LeadStatusBadge from '@/components/portal/LeadStatusBadge'
 import StatusChangeModal from '@/components/portal/StatusChangeModal'
 import type { Lead, LeadHistory } from '@/lib/types'
@@ -36,6 +36,10 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
   const [deleting, setDeleting] = useState(false)
   const [editContact, setEditContact] = useState<{ telefono: string; email: string } | null>(null)
   const [savingContact, setSavingContact] = useState(false)
+  const [showNoteForm, setShowNoteForm] = useState(false)
+  const [noteForm, setNoteForm] = useState({ communication_type: 'Llamada', note: '' })
+  const [savingNote, setSavingNote] = useState(false)
+  const [noteError, setNoteError] = useState('')
 
   async function load() {
     setLoading(true)
@@ -97,6 +101,26 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
       alert('Error al guardar los cambios.')
     }
     setSavingContact(false)
+  }
+
+  async function handleSaveNote() {
+    setNoteError('')
+    if (noteForm.note.trim().length < 20) { setNoteError('La nota debe tener al menos 20 caracteres.'); return }
+    setSavingNote(true)
+    const res = await fetch(`/api/portal/leads/${params.id}/note`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(noteForm),
+    })
+    if (res.ok) {
+      await load()
+      setShowNoteForm(false)
+      setNoteForm({ communication_type: 'Llamada', note: '' })
+    } else {
+      const data = await res.json()
+      setNoteError(data.error ?? 'Error al guardar la nota.')
+    }
+    setSavingNote(false)
   }
 
   useEffect(() => { load() }, [params.id])
@@ -273,7 +297,73 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
 
         {/* History */}
         <div className="bg-white rounded-2xl border border-gray-200 p-6">
-          <h2 className="text-sm font-bold text-gray-900 mb-4">Historial de Actividad</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-bold text-gray-900">Historial de Actividad</h2>
+            {!showNoteForm && (
+              <button
+                onClick={() => setShowNoteForm(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-gray-500 hover:bg-gray-100 transition-colors"
+              >
+                <MessageSquarePlus className="h-3.5 w-3.5" />
+                Agregar seguimiento
+              </button>
+            )}
+          </div>
+
+          {/* Inline note form */}
+          {showNoteForm && (
+            <div className="mb-5 p-4 rounded-xl border border-gray-200 bg-gray-50 space-y-3">
+              <p className="text-xs font-semibold text-gray-700">Nuevo seguimiento</p>
+              {noteError && (
+                <div className="flex items-center gap-2 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                  <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+                  {noteError}
+                </div>
+              )}
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Tipo de comunicación</label>
+                <select
+                  value={noteForm.communication_type}
+                  onChange={(e) => setNoteForm((p) => ({ ...p, communication_type: e.target.value }))}
+                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-navy/20"
+                >
+                  {['Llamada', 'Mensaje de texto', 'Email', 'Visita presencial', 'WhatsApp', 'Otro'].map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Nota <span className="text-gray-400">(mín. 20 caracteres)</span></label>
+                <textarea
+                  rows={3}
+                  value={noteForm.note}
+                  onChange={(e) => setNoteForm((p) => ({ ...p, note: e.target.value }))}
+                  placeholder="Describe el seguimiento realizado…"
+                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-navy/20 resize-none"
+                />
+                <p className={`text-xs mt-0.5 ${noteForm.note.trim().length >= 20 ? 'text-green-600' : 'text-gray-400'}`}>
+                  {noteForm.note.trim().length}/20 caracteres mínimos
+                </p>
+              </div>
+              <div className="flex items-center justify-end gap-2 pt-1">
+                <button
+                  onClick={() => { setShowNoteForm(false); setNoteForm({ communication_type: 'Llamada', note: '' }); setNoteError('') }}
+                  disabled={savingNote}
+                  className="px-3 py-1.5 rounded-lg text-sm text-gray-500 hover:bg-gray-100 transition-colors disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSaveNote}
+                  disabled={savingNote}
+                  className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-navy text-white text-sm font-semibold hover:bg-navy/90 transition-colors disabled:opacity-50"
+                >
+                  <Check className="h-3.5 w-3.5" />
+                  {savingNote ? 'Guardando…' : 'Guardar seguimiento'}
+                </button>
+              </div>
+            </div>
+          )}
 
           {history.length === 0 ? (
             <p className="text-sm text-gray-400">Sin actividad registrada aún.</p>
