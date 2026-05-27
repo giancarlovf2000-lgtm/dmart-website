@@ -34,6 +34,21 @@ function formatDate(d: string) {
   return new Date(d + 'T00:00:00').toLocaleDateString('es-PR', { weekday: 'short', month: 'short', day: 'numeric' })
 }
 
+const MONTH_NAMES_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
+
+function getNextMonthInfo() {
+  const now = new Date()
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+  const daysLeft = daysInMonth - now.getDate()
+  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+  const year = nextMonth.getFullYear()
+  const month = nextMonth.getMonth()
+  const monthStr = `${year}-${String(month + 1).padStart(2, '0')}`
+  const daysInNextMonth = new Date(year, month + 1, 0).getDate()
+  const firstDayOfWeek = nextMonth.getDay()
+  return { daysLeft, monthStr, year, month, daysInNextMonth, firstDayOfWeek }
+}
+
 function ProgressBar({ value, max, color }: { value: number; max: number; color: string }) {
   const pct = Math.min(100, Math.round((value / max) * 100))
   return (
@@ -134,6 +149,10 @@ export default function ReportesPage() {
   const [origin, setOrigin] = useState('')
   const [teamMonth, setTeamMonth] = useState(firstOfMonth(new Date()))
   const [loadingReport, setLoadingReport] = useState(false)
+  const [planNotes, setPlanNotes] = useState<Record<string, string>>({})
+  const [planSaving, setPlanSaving] = useState(false)
+  const [planSaved, setPlanSaved] = useState(false)
+  const planSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     if (typeof window !== 'undefined') setOrigin(window.location.origin)
@@ -159,7 +178,16 @@ export default function ReportesPage() {
     if (repRes.ok) {
       const d = await repRes.json()
       setReports(d.reports ?? [])
-      if (d.role) setRole(d.role)
+      if (d.role) {
+        setRole(d.role)
+        if (d.role === 'supervisor') {
+          const { monthStr } = getNextMonthInfo()
+          fetch(`/api/portal/supervisor-plan?month=${monthStr}`)
+            .then((r) => r.json())
+            .then((pd) => { if (pd.notes) setPlanNotes(pd.notes) })
+            .catch(() => {})
+        }
+      }
     } else {
       console.error('[reportes] reports fetch failed:', repRes.status)
     }
@@ -167,6 +195,24 @@ export default function ReportesPage() {
   }, [currentMonth])
 
   useEffect(() => { loadData() }, [loadData])
+
+  function updatePlanNote(day: number, value: string) {
+    const next = { ...planNotes, [String(day)]: value }
+    setPlanNotes(next)
+    setPlanSaved(false)
+    if (planSaveTimer.current) clearTimeout(planSaveTimer.current)
+    planSaveTimer.current = setTimeout(async () => {
+      setPlanSaving(true)
+      const { monthStr } = getNextMonthInfo()
+      await fetch('/api/portal/supervisor-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ month: monthStr, notes: next }),
+      })
+      setPlanSaving(false)
+      setPlanSaved(true)
+    }, 800)
+  }
 
   function triggerDownload(content: string, filename: string, mime: string) {
     const blob = new Blob([content], { type: mime })
@@ -413,6 +459,51 @@ ${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads este mes.</p
                 <Plus className="h-4 w-4" /> Nueva Actividad
               </button>
             </div>
+
+            {/* ── Calendario de planificación — solo supervisores, últimos 5 días del mes ── */}
+            {role === 'supervisor' && (() => {
+              const { daysLeft, month, year, daysInNextMonth, firstDayOfWeek } = getNextMonthInfo()
+              if (daysLeft > 5) return null
+              const blanks = Array(firstDayOfWeek).fill(null)
+              const days = Array.from({ length: daysInNextMonth }, (_, i) => i + 1)
+              return (
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Calendar className="h-4 w-4 text-amber-600" />
+                    <h3 className="text-sm font-bold text-amber-900">
+                      Planifica tu mes — {MONTH_NAMES_ES[month]} {year}
+                    </h3>
+                    <div className="ml-auto text-xs">
+                      {planSaving && <span className="text-amber-500">Guardando…</span>}
+                      {planSaved && !planSaving && <span className="text-green-600">Guardado ✓</span>}
+                    </div>
+                  </div>
+                  <p className="text-xs text-amber-700 mb-4">
+                    El mes siguiente está por comenzar. Escribe en cada día qué actividades planeas realizar.
+                  </p>
+                  <div className="grid grid-cols-7 gap-1 mb-1">
+                    {['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'].map((d) => (
+                      <div key={d} className="text-center text-xs font-semibold text-amber-700 py-1">{d}</div>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-7 gap-1">
+                    {blanks.map((_, i) => <div key={`b${i}`} />)}
+                    {days.map((day) => (
+                      <div key={day} className="bg-white border border-amber-100 rounded-lg p-1.5 min-h-[72px] flex flex-col">
+                        <span className="text-xs font-bold text-amber-800 mb-1">{day}</span>
+                        <textarea
+                          rows={2}
+                          value={planNotes[String(day)] ?? ''}
+                          onChange={(e) => updatePlanNote(day, e.target.value)}
+                          placeholder="…"
+                          className="flex-1 text-xs text-gray-700 resize-none border-0 outline-none bg-transparent placeholder-gray-300 leading-tight"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            })()}
 
             {showNewActivity && (
               <form onSubmit={createActivity} className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
