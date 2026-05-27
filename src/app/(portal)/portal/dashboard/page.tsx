@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient as createServerSupabase } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
 import { promoteNewLeadsToCritico, getStaleLeadIds } from '@/lib/portal/alerts'
+import { checkSupervisorPlanningGate } from '@/lib/portal/planningGate'
 import { findDuplicatePairs, canonicalPairKey } from '@/lib/portal/duplicates'
 import PortalHeader from '@/components/portal/PortalHeader'
 import LeadTable from '@/components/portal/LeadTable'
@@ -40,6 +41,12 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   const isAdmin = employee.role === 'admin'
   const isSupervisor = employee.role === 'supervisor'
+
+  // Planning gate: block supervisors during last 5 days if plan not complete
+  if (isSupervisor) {
+    const gate = await checkSupervisorPlanningGate(employee.id, adminClient)
+    if (gate.required && !gate.complete) redirect('/portal/reportes?planning=required')
+  }
 
   // Get supervised employees (for supervisor role)
   let supervisedIds: string[] = []

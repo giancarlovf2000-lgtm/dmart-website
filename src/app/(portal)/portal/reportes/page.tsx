@@ -36,6 +36,11 @@ function formatDate(d: string) {
 
 const MONTH_NAMES_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
 
+function getNextMonthStart(): string {
+  const now = new Date()
+  return new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString().slice(0, 10)
+}
+
 function getNextMonthInfo() {
   const now = new Date()
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
@@ -153,6 +158,7 @@ export default function ReportesPage() {
   const [planSaving, setPlanSaving] = useState(false)
   const [planSaved, setPlanSaved] = useState(false)
   const planSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [gateStatus, setGateStatus] = useState<{ required: boolean; complete: boolean; calendarDays: number; activitiesCount: number } | null>(null)
 
   useEffect(() => {
     if (typeof window !== 'undefined') setOrigin(window.location.origin)
@@ -181,11 +187,24 @@ export default function ReportesPage() {
       if (d.role) {
         setRole(d.role)
         if (d.role === 'supervisor') {
-          const { monthStr } = getNextMonthInfo()
-          fetch(`/api/portal/supervisor-plan?month=${monthStr}`)
-            .then((r) => r.json())
-            .then((pd) => { if (pd.notes) setPlanNotes(pd.notes) })
-            .catch(() => {})
+          const { monthStr, daysLeft } = getNextMonthInfo()
+          // During planning window, load next month's activities and gate status
+          if (daysLeft <= 5) {
+            const nextMonthStart = getNextMonthStart()
+            const [actNext, planData, gateData] = await Promise.all([
+              fetch(`/api/portal/activities?month=${nextMonthStart}`).then((r) => r.json()),
+              fetch(`/api/portal/supervisor-plan?month=${monthStr}`).then((r) => r.json()),
+              fetch('/api/portal/supervisor-plan/gate').then((r) => r.json()),
+            ])
+            setActivities(actNext.activities ?? [])
+            if (planData.notes) setPlanNotes(planData.notes)
+            setGateStatus(gateData)
+          } else {
+            fetch(`/api/portal/supervisor-plan?month=${monthStr}`)
+              .then((r) => r.json())
+              .then((pd) => { if (pd.notes) setPlanNotes(pd.notes) })
+              .catch(() => {})
+          }
         }
       }
     } else {
@@ -211,6 +230,8 @@ export default function ReportesPage() {
       })
       setPlanSaving(false)
       setPlanSaved(true)
+      // Refresh gate status so banner updates live
+      fetch('/api/portal/supervisor-plan/gate').then((r) => r.json()).then(setGateStatus).catch(() => {})
     }, 800)
   }
 
@@ -342,7 +363,11 @@ ${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads este mes.</p
     const res = await fetch('/api/portal/activities', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...activityForm, month: currentMonth, planned_leads: activityForm.planned_leads || null }),
+      body: JSON.stringify({
+        ...activityForm,
+        month: (role === 'supervisor' && getNextMonthInfo().daysLeft <= 5) ? getNextMonthStart() : currentMonth,
+        planned_leads: activityForm.planned_leads || null,
+      }),
     })
     if (!res.ok) { const d = await res.json(); setError(d.error ?? 'Error.'); setSaving(false); return }
     setActivityForm({ name: '', type: 'feria', description: '', planned_leads: '', activity_date: '', location: '' })
@@ -452,8 +477,29 @@ ${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads este mes.</p
         {/* ── PLAN TAB ────────────────────────────────────────────── */}
         {activeTab === 'plan' && (
           <div className="space-y-4">
+
+            {/* Gate progress banner */}
+            {gateStatus?.required && !gateStatus.complete && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                <p className="text-sm font-bold text-red-800 mb-2">⚠ Completa tu plan para acceder a los leads</p>
+                <div className="flex flex-wrap gap-4 text-sm text-red-700">
+                  <span>{gateStatus.calendarDays >= 5 ? '✓' : `${gateStatus.calendarDays}/5`} días del calendario con texto</span>
+                  <span>{gateStatus.activitiesCount >= 2 ? '✓' : `${gateStatus.activitiesCount}/2`} actividades de {MONTH_NAMES_ES[getNextMonthInfo().month]}</span>
+                </div>
+              </div>
+            )}
+            {gateStatus?.required && gateStatus.complete && (
+              <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                <p className="text-sm font-bold text-green-800">✓ Plan completado — ya puedes acceder a los leads</p>
+              </div>
+            )}
+
             <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-600">Planifica las actividades que realizarás este mes para generar leads.</p>
+              <p className="text-sm text-gray-600">
+                {gateStatus?.required
+                  ? `Planifica tus actividades para ${MONTH_NAMES_ES[getNextMonthInfo().month]} ${getNextMonthInfo().year}.`
+                  : 'Planifica las actividades que realizarás este mes para generar leads.'}
+              </p>
               <button onClick={() => setShowNewActivity(!showNewActivity)}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gold text-white text-sm font-semibold hover:bg-gold/90 transition-colors">
                 <Plus className="h-4 w-4" /> Nueva Actividad

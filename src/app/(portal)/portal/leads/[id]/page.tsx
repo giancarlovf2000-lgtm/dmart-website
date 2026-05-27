@@ -55,6 +55,13 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
     setIsAdmin(data.currentEmployeeRole === 'admin')
     setIsSupervisor(data.currentEmployeeRole === 'supervisor')
     setAssignableEmployees(data.assignableEmployees ?? [])
+
+    if (data.currentEmployeeRole === 'supervisor') {
+      fetch('/api/portal/supervisor-plan/gate')
+        .then((r) => r.json())
+        .then((g) => { if (g.required && !g.complete) router.push('/portal/reportes?planning=required') })
+        .catch(() => {})
+    }
     setLoading(false)
   }
 
