@@ -17,8 +17,8 @@ export async function GET(request: NextRequest) {
 
     const admin = getAdminClient()
 
-    const { data: selfEmployee } = await admin.from('employees').select('role').eq('id', user.id).single()
-    if (!selfEmployee || selfEmployee.role !== 'admin')
+    const { data: selfEmployee } = await admin.from('employees').select('role, campus').eq('id', user.id).single()
+    if (!selfEmployee || !['admin', 'director'].includes(selfEmployee.role))
       return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
 
     const { searchParams } = new URL(request.url)
@@ -31,6 +31,17 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false })
 
     if (month) query = query.eq('month', month)
+
+    // Directors only see their campus employees' activities
+    if (selfEmployee.role === 'director') {
+      const directorCampus = (selfEmployee.campus as string[])[0]
+      if (directorCampus) {
+        const { data: campusTeam } = await admin.from('employees').select('id').contains('campus', [directorCampus]).eq('active', true)
+        const campusIds = (campusTeam ?? []).map((e: { id: string }) => e.id)
+        if (campusIds.length > 0) query = query.in('employee_id', campusIds)
+        else return NextResponse.json({ activities: [] })
+      }
+    }
 
     const { data: activities, error } = await query
     if (error) {

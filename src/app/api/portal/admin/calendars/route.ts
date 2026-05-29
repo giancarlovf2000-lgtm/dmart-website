@@ -6,18 +6,18 @@ function getAdminClient() {
   return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 }
 
-async function requireAdmin() {
+async function requireAdminOrDirector() {
   const supabase = await createServerSupabase()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
   const admin = getAdminClient()
-  const { data: emp } = await admin.from('employees').select('id, role').eq('id', user.id).single()
-  if (!emp || emp.role !== 'admin') return null
+  const { data: emp } = await admin.from('employees').select('id, role, campus').eq('id', user.id).single()
+  if (!emp || !['admin', 'director'].includes(emp.role)) return null
   return emp
 }
 
 export async function GET(request: NextRequest) {
-  const caller = await requireAdmin()
+  const caller = await requireAdminOrDirector()
   if (!caller) return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
 
   const month = request.nextUrl.searchParams.get('month')
@@ -26,11 +26,24 @@ export async function GET(request: NextRequest) {
 
   const admin = getAdminClient()
 
-  // Get all supervisor/director plans for this month
-  const { data: plans, error } = await admin
+  let planQuery = admin
     .from('supervisor_monthly_plans')
     .select('supervisor_id, plan_month, notes')
     .eq('plan_month', month)
+
+  // Directors only see their campus supervisors/directors
+  if (caller.role === 'director') {
+    const directorCampus = (caller.campus as string[])[0]
+    if (directorCampus) {
+      const { data: campusTeam } = await admin.from('employees').select('id').contains('campus', [directorCampus]).eq('active', true)
+      const campusIds = (campusTeam ?? []).map((e: { id: string }) => e.id)
+      if (campusIds.length > 0) planQuery = planQuery.in('supervisor_id', campusIds)
+      else return NextResponse.json({ plans: [] })
+    }
+  }
+
+  // Get all supervisor/director plans for this month
+  const { data: plans, error } = await planQuery
 
   if (error) return NextResponse.json({ error: 'Error al obtener calendarios.' }, { status: 500 })
 

@@ -24,11 +24,11 @@ export async function GET(request: NextRequest) {
 
   const { data: selfEmp } = await admin
     .from('employees')
-    .select('id, role, full_name')
+    .select('id, role, full_name, campus')
     .eq('id', user.id)
     .single()
 
-  if (!selfEmp || !['supervisor', 'admin'].includes(selfEmp.role))
+  if (!selfEmp || !['supervisor', 'director', 'admin'].includes(selfEmp.role))
     return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
 
   const { searchParams } = new URL(request.url)
@@ -41,8 +41,13 @@ export async function GET(request: NextRequest) {
   let teamQuery = admin.from('employees').select('id, full_name, campus').eq('active', true)
   if (selfEmp.role === 'supervisor') {
     teamQuery = teamQuery.eq('supervisor_id', user.id)
+  } else if (selfEmp.role === 'director') {
+    const directorCampus = (selfEmp.campus as string[])[0]
+    teamQuery = directorCampus
+      ? teamQuery.contains('campus', [directorCampus]).neq('id', user.id)
+      : teamQuery.eq('id', user.id)
   } else {
-    // Admin: no restriction, but this endpoint is designed for supervisors
+    // Admin: no restriction
     teamQuery = teamQuery.neq('role', 'admin')
   }
   const { data: supervisedMembers } = await teamQuery

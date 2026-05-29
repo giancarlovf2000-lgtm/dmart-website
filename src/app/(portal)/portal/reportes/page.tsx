@@ -159,6 +159,18 @@ export default function ReportesPage() {
   const [planSaved, setPlanSaved] = useState(false)
   const planSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [gateStatus, setGateStatus] = useState<{ required: boolean; complete: boolean; calendarDays: number; activitiesCount: number } | null>(null)
+  const [planMonth, setPlanMonth] = useState(() =>
+    getNextMonthInfo().daysLeft <= 5 ? getNextMonthStart() : firstOfMonth(new Date())
+  )
+  const [campusActivities, setCampusActivities] = useState<{
+    id: string; employee_name: string | null; name: string; type: string
+    description: string | null; activity_date: string | null; location: string | null
+    planned_leads: number | null; actual_leads: number | null; status: 'planificada' | 'terminada'
+  }[]>([])
+  const [campusCalendars, setCampusCalendars] = useState<{
+    supervisor_id: string; full_name: string; role: string; campus: string[]
+    plan_month: string; notes: Record<string, string>
+  }[]>([])
 
   useEffect(() => {
     if (typeof window !== 'undefined') setOrigin(window.location.origin)
@@ -173,8 +185,8 @@ export default function ReportesPage() {
 
   const loadData = useCallback(async () => {
     const [actRes, repRes] = await Promise.all([
-      fetch(`/api/portal/activities?month=${currentMonth}`),
-      fetch('/api/portal/reports'), // all months for history
+      fetch(`/api/portal/activities?month=${planMonth}`),
+      fetch('/api/portal/reports'),
     ])
     if (actRes.ok) {
       const d = await actRes.json(); setActivities(d.activities ?? [])
@@ -188,22 +200,12 @@ export default function ReportesPage() {
         setRole(d.role)
         if (d.role === 'supervisor') {
           const { monthStr, daysLeft } = getNextMonthInfo()
-          // During planning window, load next month's activities and gate status
+          fetch(`/api/portal/supervisor-plan?month=${monthStr}`)
+            .then((r) => r.json())
+            .then((pd) => { if (pd.notes) setPlanNotes(pd.notes) })
+            .catch(() => {})
           if (daysLeft <= 5) {
-            const nextMonthStart = getNextMonthStart()
-            const [actNext, planData, gateData] = await Promise.all([
-              fetch(`/api/portal/activities?month=${nextMonthStart}`).then((r) => r.json()),
-              fetch(`/api/portal/supervisor-plan?month=${monthStr}`).then((r) => r.json()),
-              fetch('/api/portal/supervisor-plan/gate').then((r) => r.json()),
-            ])
-            setActivities(actNext.activities ?? [])
-            if (planData.notes) setPlanNotes(planData.notes)
-            setGateStatus(gateData)
-          } else {
-            fetch(`/api/portal/supervisor-plan?month=${monthStr}`)
-              .then((r) => r.json())
-              .then((pd) => { if (pd.notes) setPlanNotes(pd.notes) })
-              .catch(() => {})
+            fetch('/api/portal/supervisor-plan/gate').then((r) => r.json()).then(setGateStatus).catch(() => {})
           }
         }
       }
@@ -211,9 +213,21 @@ export default function ReportesPage() {
       console.error('[reportes] reports fetch failed:', repRes.status)
     }
     setLoading(false)
-  }, [currentMonth])
+  }, [planMonth])
 
   useEffect(() => { loadData() }, [loadData])
+
+  useEffect(() => {
+    if (role !== 'director') return
+    const calendarMonthStr = planMonth.slice(0, 7)
+    Promise.all([
+      fetch(`/api/portal/admin/activities?month=${planMonth}`).then((r) => r.json()),
+      fetch(`/api/portal/admin/calendars?month=${calendarMonthStr}`).then((r) => r.json()),
+    ]).then(([actData, calData]) => {
+      setCampusActivities(actData.activities ?? [])
+      setCampusCalendars(calData.plans ?? [])
+    }).catch(() => {})
+  }, [role, planMonth])
 
   function updatePlanNote(day: number, value: string) {
     const next = { ...planNotes, [String(day)]: value }
@@ -365,7 +379,7 @@ ${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads este mes.</p
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         ...activityForm,
-        month: (role === 'supervisor' && getNextMonthInfo().daysLeft <= 5) ? getNextMonthStart() : currentMonth,
+        month: planMonth,
         planned_leads: activityForm.planned_leads || null,
       }),
     })
@@ -442,16 +456,12 @@ ${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads este mes.</p
       </div>
 
       <div className="max-w-4xl mx-auto px-4 md:px-6 py-6">
-        <div className="mb-5 text-sm text-gray-500">
-          Mes actual: <span className="font-semibold text-gray-800 capitalize">{monthLabel(currentMonth)}</span>
-        </div>
-
         {/* Tabs */}
         <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-xl w-fit">
           {([
             { key: 'plan',   label: 'Plan del Mes' },
             { key: 'cierre', label: 'Informe de Cierre' },
-            ...(role === 'supervisor' ? [{ key: 'equipo', label: 'Equipo' }] : []),
+            ...((role === 'supervisor' || role === 'director') ? [{ key: 'equipo', label: 'Equipo' }] : []),
           ] as { key: 'plan' | 'cierre' | 'equipo'; label: string }[]).map(({ key, label }) => (
             <button key={key} onClick={() => setActiveTab(key)}
               className={`px-5 py-2 rounded-lg text-sm font-semibold transition-colors ${activeTab === key ? 'bg-white text-navy shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
@@ -477,6 +487,29 @@ ${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads este mes.</p
         {/* ── PLAN TAB ────────────────────────────────────────────── */}
         {activeTab === 'plan' && (
           <div className="space-y-4">
+
+            {/* Month selector */}
+            {(() => {
+              const opts: string[] = []
+              for (let i = 3; i >= -3; i--) {
+                const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - i)
+                opts.push(d.toISOString().slice(0, 10))
+              }
+              return (
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-gray-500">Mes:</span>
+                  <select
+                    value={planMonth}
+                    onChange={(e) => setPlanMonth(e.target.value)}
+                    className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-navy/20 capitalize"
+                  >
+                    {opts.map((m) => (
+                      <option key={m} value={m} className="capitalize">{monthLabel(m)}</option>
+                    ))}
+                  </select>
+                </div>
+              )
+            })()}
 
             {/* Gate progress banner */}
             {gateStatus?.required && !gateStatus.complete && (
@@ -677,6 +710,89 @@ ${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads este mes.</p
                     </div>
                   )
                 })}
+              </div>
+            )}
+
+            {/* ── Director: campus activities (read-only) ── */}
+            {role === 'director' && (
+              <div className="pt-2 border-t border-gray-200 space-y-3">
+                <h3 className="text-sm font-bold text-gray-700">Actividades del Recinto</h3>
+                {campusActivities.length === 0 ? (
+                  <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+                    <p className="text-sm text-gray-400">No hay actividades en tu recinto para este mes.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {campusActivities.map((act) => (
+                      <div key={act.id} className="bg-white rounded-xl border border-gray-200 p-4 flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-semibold text-gray-900 text-sm">{act.name}</p>
+                            {act.status === 'terminada'
+                              ? <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-medium"><CheckCircle className="h-3 w-3" /> Terminada</span>
+                              : <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 text-xs font-medium">Planificada</span>}
+                          </div>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {act.employee_name ?? 'Empleado'}{act.activity_date ? ` · ${formatDate(act.activity_date)}` : ''}
+                            {act.location ? ` · ${act.location}` : ''}
+                          </p>
+                        </div>
+                        <div className="text-xs text-gray-500 whitespace-nowrap flex-shrink-0">
+                          {act.actual_leads ?? '—'} / {act.planned_leads ?? '—'} leads
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* ── Director: campus planning calendars (read-only) ── */}
+                {(() => {
+                  const calMonthStr = planMonth.slice(0, 7)
+                  const [y, m] = calMonthStr.split('-').map(Number)
+                  const daysInM = new Date(y, m, 0).getDate()
+                  return (
+                    <div className="space-y-3 pt-2">
+                      <h3 className="text-sm font-bold text-gray-700">Calendarios de Planificación — {monthLabel(planMonth)}</h3>
+                      {campusCalendars.length === 0 ? (
+                        <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+                          <p className="text-sm text-gray-400">Ningún supervisor ha completado su calendario para este mes.</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {campusCalendars.map((plan) => (
+                            <div key={plan.supervisor_id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                              <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
+                                <div className="h-7 w-7 rounded-full bg-navy/10 text-navy flex items-center justify-center text-xs font-bold flex-shrink-0">
+                                  {plan.full_name.charAt(0).toUpperCase()}
+                                </div>
+                                <div>
+                                  <p className="font-semibold text-gray-900 text-sm">{plan.full_name}</p>
+                                  <p className="text-xs text-gray-500">{plan.role === 'director' ? 'Director de Recinto' : 'Supervisor'}</p>
+                                </div>
+                                <span className="ml-auto text-xs text-gray-400">
+                                  {Object.values(plan.notes ?? {}).filter(Boolean).length} días
+                                </span>
+                              </div>
+                              <div className="p-3">
+                                <div className="grid grid-cols-7 gap-1">
+                                  {Array.from({ length: daysInM }, (_, i) => i + 1).map((day) => {
+                                    const note = (plan.notes ?? {})[String(day)] ?? ''
+                                    return (
+                                      <div key={day} className={`rounded p-1 min-h-[44px] ${note ? 'bg-amber-50 border border-amber-200' : 'bg-gray-50 border border-gray-100'}`}>
+                                        <p className={`text-xs font-semibold ${note ? 'text-amber-700' : 'text-gray-400'}`}>{day}</p>
+                                        {note && <p className="text-xs text-gray-700 leading-tight line-clamp-2">{note}</p>}
+                                      </div>
+                                    )
+                                  })}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })()}
               </div>
             )}
           </div>
@@ -906,8 +1022,8 @@ ${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads este mes.</p
           </div>
         )}
 
-        {/* ── EQUIPO TAB (supervisor only) ─────────────────────────── */}
-        {activeTab === 'equipo' && role === 'supervisor' && (
+        {/* ── EQUIPO TAB (supervisor / director) ───────────────────── */}
+        {activeTab === 'equipo' && (role === 'supervisor' || role === 'director') && (
           <div className="space-y-5">
             <div className="bg-white rounded-xl border border-gray-200 p-6">
               <div className="mb-5">
