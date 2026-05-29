@@ -705,6 +705,7 @@ interface AdminActivity {
 }
 
 function ActivitiesPanel() {
+  const [activitiesMonth, setActivitiesMonth] = useState(firstOfMonth())
   const [activities, setActivities] = useState<AdminActivity[]>([])
   const [loading, setLoading] = useState(true)
   const [fetchError, setFetchError] = useState('')
@@ -712,10 +713,10 @@ function ActivitiesPanel() {
   const [calendarPlans, setCalendarPlans] = useState<CalendarPlan[]>([])
   const [calendarLoading, setCalendarLoading] = useState(true)
 
-  const currentMonth = firstOfMonth()
-
   useEffect(() => {
-    fetch(`/api/portal/admin/activities?month=${currentMonth}`)
+    setLoading(true)
+    setFetchError('')
+    fetch(`/api/portal/admin/activities?month=${activitiesMonth}`)
       .then(async (r) => {
         const d = await r.json()
         if (!r.ok) { setFetchError(d.error ?? 'Error al cargar actividades.'); setLoading(false); return }
@@ -723,7 +724,7 @@ function ActivitiesPanel() {
         setLoading(false)
       })
       .catch(() => { setFetchError('Error de conexión.'); setLoading(false) })
-  }, [currentMonth])
+  }, [activitiesMonth])
 
   useEffect(() => {
     setCalendarLoading(true)
@@ -736,9 +737,17 @@ function ActivitiesPanel() {
       .catch(() => setCalendarLoading(false))
   }, [calendarMonth])
 
-  // Month options for calendar selector: 2 past + current + 3 future
+  // Month options: 3 past + current + 3 future
+  const monthOptions: string[] = []
+  for (let i = 3; i >= -3; i--) {
+    const d = new Date()
+    d.setDate(1)
+    d.setMonth(d.getMonth() - i)
+    monthOptions.push(d.toISOString().slice(0, 10))
+  }
+
   const calendarMonthOptions: string[] = []
-  for (let i = -2; i <= 3; i++) {
+  for (let i = -3; i <= 3; i++) {
     const d = new Date()
     d.setMonth(d.getMonth() + i)
     calendarMonthOptions.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
@@ -758,7 +767,18 @@ function ActivitiesPanel() {
     <div className="space-y-8">
       {/* Activities section */}
       <div>
-        <h2 className="text-sm font-bold text-gray-900 mb-4">Actividades del Mes Actual</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-bold text-gray-900">Actividades</h2>
+          <select
+            value={activitiesMonth}
+            onChange={(e) => setActivitiesMonth(e.target.value)}
+            className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-navy/20 capitalize"
+          >
+            {monthOptions.map((m) => (
+              <option key={m} value={m} className="capitalize">{monthLabel(m)}</option>
+            ))}
+          </select>
+        </div>
         {loading ? (
           <div className="bg-white rounded-xl border border-gray-200 p-12 flex justify-center">
             <div className="animate-spin h-7 w-7 rounded-full border-4 border-navy border-t-transparent" />
