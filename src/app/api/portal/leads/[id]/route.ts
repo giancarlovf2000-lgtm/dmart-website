@@ -21,7 +21,7 @@ export async function GET(
 
   const { data: employee } = await admin
     .from('employees')
-    .select('id, role')
+    .select('id, role, campus')
     .eq('id', user.id)
     .single()
 
@@ -36,7 +36,7 @@ export async function GET(
   if (leadError || !lead)
     return NextResponse.json({ error: 'Lead no encontrado.' }, { status: 404 })
 
-  // Access check: admin sees all; supervisor sees own + team; employee sees own
+  // Access check: admin sees all; supervisor/director sees team; employee sees own
   if (employee.role !== 'admin') {
     if (employee.role === 'supervisor') {
       const { data: teamMember } = await admin
@@ -46,6 +46,11 @@ export async function GET(
         .eq('supervisor_id', user.id)
         .single()
       if (lead.assigned_to !== user.id && !teamMember)
+        return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
+    } else if (employee.role === 'director') {
+      const { data: campusMember } = await admin.from('employees').select('id')
+        .eq('id', lead.assigned_to).contains('campus', employee.campus as string[]).single()
+      if (!campusMember)
         return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
     } else if (lead.assigned_to !== user.id) {
       return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
@@ -67,6 +72,10 @@ export async function GET(
     const { data: team } = await admin.from('employees').select('id, full_name').eq('supervisor_id', user.id).eq('active', true).order('full_name')
     const { data: self } = await admin.from('employees').select('id, full_name').eq('id', user.id).single()
     assignableEmployees = [self, ...(team ?? [])].filter(Boolean) as { id: string; full_name: string }[]
+  } else if (employee.role === 'director') {
+    const { data: campusEmps } = await admin.from('employees').select('id, full_name')
+      .contains('campus', employee.campus as string[]).eq('active', true).order('full_name')
+    assignableEmployees = campusEmps ?? []
   }
 
   return NextResponse.json({ lead, history: history ?? [], currentEmployeeRole: employee.role, assignableEmployees })
@@ -83,7 +92,7 @@ export async function PATCH(
   const body = await request.json()
   const admin = getAdminClient()
 
-  const { data: employee } = await admin.from('employees').select('id, role, full_name').eq('id', user.id).single()
+  const { data: employee } = await admin.from('employees').select('id, role, full_name, campus').eq('id', user.id).single()
   if (!employee) return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
 
   // ── Reassignment ────────────────────────────────────────────────────────────
@@ -96,6 +105,10 @@ export async function PATCH(
           const { data: teamCheck } = await admin.from('employees').select('id').eq('id', newAssignee).eq('supervisor_id', user.id).single()
           if (!teamCheck) return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
         }
+      } else if (employee.role === 'director') {
+        const { data: campusCheck } = await admin.from('employees').select('id')
+          .eq('id', newAssignee).contains('campus', employee.campus as string[]).single()
+        if (!campusCheck) return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
       } else {
         return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
       }

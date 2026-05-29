@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const validRole = ['admin', 'supervisor', 'empleado'].includes(role) ? role : 'empleado'
+  const validRole = ['admin', 'supervisor', 'director', 'empleado'].includes(role) ? role : 'empleado'
 
   // Create employee profile
   const { data: employee, error: empError } = await adminClient

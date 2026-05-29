@@ -34,7 +34,7 @@ export async function POST(
 
   const { data: employee } = await admin
     .from('employees')
-    .select('id, role')
+    .select('id, role, campus')
     .eq('id', user.id)
     .single()
 
@@ -57,6 +57,11 @@ export async function POST(
         .eq('supervisor_id', user.id)
         .single()
       if (lead.assigned_to !== user.id && !teamMember)
+        return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
+    } else if (employee.role === 'director') {
+      const { data: campusMember } = await admin.from('employees').select('id')
+        .eq('id', lead.assigned_to).contains('campus', employee.campus as string[]).single()
+      if (!campusMember)
         return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
     } else if (lead.assigned_to !== user.id) {
       return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })

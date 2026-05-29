@@ -16,6 +16,31 @@ interface EmployeeWithCount extends Employee {
 
 const CAMPUSES = ['Barranquitas', 'Vega Alta']
 
+interface CalendarPlan {
+  supervisor_id: string
+  full_name: string
+  role: string
+  campus: string[]
+  plan_month: string
+  notes: Record<string, string>
+}
+
+function getNextMonthStr(): string {
+  const d = new Date()
+  d.setMonth(d.getMonth() + 1)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
+function getDaysInMonth(yearMonth: string): number {
+  const [y, m] = yearMonth.split('-').map(Number)
+  return new Date(y, m, 0).getDate()
+}
+
+function calendarMonthLabel(ym: string): string {
+  const [y, m] = ym.split('-').map(Number)
+  return new Date(y, m - 1, 1).toLocaleDateString('es-PR', { month: 'long', year: 'numeric' })
+}
+
 const SCORE_CONFIG = {
   excelente: { label: 'Excelente',  bg: 'bg-green-100', text: 'text-green-700' },
   bueno:     { label: 'Bueno',      bg: 'bg-blue-100',  text: 'text-blue-700' },
@@ -112,9 +137,15 @@ function CreateEmployeeModal({ onClose, onCreated, allEmployees }: { onClose: ()
             <select value={form.role} onChange={(e) => setForm((p) => ({ ...p, role: e.target.value as typeof p.role, supervisee_ids: [] }))} className="form-input">
               <option value="empleado">Representante de Admisiones</option>
               <option value="supervisor">Supervisor de Admisiones</option>
+              <option value="director">Director de Recinto</option>
               <option value="admin">Administrador</option>
             </select>
           </div>
+          {form.role === 'director' && (
+            <div className="p-3 rounded-lg bg-blue-50 border border-blue-100">
+              <p className="text-xs text-blue-700">El Director supervisará automáticamente a todos los empleados del recinto asignado — no es necesario seleccionarlos individualmente.</p>
+            </div>
+          )}
           {form.role === 'supervisor' && (
             <div>
               <label className="form-label">Empleados a supervisar</label>
@@ -266,9 +297,15 @@ function EditEmployeeModal({ employee, allEmployees, onClose, onSaved }: {
             <select value={form.role} onChange={(e) => setForm((p) => ({ ...p, role: e.target.value as typeof p.role, supervisee_ids: [] }))} className="form-input">
               <option value="empleado">Representante de Admisiones</option>
               <option value="supervisor">Supervisor de Admisiones</option>
+              <option value="director">Director de Recinto</option>
               <option value="admin">Administrador</option>
             </select>
           </div>
+          {form.role === 'director' && (
+            <div className="p-3 rounded-lg bg-blue-50 border border-blue-100">
+              <p className="text-xs text-blue-700">El Director supervisará automáticamente a todos los empleados del recinto asignado — no es necesario seleccionarlos individualmente.</p>
+            </div>
+          )}
           {form.role === 'supervisor' && (
             <div>
               <label className="form-label">Empleados a supervisar</label>
@@ -671,6 +708,9 @@ function ActivitiesPanel() {
   const [activities, setActivities] = useState<AdminActivity[]>([])
   const [loading, setLoading] = useState(true)
   const [fetchError, setFetchError] = useState('')
+  const [calendarMonth, setCalendarMonth] = useState(getNextMonthStr())
+  const [calendarPlans, setCalendarPlans] = useState<CalendarPlan[]>([])
+  const [calendarLoading, setCalendarLoading] = useState(true)
 
   const currentMonth = firstOfMonth()
 
@@ -685,33 +725,26 @@ function ActivitiesPanel() {
       .catch(() => { setFetchError('Error de conexión.'); setLoading(false) })
   }, [currentMonth])
 
-  if (loading) {
-    return (
-      <div className="bg-white rounded-xl border border-gray-200 p-12 flex justify-center">
-        <div className="animate-spin h-7 w-7 rounded-full border-4 border-navy border-t-transparent" />
-      </div>
-    )
+  useEffect(() => {
+    setCalendarLoading(true)
+    fetch(`/api/portal/admin/calendars?month=${calendarMonth}`)
+      .then(async (r) => {
+        const d = await r.json()
+        setCalendarPlans(d.plans ?? [])
+        setCalendarLoading(false)
+      })
+      .catch(() => setCalendarLoading(false))
+  }, [calendarMonth])
+
+  // Month options for calendar selector: 2 past + current + 3 future
+  const calendarMonthOptions: string[] = []
+  for (let i = -2; i <= 3; i++) {
+    const d = new Date()
+    d.setMonth(d.getMonth() + i)
+    calendarMonthOptions.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
   }
 
-  if (fetchError) {
-    return (
-      <div className="bg-white rounded-xl border border-red-100 p-10 text-center">
-        <AlertCircle className="h-8 w-8 text-red-400 mx-auto mb-2" />
-        <p className="text-sm text-red-600">{fetchError}</p>
-      </div>
-    )
-  }
-
-  if (activities.length === 0) {
-    return (
-      <div className="bg-white rounded-xl border border-gray-200 p-14 text-center">
-        <CalendarDays className="h-10 w-10 text-gray-300 mx-auto mb-3" />
-        <p className="font-medium text-gray-500">No hay actividades planificadas este mes.</p>
-      </div>
-    )
-  }
-
-  // Group by employee
+  // Group activities by employee
   const byEmployee = new Map<string, AdminActivity[]>()
   activities.forEach((a) => {
     const key = a.employee_name ?? a.employee_id
@@ -719,64 +752,152 @@ function ActivitiesPanel() {
     byEmployee.get(key)!.push(a)
   })
 
+  const daysInMonth = getDaysInMonth(calendarMonth)
+
   return (
-    <div className="space-y-6">
-      {Array.from(byEmployee.entries()).map(([empName, acts]) => (
-        <div key={empName}>
-          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">{empName}</h3>
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100 bg-gray-50">
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Actividad</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden sm:table-cell">Tipo</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden md:table-cell">Fecha · Lugar</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Leads</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Estado</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {acts.map((act) => (
-                  <tr key={act.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3">
-                      <p className="font-medium text-gray-900">{act.name}</p>
-                      {act.description && <p className="text-xs text-gray-400 truncate max-w-[200px]">{act.description}</p>}
-                    </td>
-                    <td className="px-4 py-3 text-gray-600 hidden sm:table-cell text-xs">
-                      {ACTIVITY_TYPE_LABELS[act.type] ?? act.type}
-                    </td>
-                    <td className="px-4 py-3 hidden md:table-cell">
-                      <div className="space-y-0.5">
-                        {act.activity_date && (
-                          <p className="text-xs text-gray-600 flex items-center gap-1">
-                            <CalendarDays className="h-3 w-3 text-gray-400" />
-                            {new Date(act.activity_date + 'T00:00:00').toLocaleDateString('es-PR', { month: 'short', day: 'numeric' })}
-                          </p>
-                        )}
-                        {act.location && (
-                          <p className="text-xs text-gray-600 flex items-center gap-1">
-                            <MapPin className="h-3 w-3 text-gray-400" />
-                            {act.location}
-                          </p>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-xs text-gray-600">
-                      <span>{act.actual_leads ?? '—'} / {act.planned_leads ?? '—'}</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      {act.status === 'terminada'
-                        ? <span className="inline-flex items-center gap-1 text-xs text-green-700"><CheckCircle className="h-3.5 w-3.5" />Terminada</span>
-                        : <span className="inline-flex items-center gap-1 text-xs text-blue-600">Planificada</span>
-                      }
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+    <div className="space-y-8">
+      {/* Activities section */}
+      <div>
+        <h2 className="text-sm font-bold text-gray-900 mb-4">Actividades del Mes Actual</h2>
+        {loading ? (
+          <div className="bg-white rounded-xl border border-gray-200 p-12 flex justify-center">
+            <div className="animate-spin h-7 w-7 rounded-full border-4 border-navy border-t-transparent" />
           </div>
+        ) : fetchError ? (
+          <div className="bg-white rounded-xl border border-red-100 p-10 text-center">
+            <AlertCircle className="h-8 w-8 text-red-400 mx-auto mb-2" />
+            <p className="text-sm text-red-600">{fetchError}</p>
+          </div>
+        ) : activities.length === 0 ? (
+          <div className="bg-white rounded-xl border border-gray-200 p-14 text-center">
+            <CalendarDays className="h-10 w-10 text-gray-300 mx-auto mb-3" />
+            <p className="font-medium text-gray-500">No hay actividades planificadas este mes.</p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {Array.from(byEmployee.entries()).map(([empName, acts]) => (
+              <div key={empName}>
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">{empName}</h3>
+                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-100 bg-gray-50">
+                        <th className="text-left px-4 py-3 font-semibold text-gray-600">Actividad</th>
+                        <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden sm:table-cell">Tipo</th>
+                        <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden md:table-cell">Fecha · Lugar</th>
+                        <th className="text-left px-4 py-3 font-semibold text-gray-600">Leads</th>
+                        <th className="text-left px-4 py-3 font-semibold text-gray-600">Estado</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {acts.map((act) => (
+                        <tr key={act.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-3">
+                            <p className="font-medium text-gray-900">{act.name}</p>
+                            {act.description && <p className="text-xs text-gray-400 truncate max-w-[200px]">{act.description}</p>}
+                          </td>
+                          <td className="px-4 py-3 text-gray-600 hidden sm:table-cell text-xs">
+                            {ACTIVITY_TYPE_LABELS[act.type] ?? act.type}
+                          </td>
+                          <td className="px-4 py-3 hidden md:table-cell">
+                            <div className="space-y-0.5">
+                              {act.activity_date && (
+                                <p className="text-xs text-gray-600 flex items-center gap-1">
+                                  <CalendarDays className="h-3 w-3 text-gray-400" />
+                                  {new Date(act.activity_date + 'T00:00:00').toLocaleDateString('es-PR', { month: 'short', day: 'numeric' })}
+                                </p>
+                              )}
+                              {act.location && (
+                                <p className="text-xs text-gray-600 flex items-center gap-1">
+                                  <MapPin className="h-3 w-3 text-gray-400" />
+                                  {act.location}
+                                </p>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-xs text-gray-600">
+                            <span>{act.actual_leads ?? '—'} / {act.planned_leads ?? '—'}</span>
+                          </td>
+                          <td className="px-4 py-3">
+                            {act.status === 'terminada'
+                              ? <span className="inline-flex items-center gap-1 text-xs text-green-700"><CheckCircle className="h-3.5 w-3.5" />Terminada</span>
+                              : <span className="inline-flex items-center gap-1 text-xs text-blue-600">Planificada</span>
+                            }
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Calendars section */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-bold text-gray-900">Calendarios de Planificación</h2>
+          <select
+            value={calendarMonth}
+            onChange={(e) => setCalendarMonth(e.target.value)}
+            className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-navy/20 capitalize"
+          >
+            {calendarMonthOptions.map((m) => (
+              <option key={m} value={m} className="capitalize">{calendarMonthLabel(m)}</option>
+            ))}
+          </select>
         </div>
-      ))}
+
+        {calendarLoading ? (
+          <div className="bg-white rounded-xl border border-gray-200 p-10 flex justify-center">
+            <div className="animate-spin h-6 w-6 rounded-full border-4 border-navy border-t-transparent" />
+          </div>
+        ) : calendarPlans.length === 0 ? (
+          <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+            <CalendarDays className="h-9 w-9 text-gray-300 mx-auto mb-2" />
+            <p className="text-sm text-gray-500">Ningún supervisor ha completado su calendario para este mes.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {calendarPlans.map((plan) => (
+              <div key={plan.supervisor_id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div className="px-5 py-3 border-b border-gray-100 flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-full bg-navy/10 text-navy flex items-center justify-center text-sm font-bold flex-shrink-0">
+                    {plan.full_name.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900 text-sm">{plan.full_name}</p>
+                    <p className="text-xs text-gray-500 capitalize">
+                      {plan.role === 'director' ? 'Director de Recinto' : 'Supervisor'} · {(plan.campus as string[]).join(', ')}
+                    </p>
+                  </div>
+                  <div className="ml-auto text-xs text-gray-400">
+                    {Object.values(plan.notes ?? {}).filter(Boolean).length} días planificados
+                  </div>
+                </div>
+                <div className="p-4">
+                  <div className="grid grid-cols-7 gap-1">
+                    {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
+                      const note = (plan.notes ?? {})[String(day)] ?? ''
+                      return (
+                        <div
+                          key={day}
+                          className={`rounded-lg p-1.5 min-h-[52px] ${note ? 'bg-amber-50 border border-amber-200' : 'bg-gray-50 border border-gray-100'}`}
+                        >
+                          <p className={`text-xs font-semibold mb-0.5 ${note ? 'text-amber-700' : 'text-gray-400'}`}>{day}</p>
+                          {note && <p className="text-xs text-gray-700 leading-tight line-clamp-2">{note}</p>}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -1380,10 +1501,15 @@ export default function AdminPage() {
                       </td>
                       <td className="px-4 py-3 text-gray-600">
                         <div>
-                          <span>{emp.role === 'admin' ? 'Administrador' : emp.role === 'supervisor' ? 'Supervisor de Adm.' : 'Representante'}</span>
+                          <span>{emp.role === 'admin' ? 'Administrador' : emp.role === 'supervisor' ? 'Supervisor de Adm.' : emp.role === 'director' ? 'Director de Recinto' : 'Representante'}</span>
                           {emp.role === 'supervisor' && (
                             <p className="text-xs text-indigo-500 mt-0.5">
                               Supervisando: {employees.filter((e) => e.supervisor_id === emp.id).length}
+                            </p>
+                          )}
+                          {emp.role === 'director' && (
+                            <p className="text-xs text-indigo-500 mt-0.5">
+                              Recinto: {(emp.campus as string[]).join(', ')}
                             </p>
                           )}
                         </div>

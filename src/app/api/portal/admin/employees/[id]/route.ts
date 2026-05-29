@@ -69,7 +69,7 @@ export async function PATCH(
         await admin.from('employees').update({ supervisor_id: id }).in('id', superviseeIds)
       }
     } else {
-      // No longer supervisor — clear their supervisees
+      // No longer supervisor/director — clear their supervisees
       await admin.from('employees').update({ supervisor_id: null }).eq('supervisor_id', id)
     }
   }

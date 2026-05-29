@@ -41,14 +41,15 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   const isAdmin = employee.role === 'admin'
   const isSupervisor = employee.role === 'supervisor'
+  const isDirector = employee.role === 'director'
 
-  // Planning gate: block supervisors during last 5 days if plan not complete
+  // Planning gate: block supervisors during last 5 days if plan not complete (directors exempt)
   if (isSupervisor) {
     const gate = await checkSupervisorPlanningGate(employee.id, adminClient)
     if (gate.required && !gate.complete) redirect('/portal/reportes?planning=required')
   }
 
-  // Get supervised employees (for supervisor role)
+  // Get team members (supervisor by supervisor_id, director by campus)
   let supervisedIds: string[] = []
   let supervisedEmployees: { id: string; full_name: string }[] = []
   if (isSupervisor) {
@@ -59,10 +60,22 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       .eq('active', true)
     supervisedEmployees = (supervised ?? []) as { id: string; full_name: string }[]
     supervisedIds = supervisedEmployees.map((e) => e.id)
+  } else if (isDirector) {
+    const directorCampus = (employee.campus as string[])[0]
+    if (directorCampus) {
+      const { data: campusEmps } = await adminClient
+        .from('employees')
+        .select('id, full_name')
+        .contains('campus', [directorCampus])
+        .eq('active', true)
+        .neq('id', user.id)
+      supervisedEmployees = (campusEmps ?? []) as { id: string; full_name: string }[]
+      supervisedIds = supervisedEmployees.map((e) => e.id)
+    }
   }
 
-  const supervisorIds = isSupervisor ? [user!.id, ...supervisedIds] : []
-  const employeeIdFilter = isAdmin ? undefined : isSupervisor ? supervisorIds : user!.id
+  const teamIds = (isSupervisor || isDirector) ? [user!.id, ...supervisedIds] : []
+  const employeeIdFilter = isAdmin ? undefined : (isSupervisor || isDirector) ? teamIds : user!.id
 
   await promoteNewLeadsToCritico(employeeIdFilter)
   const staleLeadIds = await getStaleLeadIds(employeeIdFilter)
@@ -76,7 +89,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function applyRoleFilter(query: any) {
     if (isAdmin) return query
-    if (isSupervisor) return query.in('assigned_to', supervisorIds.length > 0 ? supervisorIds : ['no-match'])
+    if (isSupervisor || isDirector) return query.in('assigned_to', teamIds.length > 0 ? teamIds : ['no-match'])
     return query.eq('assigned_to', user!.id)
   }
 
@@ -278,7 +291,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
               <h2 className="text-sm font-semibold text-gray-700">
                 {showStale
                   ? `Seguimiento pendiente · ${staleLeadIds.length} leads`
-                  : `${isAdmin ? 'Todos los leads' : isSupervisor ? 'Leads de mi equipo' : 'Mis leads'} · ${counts.total} total`}
+                  : `${isAdmin ? 'Todos los leads' : (isSupervisor || isDirector) ? 'Leads de mi equipo' : 'Mis leads'} · ${counts.total} total`}
               </h2>
               <div className="flex items-center gap-3">
                 {isAdmin ? (
@@ -287,7 +300,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                   </a>
                 ) : (
                   <a href="/portal/reportes" className="text-xs text-navy hover:underline font-medium">
-                    {isSupervisor ? 'Reportes del Equipo →' : 'Plan y Reportes →'}
+                    {(isSupervisor || isDirector) ? 'Reportes del Equipo →' : 'Plan y Reportes →'}
                   </a>
                 )}
               </div>

@@ -133,7 +133,7 @@ const STEPS_ADMIN: TutorialStep[] = [
 ]
 
 function TutorialModal({ role, onClose }: { role: string; onClose: () => void }) {
-  const steps = role === 'admin' ? STEPS_ADMIN : role === 'supervisor' ? STEPS_SUPERVISOR : STEPS_EMPLEADO
+  const steps = role === 'admin' ? STEPS_ADMIN : (role === 'supervisor' || role === 'director') ? STEPS_SUPERVISOR : STEPS_EMPLEADO
   const [current, setCurrent] = useState(0)
   const step = steps[current]
   const Icon = step.icon
@@ -239,7 +239,7 @@ export default function PortalHeader({ employee }: PortalHeaderProps) {
             <div>
               <p className="text-sm font-semibold text-gray-900">{employee.full_name}</p>
               <p className="text-xs text-gray-500 capitalize">
-                {employee.role === 'admin' ? 'Administrador' : employee.role === 'supervisor' ? 'Supervisor de Admisiones' : 'Representante de Admisiones'}
+                {employee.role === 'admin' ? 'Administrador' : employee.role === 'supervisor' ? 'Supervisor de Admisiones' : employee.role === 'director' ? 'Director de Recinto' : 'Representante de Admisiones'}
               </p>
             </div>
           </div>

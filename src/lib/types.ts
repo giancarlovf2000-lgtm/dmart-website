@@ -88,7 +88,7 @@ export type ActionType = 'status_change' | 'note_added' | 'lead_created' | 'lead
 
 export type AssignmentSource = 'website' | 'manual' | 'import'
 
-export type EmployeeRole = 'admin' | 'supervisor' | 'empleado'
+export type EmployeeRole = 'admin' | 'supervisor' | 'director' | 'empleado'
 
 export interface Employee {
   id: string

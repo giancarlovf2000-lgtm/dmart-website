@@ -15,7 +15,7 @@ async function getAuthenticatedEmployee(supabase: Awaited<ReturnType<typeof crea
   const admin = getAdminClient()
   const { data: employee } = await admin
     .from('employees')
-    .select('id, full_name, role, active')
+    .select('id, full_name, role, active, campus')
     .eq('id', user.id)
     .single()
   if (!employee || !employee.active) return null
@@ -49,6 +49,15 @@ export async function GET(request: NextRequest) {
     const teamIds = (team ?? []).map((e: { id: string }) => e.id)
     const allIds = [user.id, ...teamIds]
     query = query.in('assigned_to', allIds)
+  } else if (employee.role === 'director') {
+    const directorCampus = (employee.campus as string[])[0]
+    if (directorCampus) {
+      const { data: campusTeam } = await admin.from('employees').select('id').contains('campus', [directorCampus]).eq('active', true)
+      const campusIds = (campusTeam ?? []).map((e: { id: string }) => e.id)
+      query = query.in('assigned_to', campusIds)
+    } else {
+      query = query.eq('assigned_to', user.id)
+    }
   } else {
     query = query.eq('assigned_to', user.id)
   }
