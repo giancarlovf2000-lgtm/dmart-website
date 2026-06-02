@@ -199,14 +199,11 @@ export default function ReportesPage() {
       if (d.role) {
         setRole(d.role)
         if (d.role === 'supervisor') {
-          const { monthStr, daysLeft } = getNextMonthInfo()
-          fetch(`/api/portal/supervisor-plan?month=${monthStr}`)
+          fetch(`/api/portal/supervisor-plan?month=${planMonth.slice(0, 7)}`)
             .then((r) => r.json())
             .then((pd) => { if (pd.notes) setPlanNotes(pd.notes) })
             .catch(() => {})
-          if (daysLeft <= 5) {
-            fetch('/api/portal/supervisor-plan/gate').then((r) => r.json()).then(setGateStatus).catch(() => {})
-          }
+          fetch('/api/portal/supervisor-plan/gate').then((r) => r.json()).then(setGateStatus).catch(() => {})
         }
       }
     } else {
@@ -216,6 +213,15 @@ export default function ReportesPage() {
   }, [planMonth])
 
   useEffect(() => { loadData() }, [loadData])
+
+  useEffect(() => {
+    if (role !== 'supervisor') return
+    setPlanNotes({})
+    fetch(`/api/portal/supervisor-plan?month=${planMonth.slice(0, 7)}`)
+      .then((r) => r.json())
+      .then((pd) => { if (pd.notes) setPlanNotes(pd.notes) })
+      .catch(() => {})
+  }, [role, planMonth])
 
   useEffect(() => {
     if (role !== 'director') return
@@ -236,11 +242,10 @@ export default function ReportesPage() {
     if (planSaveTimer.current) clearTimeout(planSaveTimer.current)
     planSaveTimer.current = setTimeout(async () => {
       setPlanSaving(true)
-      const { monthStr } = getNextMonthInfo()
       await fetch('/api/portal/supervisor-plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ month: monthStr, notes: next }),
+        body: JSON.stringify({ month: planMonth.slice(0, 7), notes: next }),
       })
       setPlanSaving(false)
       setPlanSaved(true)
@@ -539,18 +544,21 @@ ${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads este mes.</p
               </button>
             </div>
 
-            {/* ── Calendario de planificación — solo supervisores, últimos 5 días del mes ── */}
+            {/* ── Calendario de planificación — supervisores ── */}
             {role === 'supervisor' && (() => {
-              const { daysLeft, month, year, daysInNextMonth, firstDayOfWeek } = getNextMonthInfo()
-              if (daysLeft > 5) return null
+              const calDate = new Date(planMonth + 'T00:00:00')
+              const calYear = calDate.getFullYear()
+              const calMonth = calDate.getMonth()
+              const daysInCalMonth = new Date(calYear, calMonth + 1, 0).getDate()
+              const firstDayOfWeek = new Date(calYear, calMonth, 1).getDay()
               const blanks = Array(firstDayOfWeek).fill(null)
-              const days = Array.from({ length: daysInNextMonth }, (_, i) => i + 1)
+              const days = Array.from({ length: daysInCalMonth }, (_, i) => i + 1)
               return (
                 <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5">
                   <div className="flex items-center gap-2 mb-1">
                     <Calendar className="h-4 w-4 text-amber-600" />
                     <h3 className="text-sm font-bold text-amber-900">
-                      Planifica tu mes — {MONTH_NAMES_ES[month]} {year}
+                      Calendario de planificación — {MONTH_NAMES_ES[calMonth]} {calYear}
                     </h3>
                     <div className="ml-auto text-xs">
                       {planSaving && <span className="text-amber-500">Guardando…</span>}
@@ -558,7 +566,7 @@ ${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads este mes.</p
                     </div>
                   </div>
                   <p className="text-xs text-amber-700 mb-4">
-                    El mes siguiente está por comenzar. Escribe en cada día qué actividades planeas realizar.
+                    Escribe en cada día qué actividades planeas realizar.
                   </p>
                   <div className="grid grid-cols-7 gap-1 mb-1">
                     {['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'].map((d) => (

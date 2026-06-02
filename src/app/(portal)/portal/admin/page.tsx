@@ -704,6 +704,14 @@ interface AdminActivity {
   created_at: string
 }
 
+interface PlanChange {
+  id: string
+  day: number
+  old_value: string | null
+  new_value: string | null
+  changed_at: string
+}
+
 function ActivitiesPanel() {
   const [activitiesMonth, setActivitiesMonth] = useState(firstOfMonth())
   const [activities, setActivities] = useState<AdminActivity[]>([])
@@ -712,6 +720,7 @@ function ActivitiesPanel() {
   const [calendarMonth, setCalendarMonth] = useState(getNextMonthStr())
   const [calendarPlans, setCalendarPlans] = useState<CalendarPlan[]>([])
   const [calendarLoading, setCalendarLoading] = useState(true)
+  const [historyState, setHistoryState] = useState<Record<string, { open: boolean; loading: boolean; changes: PlanChange[] }>>({})
 
   useEffect(() => {
     setLoading(true)
@@ -728,6 +737,7 @@ function ActivitiesPanel() {
 
   useEffect(() => {
     setCalendarLoading(true)
+    setHistoryState({})
     fetch(`/api/portal/admin/calendars?month=${calendarMonth}`)
       .then(async (r) => {
         const d = await r.json()
@@ -762,6 +772,26 @@ function ActivitiesPanel() {
   })
 
   const daysInMonth = getDaysInMonth(calendarMonth)
+
+  async function toggleHistory(supervisorId: string) {
+    const current = historyState[supervisorId]
+    if (current?.open) {
+      setHistoryState((p) => ({ ...p, [supervisorId]: { ...p[supervisorId], open: false } }))
+      return
+    }
+    if (current?.changes.length > 0) {
+      setHistoryState((p) => ({ ...p, [supervisorId]: { ...p[supervisorId], open: true } }))
+      return
+    }
+    setHistoryState((p) => ({ ...p, [supervisorId]: { open: true, loading: true, changes: [] } }))
+    try {
+      const r = await fetch(`/api/portal/admin/plan-changes?supervisor_id=${supervisorId}&month=${calendarMonth}`)
+      const d = await r.json()
+      setHistoryState((p) => ({ ...p, [supervisorId]: { open: true, loading: false, changes: d.changes ?? [] } }))
+    } catch {
+      setHistoryState((p) => ({ ...p, [supervisorId]: { open: true, loading: false, changes: [] } }))
+    }
+  }
 
   return (
     <div className="space-y-8">
@@ -881,40 +911,90 @@ function ActivitiesPanel() {
           </div>
         ) : (
           <div className="space-y-4">
-            {calendarPlans.map((plan) => (
-              <div key={plan.supervisor_id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <div className="px-5 py-3 border-b border-gray-100 flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-full bg-navy/10 text-navy flex items-center justify-center text-sm font-bold flex-shrink-0">
-                    {plan.full_name.charAt(0).toUpperCase()}
+            {calendarPlans.map((plan) => {
+              const hs = historyState[plan.supervisor_id]
+              return (
+                <div key={plan.supervisor_id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                  <div className="px-5 py-3 border-b border-gray-100 flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-full bg-navy/10 text-navy flex items-center justify-center text-sm font-bold flex-shrink-0">
+                      {plan.full_name.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-900 text-sm">{plan.full_name}</p>
+                      <p className="text-xs text-gray-500 capitalize">
+                        {plan.role === 'director' ? 'Director de Recinto' : 'Supervisor'} · {(plan.campus as string[]).join(', ')}
+                      </p>
+                    </div>
+                    <div className="ml-auto flex items-center gap-3">
+                      <span className="text-xs text-gray-400">
+                        {Object.values(plan.notes ?? {}).filter(Boolean).length} días planificados
+                      </span>
+                      <button
+                        onClick={() => toggleHistory(plan.supervisor_id)}
+                        className="text-xs text-navy hover:underline"
+                      >
+                        {hs?.open ? 'Ocultar historial' : 'Ver historial'}
+                      </button>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-semibold text-gray-900 text-sm">{plan.full_name}</p>
-                    <p className="text-xs text-gray-500 capitalize">
-                      {plan.role === 'director' ? 'Director de Recinto' : 'Supervisor'} · {(plan.campus as string[]).join(', ')}
-                    </p>
+                  <div className="p-4">
+                    <div className="grid grid-cols-7 gap-1">
+                      {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
+                        const note = (plan.notes ?? {})[String(day)] ?? ''
+                        return (
+                          <div
+                            key={day}
+                            className={`rounded-lg p-1.5 min-h-[52px] ${note ? 'bg-amber-50 border border-amber-200' : 'bg-gray-50 border border-gray-100'}`}
+                          >
+                            <p className={`text-xs font-semibold mb-0.5 ${note ? 'text-amber-700' : 'text-gray-400'}`}>{day}</p>
+                            {note && <p className="text-xs text-gray-700 leading-tight line-clamp-2">{note}</p>}
+                          </div>
+                        )
+                      })}
+                    </div>
                   </div>
-                  <div className="ml-auto text-xs text-gray-400">
-                    {Object.values(plan.notes ?? {}).filter(Boolean).length} días planificados
-                  </div>
-                </div>
-                <div className="p-4">
-                  <div className="grid grid-cols-7 gap-1">
-                    {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
-                      const note = (plan.notes ?? {})[String(day)] ?? ''
-                      return (
-                        <div
-                          key={day}
-                          className={`rounded-lg p-1.5 min-h-[52px] ${note ? 'bg-amber-50 border border-amber-200' : 'bg-gray-50 border border-gray-100'}`}
-                        >
-                          <p className={`text-xs font-semibold mb-0.5 ${note ? 'text-amber-700' : 'text-gray-400'}`}>{day}</p>
-                          {note && <p className="text-xs text-gray-700 leading-tight line-clamp-2">{note}</p>}
+
+                  {/* History panel */}
+                  {hs?.open && (
+                    <div className="border-t border-gray-100 px-5 py-4">
+                      <p className="text-xs font-semibold text-gray-700 mb-3">Historial de ediciones</p>
+                      {hs.loading ? (
+                        <div className="flex justify-center py-4">
+                          <div className="animate-spin h-5 w-5 rounded-full border-4 border-navy border-t-transparent" />
                         </div>
-                      )
-                    })}
-                  </div>
+                      ) : hs.changes.length === 0 ? (
+                        <p className="text-xs text-gray-400">Sin historial de ediciones para este mes.</p>
+                      ) : (
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-xs">
+                            <thead>
+                              <tr className="border-b border-gray-100">
+                                <th className="text-left pb-2 font-semibold text-gray-500 pr-4">Día</th>
+                                <th className="text-left pb-2 font-semibold text-gray-500 pr-4">Antes</th>
+                                <th className="text-left pb-2 font-semibold text-gray-500 pr-4">Después</th>
+                                <th className="text-left pb-2 font-semibold text-gray-500">Fecha y Hora</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-50">
+                              {hs.changes.map((ch) => (
+                                <tr key={ch.id} className="align-top">
+                                  <td className="py-2 pr-4 font-medium text-gray-700">{ch.day}</td>
+                                  <td className="py-2 pr-4 text-red-600 max-w-[160px] whitespace-pre-wrap break-words">{ch.old_value ?? <span className="text-gray-300 italic">vacío</span>}</td>
+                                  <td className="py-2 pr-4 text-green-700 max-w-[160px] whitespace-pre-wrap break-words">{ch.new_value ?? <span className="text-gray-300 italic">vacío</span>}</td>
+                                  <td className="py-2 text-gray-400 whitespace-nowrap">
+                                    {new Date(ch.changed_at).toLocaleString('es-PR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>

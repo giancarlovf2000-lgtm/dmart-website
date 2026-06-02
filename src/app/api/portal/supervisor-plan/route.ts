@@ -54,6 +54,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Notas inválidas.' }, { status: 400 })
 
   const admin = getAdminClient()
+
+  // Fetch current notes to compute diff before overwriting
+  const { data: current } = await admin
+    .from('supervisor_monthly_plans')
+    .select('notes')
+    .eq('supervisor_id', user.id)
+    .eq('plan_month', month)
+    .single()
+  const oldNotes: Record<string, string> = (current?.notes as Record<string, string>) ?? {}
+
   const { error } = await admin
     .from('supervisor_monthly_plans')
     .upsert(
@@ -62,5 +72,27 @@ export async function POST(request: NextRequest) {
     )
 
   if (error) return NextResponse.json({ error: 'Error al guardar.' }, { status: 500 })
+
+  // Log per-day changes for audit trail
+  const incomingNotes = notes as Record<string, string>
+  const allDays = Array.from(new Set([...Object.keys(oldNotes), ...Object.keys(incomingNotes)]))
+  const changeRows: object[] = []
+  for (const dayStr of allDays) {
+    const oldVal = (oldNotes[dayStr] ?? '').trim()
+    const newVal = (incomingNotes[dayStr] ?? '').trim()
+    if (oldVal !== newVal) {
+      changeRows.push({
+        supervisor_id: user.id,
+        plan_month: month,
+        day: Number(dayStr),
+        old_value: oldVal || null,
+        new_value: newVal || null,
+      })
+    }
+  }
+  if (changeRows.length > 0) {
+    await admin.from('supervisor_plan_changes').insert(changeRows)
+  }
+
   return NextResponse.json({ success: true })
 }
