@@ -6,7 +6,10 @@ import { ArrowLeft, Phone, Mail, MapPin, BookOpen, Clock, Calendar, User, AlertC
 import LeadStatusBadge from '@/components/portal/LeadStatusBadge'
 import StatusChangeModal from '@/components/portal/StatusChangeModal'
 import type { Lead, LeadHistory } from '@/lib/types'
-import { formatPhone } from '@/lib/utils'
+import { formatPhone, ALL_PROGRAMS } from '@/lib/utils'
+
+const CAMPUSES = ['Barranquitas', 'Vega Alta', 'No tengo preferencia']
+const HORARIOS = ['Diurno', 'Nocturno', 'Sabatino']
 
 function formatDateTime(dateStr: string) {
   return new Date(dateStr).toLocaleString('es-PR', {
@@ -34,7 +37,10 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
   const [assignableEmployees, setAssignableEmployees] = useState<{ id: string; full_name: string }[]>([])
   const [reassigning, setReassigning] = useState(false)
   const [deleting, setDeleting] = useState(false)
-  const [editContact, setEditContact] = useState<{ telefono: string; email: string } | null>(null)
+  const [editContact, setEditContact] = useState<{
+    telefono: string; email: string
+    campus: string; programa_interes: string; horario: string
+  } | null>(null)
   const [savingContact, setSavingContact] = useState(false)
   const [showNoteForm, setShowNoteForm] = useState(false)
   const [noteForm, setNoteForm] = useState({ communication_type: 'Llamada', note: '' })
@@ -99,7 +105,13 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
     const res = await fetch(`/api/portal/leads/${params.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ telefono: editContact.telefono, email: editContact.email }),
+      body: JSON.stringify({
+        telefono: editContact.telefono,
+        email: editContact.email,
+        campus: editContact.campus,
+        programa_interes: editContact.programa_interes,
+        horario: editContact.horario,
+      }),
     })
     if (res.ok) {
       await load()
@@ -210,40 +222,64 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {editContact ? (
               <>
-                <div className="flex items-start gap-2.5">
-                  <Phone className="h-4 w-4 text-gray-400 mt-2.5 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-gray-400 mb-1">Teléfono</p>
-                    <input
-                      type="tel"
-                      value={editContact.telefono}
-                      onChange={(e) => setEditContact((p) => p && ({ ...p, telefono: e.target.value }))}
-                      className="w-full text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-navy/20"
-                    />
-                  </div>
-                </div>
-                <div className="flex items-start gap-2.5">
-                  <Mail className="h-4 w-4 text-gray-400 mt-2.5 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-gray-400 mb-1">Correo</p>
-                    <input
-                      type="email"
-                      value={editContact.email}
-                      onChange={(e) => setEditContact((p) => p && ({ ...p, email: e.target.value }))}
-                      className="w-full text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-navy/20"
-                    />
-                  </div>
+                <EditField icon={Phone} label="Teléfono">
+                  <input
+                    type="tel"
+                    value={editContact.telefono}
+                    onChange={(e) => setEditContact((p) => p && ({ ...p, telefono: e.target.value }))}
+                    className="w-full text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-navy/20"
+                  />
+                </EditField>
+                <EditField icon={Mail} label="Correo">
+                  <input
+                    type="email"
+                    value={editContact.email}
+                    onChange={(e) => setEditContact((p) => p && ({ ...p, email: e.target.value }))}
+                    className="w-full text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-navy/20"
+                  />
+                </EditField>
+                <EditField icon={MapPin} label="Recinto">
+                  <select
+                    value={editContact.campus}
+                    onChange={(e) => setEditContact((p) => p && ({ ...p, campus: e.target.value }))}
+                    className="w-full text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-navy/20"
+                  >
+                    <option value="">Sin especificar</option>
+                    {CAMPUSES.map((c) => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </EditField>
+                <EditField icon={Clock} label="Horario">
+                  <select
+                    value={editContact.horario}
+                    onChange={(e) => setEditContact((p) => p && ({ ...p, horario: e.target.value }))}
+                    className="w-full text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-navy/20"
+                  >
+                    <option value="">Sin especificar</option>
+                    {HORARIOS.map((h) => <option key={h} value={h}>{h}</option>)}
+                  </select>
+                </EditField>
+                <div className="sm:col-span-2">
+                  <EditField icon={BookOpen} label="Programa de Interés">
+                    <select
+                      value={editContact.programa_interes}
+                      onChange={(e) => setEditContact((p) => p && ({ ...p, programa_interes: e.target.value }))}
+                      className="w-full text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-navy/20"
+                    >
+                      <option value="">Sin especificar</option>
+                      {ALL_PROGRAMS.map((p) => <option key={p} value={p}>{p}</option>)}
+                    </select>
+                  </EditField>
                 </div>
               </>
             ) : (
               <>
                 <InfoRow icon={Phone} label="Teléfono" value={formatPhone(lead.telefono)} />
                 <InfoRow icon={Mail} label="Correo" value={lead.email} />
+                <InfoRow icon={MapPin} label="Recinto" value={lead.campus ?? '—'} />
+                <InfoRow icon={Clock} label="Horario" value={lead.horario ?? '—'} />
+                <InfoRow icon={BookOpen} label="Programa de Interés" value={lead.programa_interes ?? '—'} />
               </>
             )}
-            <InfoRow icon={MapPin} label="Recinto" value={lead.campus ?? '—'} />
-            <InfoRow icon={Clock} label="Horario" value={lead.horario ?? '—'} />
-            <InfoRow icon={BookOpen} label="Programa de Interés" value={lead.programa_interes ?? '—'} />
             <InfoRow icon={Calendar} label="Fecha del Lead" value={formatDateTime(lead.created_at)} />
             {(isAdmin || isSupervisor) && assignableEmployees.length > 1 ? (
               <div>
@@ -292,7 +328,13 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
               </>
             ) : (
               <button
-                onClick={() => setEditContact({ telefono: lead.telefono ?? '', email: lead.email ?? '' })}
+                onClick={() => setEditContact({
+                  telefono: lead.telefono ?? '',
+                  email: lead.email ?? '',
+                  campus: lead.campus ?? '',
+                  programa_interes: lead.programa_interes ?? '',
+                  horario: lead.horario ?? '',
+                })}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-gray-500 hover:bg-gray-100 transition-colors"
               >
                 <Pencil className="h-3.5 w-3.5" />
@@ -433,6 +475,18 @@ function InfoRow({ icon: Icon, label, value }: { icon: React.ElementType; label:
       <div className="min-w-0">
         <p className="text-xs text-gray-400">{label}</p>
         <p className="text-sm font-medium text-gray-800 break-all">{value}</p>
+      </div>
+    </div>
+  )
+}
+
+function EditField({ icon: Icon, label, children }: { icon: React.ElementType; label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-start gap-2.5">
+      <Icon className="h-4 w-4 text-gray-400 mt-2.5 flex-shrink-0" />
+      <div className="flex-1 min-w-0">
+        <p className="text-xs text-gray-400 mb-1">{label}</p>
+        {children}
       </div>
     </div>
   )

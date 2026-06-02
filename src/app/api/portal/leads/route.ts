@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'El nombre es requerido.' }, { status: 400 })
   if (!apellido?.trim() || apellido.trim().length < 2)
     return NextResponse.json({ error: 'El apellido es requerido.' }, { status: 400 })
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
     return NextResponse.json({ error: 'Correo electrónico inválido.' }, { status: 400 })
   if (!telefono?.trim() || telefono.trim().length < 7)
     return NextResponse.json({ error: 'Teléfono inválido.' }, { status: 400 })
@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
     .insert({
       nombre: nombre.trim().slice(0, 100),
       apellido: apellido.trim().slice(0, 100),
-      email: email.trim().toLowerCase().slice(0, 254),
+      email: email?.trim().toLowerCase().slice(0, 254) || null,
       telefono: telefono.trim().slice(0, 20),
       campus: campus?.trim() || null,
       programa_interes: programa_interes?.trim() || null,

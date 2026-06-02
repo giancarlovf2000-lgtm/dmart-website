@@ -129,8 +129,9 @@ export async function PATCH(
     return NextResponse.json({ success: true })
   }
 
-  // ── Contact info update (telefono / email) ──────────────────────────────────
-  if (body.telefono !== undefined || body.email !== undefined) {
+  // ── Contact info update (telefono / email / campus / programa_interes / horario) ──
+  if (body.telefono !== undefined || body.email !== undefined ||
+      body.campus !== undefined || body.programa_interes !== undefined || body.horario !== undefined) {
     // Verify this employee has access to the lead
     const { data: lead } = await admin.from('leads').select('assigned_to').eq('id', params.id).single()
     if (!lead) return NextResponse.json({ error: 'Lead no encontrado.' }, { status: 404 })
@@ -139,6 +140,11 @@ export async function PATCH(
       if (employee.role === 'supervisor') {
         const { data: teamMember } = await admin.from('employees').select('id').eq('id', lead.assigned_to).eq('supervisor_id', user.id).single()
         if (lead.assigned_to !== user.id && !teamMember)
+          return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
+      } else if (employee.role === 'director') {
+        const { data: campusMember } = await admin.from('employees').select('id')
+          .eq('id', lead.assigned_to).contains('campus', employee.campus as string[]).single()
+        if (!campusMember)
           return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
       } else if (lead.assigned_to !== user.id) {
         return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
@@ -155,8 +161,23 @@ export async function PATCH(
     }
     if (body.email !== undefined) {
       const em = String(body.email).trim().toLowerCase()
-      updates.email = em
-      changes.push(`Correo actualizado a ${em}`)
+      updates.email = em || null
+      if (em) changes.push(`Correo actualizado a ${em}`)
+    }
+    if (body.campus !== undefined) {
+      const val = String(body.campus).trim()
+      updates.campus = val || null
+      if (val) changes.push(`Recinto actualizado a ${val}`)
+    }
+    if (body.programa_interes !== undefined) {
+      const val = String(body.programa_interes).trim()
+      updates.programa_interes = val || null
+      if (val) changes.push(`Programa actualizado a ${val}`)
+    }
+    if (body.horario !== undefined) {
+      const val = String(body.horario).trim()
+      updates.horario = val || null
+      if (val) changes.push(`Horario actualizado a ${val}`)
     }
 
     const { error } = await admin.from('leads').update(updates).eq('id', params.id)

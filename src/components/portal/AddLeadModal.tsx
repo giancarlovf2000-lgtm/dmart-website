@@ -40,7 +40,7 @@ export default function AddLeadModal({ employeeId, employeeName, activities, tea
 
     if (form.nombre.trim().length < 2) { setError('El nombre es requerido.'); return }
     if (form.apellido.trim().length < 2) { setError('El apellido es requerido.'); return }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) { setError('Correo electrónico inválido.'); return }
+    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) { setError('Correo electrónico inválido.'); return }
     if (form.telefono.trim().length < 7) { setError('Teléfono inválido.'); return }
     if (!form.activity_id && !form.lead_source_text.trim()) {
       setError('Selecciona una actividad o escribe el origen del lead.')
@@ -111,10 +111,10 @@ export default function AddLeadModal({ employeeId, employeeName, activities, tea
               </div>
             </div>
             <div>
-              <label className={labelClass}>Correo <span className="text-red-500">*</span></label>
+              <label className={labelClass}>Correo</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input name="email" type="email" required value={form.email} onChange={handleChange} placeholder="correo@email.com" className={cn(inputClass, 'pl-10')} />
+                <input name="email" type="email" value={form.email} onChange={handleChange} placeholder="correo@email.com" className={cn(inputClass, 'pl-10')} />
               </div>
             </div>
             <div>
