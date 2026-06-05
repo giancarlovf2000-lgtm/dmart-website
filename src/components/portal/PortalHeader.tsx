@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { LogOut, Building2, LayoutDashboard, ClipboardList, BookOpen, X, ChevronRight, ChevronLeft, LayoutGrid, UserPlus, FileText, QrCode, BarChart3, Users, Download, Lock, AlertTriangle, GitMerge } from 'lucide-react'
+import { LogOut, Building2, LayoutDashboard, ClipboardList, BookOpen, X, ChevronRight, ChevronLeft, LayoutGrid, UserPlus, FileText, QrCode, BarChart3, Users, Download, Lock, AlertTriangle, GitMerge, Scissors } from 'lucide-react'
 import type { Employee } from '@/lib/types'
 
 interface PortalHeaderProps {
@@ -292,6 +292,14 @@ export default function PortalHeader({ employee }: PortalHeaderProps) {
                 <span className="hidden sm:inline">Plan y Reportes</span>
               </a>
             )}
+
+            <a
+              href="/portal/contratos-privados"
+              className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors px-2 py-1.5 rounded-lg hover:bg-gray-100"
+            >
+              <Scissors className="h-4 w-4" />
+              <span className="hidden sm:inline">Prog. Privados</span>
+            </a>
 
             <button
               onClick={handleLogout}
