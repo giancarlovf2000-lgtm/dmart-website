@@ -81,6 +81,9 @@ export const ALL_PROGRAMS = [
   'Creación de Contenido en Redes Sociales (Programa Privado Corto)',
   'Inteligencia Artificial Aplicada (Programa Privado Corto)',
   'Ciberseguridad Básica y Protección de Datos (Programa Privado Corto)',
+  'Corte y Estilo Caballeros',
+  'Corte y Estilo Damas',
+  'Facturación a Planes Médicos',
   'No sé aún',
 ]
 

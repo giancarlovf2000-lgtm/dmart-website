@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Phone, Mail, MapPin, BookOpen, Clock, Calendar, User, AlertCircle, Trash2, Pencil, Check, X, MessageSquarePlus } from 'lucide-react'
+import { ArrowLeft, Phone, Mail, MapPin, BookOpen, Clock, Calendar, User, AlertCircle, Trash2, Pencil, Check, X, MessageSquarePlus, FileText } from 'lucide-react'
 import LeadStatusBadge from '@/components/portal/LeadStatusBadge'
 import StatusChangeModal from '@/components/portal/StatusChangeModal'
 import type { Lead, LeadHistory } from '@/lib/types'
@@ -10,6 +10,13 @@ import { formatPhone, ALL_PROGRAMS } from '@/lib/utils'
 
 const CAMPUSES = ['Barranquitas', 'Vega Alta', 'No tengo preferencia']
 const HORARIOS = ['Diurno', 'Nocturno', 'Sabatino']
+
+const PRIVATE_PROGRAM_KEYS: Record<string, string> = {
+  'Corte y Estilo Caballeros': 'caballeros',
+  'Corte y Estilo Damas': 'damas',
+  'Técnica de Uñas': 'unas',
+  'Facturación a Planes Médicos': 'facturacion',
+}
 
 function formatDateTime(dateStr: string) {
   return new Date(dateStr).toLocaleString('es-PR', {
@@ -327,19 +334,30 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
                 </button>
               </>
             ) : (
-              <button
-                onClick={() => setEditContact({
-                  telefono: lead.telefono ?? '',
-                  email: lead.email ?? '',
-                  campus: lead.campus ?? '',
-                  programa_interes: lead.programa_interes ?? '',
-                  horario: lead.horario ?? '',
-                })}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-gray-500 hover:bg-gray-100 transition-colors"
-              >
-                <Pencil className="h-3.5 w-3.5" />
-                Editar contacto
-              </button>
+              <>
+                {lead.programa_interes && PRIVATE_PROGRAM_KEYS[lead.programa_interes] && (
+                  <a
+                    href={`/portal/contratos-privados?program=${PRIVATE_PROGRAM_KEYS[lead.programa_interes]}&nombre=${encodeURIComponent(`${lead.nombre} ${lead.apellido}`)}&telefono=${encodeURIComponent(lead.telefono ?? '')}&email=${encodeURIComponent(lead.email ?? '')}`}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gold text-white text-sm font-semibold hover:bg-gold/90 transition-colors"
+                  >
+                    <FileText className="h-3.5 w-3.5" />
+                    Generar Contrato
+                  </a>
+                )}
+                <button
+                  onClick={() => setEditContact({
+                    telefono: lead.telefono ?? '',
+                    email: lead.email ?? '',
+                    campus: lead.campus ?? '',
+                    programa_interes: lead.programa_interes ?? '',
+                    horario: lead.horario ?? '',
+                  })}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-gray-500 hover:bg-gray-100 transition-colors"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                  Editar contacto
+                </button>
+              </>
             )}
           </div>
         </div>

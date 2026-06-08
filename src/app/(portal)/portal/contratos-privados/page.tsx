@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Check, ChevronRight, ChevronLeft, Printer, AlertCircle, CheckCircle } from 'lucide-react'
 import PortalHeader from '@/components/portal/PortalHeader'
 import type { Employee } from '@/lib/types'
@@ -286,7 +287,8 @@ const PROGRAM_LABELS: Record<string, string> = {
 
 // ─── Main component ──────────────────────────────────────────────────────────
 
-export default function ContratosPrivadosPage() {
+function ContratosPrivadosContent() {
+  const searchParams = useSearchParams()
   const [employee, setEmployee] = useState<Pick<Employee, 'full_name' | 'campus' | 'role'> | null>(null)
   const [step, setStep] = useState(1)
   const [program, setProgram] = useState<ProgramKey | null>(null)
@@ -300,6 +302,20 @@ export default function ContratosPrivadosPage() {
   const [loadingContracts, setLoadingContracts] = useState(true)
 
   useEffect(() => {
+    // Pre-fill from lead profile URL params
+    const programParam = searchParams.get('program') as ProgramKey | null
+    if (programParam && programParam in PROGRAMS) {
+      setProgram(programParam)
+      setEqPlan(PROGRAMS[programParam].noEquipment ? 'none' : null)
+      setStep(2)
+      setStudent((prev) => ({
+        ...prev,
+        nombre: searchParams.get('nombre') ?? '',
+        telefono: searchParams.get('telefono') ?? '',
+        email: searchParams.get('email') ?? '',
+      }))
+    }
+
     fetch('/api/portal/me')
       .then((r) => r.json())
       .then((d) => { if (d.employee) setEmployee(d.employee) })
@@ -309,6 +325,7 @@ export default function ContratosPrivadosPage() {
       .then((r) => r.json())
       .then((d) => { setContracts(d.contracts ?? []); setLoadingContracts(false) })
       .catch(() => setLoadingContracts(false))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   function setSI(field: keyof StudentInfo, value: string | boolean) {
@@ -784,5 +801,17 @@ export default function ContratosPrivadosPage() {
         </div>
       </div>
     </>
+  )
+}
+
+export default function ContratosPrivadosPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 rounded-full border-4 border-navy border-t-transparent" />
+      </div>
+    }>
+      <ContratosPrivadosContent />
+    </Suspense>
   )
 }
