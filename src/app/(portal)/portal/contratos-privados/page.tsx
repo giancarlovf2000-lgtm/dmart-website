@@ -8,9 +8,10 @@ import type { Employee } from '@/lib/types'
 // ─── Business constants ──────────────────────────────────────────────────────
 
 const PROGRAMS = {
-  caballeros: { label: 'Corte y Estilo Caballeros', equipCost: 110 },
-  damas:      { label: 'Corte y Estilo Damas',       equipCost: 80  },
-  unas:       { label: 'Técnica de Uñas',             equipCost: 40  },
+  caballeros:  { label: 'Corte y Estilo Caballeros',   equipCost: 110, noEquipment: false },
+  damas:       { label: 'Corte y Estilo Damas',         equipCost: 80,  noEquipment: false },
+  unas:        { label: 'Técnica de Uñas',              equipCost: 40,  noEquipment: false },
+  facturacion: { label: 'Facturación a Planes Médicos', equipCost: 0,   noEquipment: true  },
 } as const
 type ProgramKey = keyof typeof PROGRAMS
 
@@ -23,7 +24,7 @@ const WEEKS               = 11
 
 function fmt(n: number) { return `$${n.toFixed(2)}` }
 
-function calcPrices(prog: ProgramKey, progPlan: 'complete' | 'deferred', eqPlan: 'complete' | 'deferred' | 'student') {
+function calcPrices(prog: ProgramKey, progPlan: 'complete' | 'deferred', eqPlan: 'complete' | 'deferred' | 'student' | 'none') {
   const eq = PROGRAMS[prog].equipCost
 
   const progCompleteAmt    = PROGRAM_COST * (1 - DISCOUNT)                // 445.50
@@ -83,7 +84,7 @@ const emptyStudent = (): StudentInfo => ({
 function buildContractHtml(params: {
   program: ProgramKey
   progPlan: 'complete' | 'deferred'
-  eqPlan: 'complete' | 'deferred' | 'student'
+  eqPlan: 'complete' | 'deferred' | 'student' | 'none'
   student: StudentInfo
   prices: ReturnType<typeof calcPrices>
   employeeName: string
@@ -185,6 +186,7 @@ function buildContractHtml(params: {
     <tr class="check-row"><td>${check(program === 'caballeros')}</td><td>Corte y Estilo Caballeros</td><td>36</td><td>$495.00</td><td>$110.00</td></tr>
     <tr class="check-row"><td>${check(program === 'damas')}</td><td>Corte y Estilo Damas</td><td>36</td><td>$495.00</td><td>$80.00</td></tr>
     <tr class="check-row"><td>${check(program === 'unas')}</td><td>Técnica de Uñas</td><td>36</td><td>$495.00</td><td>$40.00</td></tr>
+    <tr class="check-row"><td>${check(program === 'facturacion')}</td><td>Facturación a Planes Médicos</td><td>36</td><td>$495.00</td><td>No aplica</td></tr>
   </tbody>
 </table>
 
@@ -204,7 +206,7 @@ function buildContractHtml(params: {
     <tr class="check-row"><td>${check(eqPlan === 'complete')}</td><td>Pago completo antes o al inicio (10% de descuento)</td><td>${eqCompleteLabel}</td><td>$0.00</td></tr>
     <tr class="check-row"><td>${check(eqPlan === 'deferred')}</td><td>Plan diferido — 11 cuotas semanales (cargo administrativo $20.00 incluido)</td><td>${fmt(eq + EQ_DEFERRED_ADMIN)}</td><td>${eqDeferredLabel}</td></tr>
     <tr class="check-row"><td>${check(eqPlan === 'student')}</td><td>El estudiante aporta su propio equipo (debe ser validado por Academic Officer)</td><td>$0.00</td><td>$0.00</td></tr>
-    <tr class="check-row"><td>☐</td><td>Este programa no requiere kit institucional</td><td>—</td><td>—</td></tr>
+    <tr class="check-row"><td>${check(eqPlan === 'none')}</td><td>Este programa no requiere kit institucional</td><td>—</td><td>—</td></tr>
   </tbody>
 </table>
 
@@ -276,9 +278,10 @@ interface ContractRow {
 }
 
 const PROGRAM_LABELS: Record<string, string> = {
-  caballeros: 'Corte y Estilo Caballeros',
-  damas: 'Corte y Estilo Damas',
-  unas: 'Técnica de Uñas',
+  caballeros:  'Corte y Estilo Caballeros',
+  damas:       'Corte y Estilo Damas',
+  unas:        'Técnica de Uñas',
+  facturacion: 'Facturación a Planes Médicos',
 }
 
 // ─── Main component ──────────────────────────────────────────────────────────
@@ -288,7 +291,7 @@ export default function ContratosPrivadosPage() {
   const [step, setStep] = useState(1)
   const [program, setProgram] = useState<ProgramKey | null>(null)
   const [progPlan, setProgPlan] = useState<'complete' | 'deferred' | null>(null)
-  const [eqPlan, setEqPlan] = useState<'complete' | 'deferred' | 'student' | null>(null)
+  const [eqPlan, setEqPlan] = useState<'complete' | 'deferred' | 'student' | 'none' | null>(null)
   const [student, setStudent] = useState<StudentInfo>(emptyStudent())
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -420,10 +423,10 @@ export default function ContratosPrivadosPage() {
             <div className="bg-white rounded-2xl border border-gray-200 p-6">
               <h2 className="text-sm font-bold text-gray-900 mb-4">¿Qué programa desea el prospecto?</h2>
               <div className="space-y-3">
-                {(Object.entries(PROGRAMS) as [ProgramKey, { label: string; equipCost: number }][]).map(([key, prog]) => (
+                {(Object.entries(PROGRAMS) as [ProgramKey, { label: string; equipCost: number; noEquipment: boolean }][]).map(([key, prog]) => (
                   <button
                     key={key}
-                    onClick={() => setProgram(key)}
+                    onClick={() => { setProgram(key); setEqPlan(prog.noEquipment ? 'none' : null) }}
                     className={`w-full text-left border-2 rounded-xl p-4 transition-all ${program === key ? 'border-navy bg-navy/5' : 'border-gray-200 hover:border-gray-300'}`}
                   >
                     <div className="flex items-center justify-between">
@@ -432,7 +435,10 @@ export default function ContratosPrivadosPage() {
                         <p className="text-xs text-gray-500 mt-0.5">36 horas de contacto</p>
                         <div className="flex gap-4 mt-2 text-xs text-gray-600">
                           <span>Programa: <span className="font-medium">$495.00</span></span>
-                          <span>Equipo: <span className="font-medium">${prog.equipCost}.00</span></span>
+                          {prog.noEquipment
+                            ? <span className="text-gray-400 italic">Sin equipo institucional</span>
+                            : <span>Equipo: <span className="font-medium">${prog.equipCost}.00</span></span>
+                          }
                         </div>
                       </div>
                       <div className={`h-6 w-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${program === key ? 'border-navy bg-navy' : 'border-gray-300'}`}>
@@ -582,32 +588,39 @@ export default function ContratosPrivadosPage() {
                 </div>
               </div>
 
-              {/* Equipment payment */}
-              <div className="bg-white rounded-2xl border border-gray-200 p-6">
-                <h2 className="text-sm font-bold text-gray-900 mb-1">Sección B — Equipo / Materiales / Kit</h2>
-                <p className="text-xs text-gray-400 mb-4">Costo base del equipo para {PROGRAMS[program].label}: ${PROGRAMS[program].equipCost}.00</p>
-                <div className="space-y-3">
-                  {([
-                    { key: 'complete' as const, title: 'Pago Completo de Equipo', desc: `${fmt(PROGRAMS[program].equipCost * (1 - DISCOUNT))} (10% desc.) · Un solo pago antes o al inicio del programa` },
-                    { key: 'deferred' as const, title: 'Plan Diferido de Equipo', desc: `11 cuotas de ≈${fmt((PROGRAMS[program].equipCost + EQ_DEFERRED_ADMIN) / WEEKS)}/semana · Cargo administrativo $20.00 incluido · Sin descuento` },
-                    { key: 'student' as const, title: 'El estudiante aporta su propio equipo', desc: 'El estudiante adquiere el equipo fuera de la institución · Debe ser validado por el Academic Officer antes del inicio' },
-                  ]).map(({ key, title, desc }) => (
-                    <button key={key} onClick={() => setEqPlan(key)}
-                      className={`w-full text-left border-2 rounded-xl p-4 transition-all ${eqPlan === key ? 'border-navy bg-navy/5' : 'border-gray-200 hover:border-gray-300'}`}
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <p className="font-semibold text-gray-900 text-sm">{title}</p>
-                          <p className="text-xs text-gray-500 mt-0.5">{desc}</p>
+              {/* Equipment payment — only when program requires equipment */}
+              {!PROGRAMS[program].noEquipment ? (
+                <div className="bg-white rounded-2xl border border-gray-200 p-6">
+                  <h2 className="text-sm font-bold text-gray-900 mb-1">Sección B — Equipo / Materiales / Kit</h2>
+                  <p className="text-xs text-gray-400 mb-4">Costo base del equipo para {PROGRAMS[program].label}: ${PROGRAMS[program].equipCost}.00</p>
+                  <div className="space-y-3">
+                    {([
+                      { key: 'complete' as const, title: 'Pago Completo de Equipo', desc: `${fmt(PROGRAMS[program].equipCost * (1 - DISCOUNT))} (10% desc.) · Un solo pago antes o al inicio del programa` },
+                      { key: 'deferred' as const, title: 'Plan Diferido de Equipo', desc: `11 cuotas de ≈${fmt((PROGRAMS[program].equipCost + EQ_DEFERRED_ADMIN) / WEEKS)}/semana · Cargo administrativo $20.00 incluido · Sin descuento` },
+                      { key: 'student' as const, title: 'El estudiante aporta su propio equipo', desc: 'El estudiante adquiere el equipo fuera de la institución · Debe ser validado por el Academic Officer antes del inicio' },
+                    ]).map(({ key, title, desc }) => (
+                      <button key={key} onClick={() => setEqPlan(key)}
+                        className={`w-full text-left border-2 rounded-xl p-4 transition-all ${eqPlan === key ? 'border-navy bg-navy/5' : 'border-gray-200 hover:border-gray-300'}`}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="font-semibold text-gray-900 text-sm">{title}</p>
+                            <p className="text-xs text-gray-500 mt-0.5">{desc}</p>
+                          </div>
+                          <div className={`h-5 w-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${eqPlan === key ? 'border-navy bg-navy' : 'border-gray-300'}`}>
+                            {eqPlan === key && <Check className="h-3 w-3 text-white" />}
+                          </div>
                         </div>
-                        <div className={`h-5 w-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${eqPlan === key ? 'border-navy bg-navy' : 'border-gray-300'}`}>
-                          {eqPlan === key && <Check className="h-3 w-3 text-white" />}
-                        </div>
-                      </div>
-                    </button>
-                  ))}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5">
+                  <p className="text-sm text-blue-800 font-medium">Este programa no incluye equipo o kit institucional.</p>
+                  <p className="text-xs text-blue-600 mt-1">Facturación a Planes Médicos no requiere equipo — solo aplica el pago del programa y el cargo de admisión.</p>
+                </div>
+              )}
 
               {/* Live price summary */}
               {prices && (
@@ -617,7 +630,7 @@ export default function ContratosPrivadosPage() {
                     {[
                       ['Cargo de admisión (separado)', fmt(ADMISSION)],
                       [progPlan === 'complete' ? 'Programa (pago completo, 10% desc.)' : 'Programa (diferido, 11 cuotas)', progPlan === 'complete' ? fmt(prices.progCompleteAmt) : `11 × ${fmt(prices.progDeferredWeekly)}`],
-                      [eqPlan === 'complete' ? 'Equipo (pago completo, 10% desc.)' : eqPlan === 'deferred' ? 'Equipo (diferido, 11 cuotas)' : 'Equipo (aportado por estudiante)', eqPlan === 'complete' ? fmt(prices.eqCompleteAmt) : eqPlan === 'deferred' ? `11 × ${fmt(prices.eqDeferredWeekly)}` : '$0.00'],
+                      [eqPlan === 'none' ? 'Equipo (no aplica)' : eqPlan === 'complete' ? 'Equipo (pago completo, 10% desc.)' : eqPlan === 'deferred' ? 'Equipo (diferido, 11 cuotas)' : 'Equipo (aportado por estudiante)', eqPlan === 'none' ? 'No aplica' : eqPlan === 'complete' ? fmt(prices.eqCompleteAmt) : eqPlan === 'deferred' ? `11 × ${fmt(prices.eqDeferredWeekly)}` : '$0.00'],
                     ].map(([label, value]) => (
                       <div key={label} className="flex justify-between text-amber-800">
                         <span className="text-xs">{label}</span>
@@ -673,7 +686,7 @@ export default function ContratosPrivadosPage() {
                     ['Fecha de inicio', student.fecha_inicio],
                     ['Horario', student.horario || '—'],
                     ['Plan de pago', progPlan === 'complete' ? 'Pago completo del programa' : 'Plan diferido — 11 cuotas'],
-                    ['Equipo', eqPlan === 'complete' ? 'Pago completo de equipo' : eqPlan === 'deferred' ? 'Plan diferido de equipo' : 'Estudiante aporta equipo'],
+                    ['Equipo', eqPlan === 'none' ? 'No aplica (sin equipo)' : eqPlan === 'complete' ? 'Pago completo de equipo' : eqPlan === 'deferred' ? 'Plan diferido de equipo' : 'Estudiante aporta equipo'],
                     ['Escenario aplicable', `#${prices.scenario}`],
                     ['Pago inicial mínimo', fmt(prices.initial)],
                     ['Cuota semanal total', prices.weeklyTotal > 0 ? `${fmt(prices.weeklyTotal)}/semana` : '$0.00'],
