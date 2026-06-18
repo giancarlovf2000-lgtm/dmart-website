@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import {
   UserPlus, Building2, CheckCircle, XCircle, AlertCircle, X, Upload,
   FileText, Users, ClipboardList, CalendarDays, MapPin, BarChart3,
-  GraduationCap, TrendingUp, Zap, Briefcase, Phone, Mail, Pencil,
+  GraduationCap, TrendingUp, Zap, Briefcase, Phone, Mail, Pencil, Download,
 } from 'lucide-react'
 import PortalHeader from '@/components/portal/PortalHeader'
 import Button from '@/components/ui/Button'
@@ -1152,9 +1152,19 @@ interface EmpStat {
   matriculados_count: number
   activities_planned: number
   activities_completed: number
+  activities: {
+    id: string; name: string; type: string; activity_date: string | null
+    planned_leads: number; actual_leads: number; status: string
+  }[]
   report_submitted: boolean
   performance_score: string | null
   report_notes: string | null
+  // enriched
+  status_breakdown: Record<string, number>
+  source_breakdown: Record<string, number>
+  programs_breakdown: Record<string, number>
+  contracts_count: number
+  contracts_total: number
 }
 
 interface SummaryTotals {
@@ -1164,12 +1174,247 @@ interface SummaryTotals {
   total_activities_completed: number
   reports_submitted: number
   total_employees: number
+  total_contracts: number
+  duplicate_pairs_count: number
+}
+
+interface SummaryLead {
+  id: string
+  nombre: string
+  apellido: string
+  telefono: string | null
+  email: string | null
+  campus: string | null
+  programa_interes: string | null
+  status: string
+  created_at: string
+  employee_name: string
+  source_label: string
+}
+
+interface DupPair {
+  lead1: { id: string; nombre: string; apellido: string; telefono: string | null; email: string | null; employee_name: string }
+  lead2: { id: string; nombre: string; apellido: string; telefono: string | null; email: string | null; employee_name: string }
+  match_type: 'phone' | 'email'
 }
 
 interface SummaryData {
   month: string
   totals: SummaryTotals
   employees: EmpStat[]
+  leads: SummaryLead[]
+  duplicate_pairs: DupPair[]
+}
+
+// ─── Admin HTML report builder ───────────────────────────────────────────────
+
+const ACT_TYPE_LABELS: Record<string, string> = {
+  feria: 'Feria',
+  visita_escuela: 'Visita a Escuela',
+  evento_comunitario: 'Evento Comunitario',
+  otro: 'Otro',
+}
+
+function buildAdminHtml(data: SummaryData, label: string): string {
+  const now = new Date().toLocaleDateString('es-PR', { day: 'numeric', month: 'long', year: 'numeric' })
+  const navy = '#0a1628'
+  const gold = '#c9a227'
+
+  const tblStyle = `border-collapse:collapse;width:100%;font-size:11px;margin-bottom:16px;`
+  const thStyle = `background:${navy};color:#fff;padding:6px 8px;text-align:left;font-size:11px;`
+  const tdStyle = `padding:5px 8px;border-bottom:1px solid #e5e7eb;vertical-align:top;`
+  const tdAlt   = `padding:5px 8px;border-bottom:1px solid #e5e7eb;background:#f9fafb;vertical-align:top;`
+
+  function tr(cells: string[], alt = false): string {
+    return `<tr>${cells.map((c) => `<td style="${alt ? tdAlt : tdStyle}">${c}</td>`).join('')}</tr>`
+  }
+  function thead(cols: string[]): string {
+    return `<thead><tr>${cols.map((c) => `<th style="${thStyle}">${c}</th>`).join('')}</tr></thead>`
+  }
+  function kpi(label: string, value: string | number, sub?: string): string {
+    return `<div style="background:#f3f4f6;border-radius:10px;padding:12px 16px;text-align:center;flex:1;min-width:120px;">
+      <div style="font-size:22px;font-weight:800;color:${navy};">${value}</div>
+      <div style="font-size:11px;color:#6b7280;margin-top:2px;">${label}</div>
+      ${sub ? `<div style="font-size:10px;color:#9ca3af;margin-top:1px;">${sub}</div>` : ''}
+    </div>`
+  }
+  function noData(msg = 'Sin datos para este período'): string {
+    return `<p style="font-size:11px;color:#9ca3af;font-style:italic;margin:6px 0 16px;">${msg}</p>`
+  }
+  function pct(num: number, den: number): string {
+    return den === 0 ? '0%' : `${Math.round((num / den) * 100)}%`
+  }
+
+  const sortedEmps = [...data.employees].sort((a, b) => b.leads_count - a.leads_count)
+
+  // §3 — Per-employee sections
+  const empSections = sortedEmps.map((emp) => {
+    const conv = pct(emp.matriculados_count, emp.leads_count)
+    const campusStr = emp.campus.join(', ') || '—'
+    const statusEntries = Object.entries(emp.status_breakdown).sort((a, b) => b[1] - a[1])
+    const sourceEntries = Object.entries(emp.source_breakdown).sort((a, b) => b[1] - a[1])
+    const programEntries = Object.entries(emp.programs_breakdown).sort((a, b) => b[1] - a[1])
+
+    const statusTable = statusEntries.length === 0 ? noData() : `
+      <table style="${tblStyle}">
+        ${thead(['Estado', 'Cantidad'])}
+        <tbody>${statusEntries.map(([s, n], i) => tr([s, String(n)], i % 2 === 1)).join('')}</tbody>
+      </table>`
+
+    const sourceTable = sourceEntries.length === 0 ? noData() : `
+      <table style="${tblStyle}">
+        ${thead(['Fuente', 'Cantidad'])}
+        <tbody>${sourceEntries.map(([s, n], i) => tr([s, String(n)], i % 2 === 1)).join('')}</tbody>
+      </table>`
+
+    const programTable = programEntries.length === 0 ? noData() : `
+      <table style="${tblStyle}">
+        ${thead(['Programa de Interés', 'Leads'])}
+        <tbody>${programEntries.map(([p, n], i) => tr([p, String(n)], i % 2 === 1)).join('')}</tbody>
+      </table>`
+
+    const actsRows = (emp.activities ?? []).map((a, i) => tr([
+      a.name ?? '—',
+      ACT_TYPE_LABELS[a.type] ?? a.type,
+      a.activity_date ? new Date(a.activity_date + 'T12:00:00').toLocaleDateString('es-PR') : '—',
+      String(a.planned_leads ?? 0),
+      String(a.actual_leads ?? 0),
+      a.status === 'terminada' ? 'Terminada' : 'Planificada',
+    ], i % 2 === 1))
+    const actTable = actsRows.length === 0 ? noData() : `
+      <table style="${tblStyle}">
+        ${thead(['Actividad', 'Tipo', 'Fecha', 'Planificados', 'Realizados', 'Estado'])}
+        <tbody>${actsRows.join('')}</tbody>
+      </table>`
+
+    const scoreLabel = emp.performance_score
+      ? ({ excelente: 'Excelente', bueno: 'Bueno', basico: 'Básico', deficiente: 'Deficiente' }[emp.performance_score] ?? emp.performance_score)
+      : 'Sin informe enviado'
+
+    return `
+<div style="page-break-inside:avoid;border:1px solid #e5e7eb;border-radius:10px;padding:20px;margin-bottom:20px;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+    <div>
+      <h2 style="margin:0 0 2px;font-size:14px;color:${navy};">${emp.full_name}${!emp.active ? ' <span style="font-size:10px;color:#9ca3af;">(Inactivo)</span>' : ''}</h2>
+      <p style="margin:0;font-size:11px;color:#6b7280;">Recinto(s): ${campusStr}</p>
+    </div>
+    <span style="font-size:11px;background:#f3f4f6;padding:4px 10px;border-radius:20px;color:#374151;">${scoreLabel}</span>
+  </div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+    ${kpi('Leads', emp.leads_count)}
+    ${kpi('Matriculados', emp.matriculados_count, `${conv} conversión`)}
+    ${kpi('Actividades', `${emp.activities_completed}/${emp.activities_planned}`, 'terminadas/planif.')}
+    ${kpi('Contratos privados', emp.contracts_count, emp.contracts_total > 0 ? `$${emp.contracts_total.toFixed(2)} total` : undefined)}
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+    <div>
+      <h3 style="font-size:12px;color:${navy};margin:0 0 6px;border-bottom:1px solid ${gold};padding-bottom:3px;">Distribución por Estado</h3>
+      ${statusTable}
+    </div>
+    <div>
+      <h3 style="font-size:12px;color:${navy};margin:0 0 6px;border-bottom:1px solid ${gold};padding-bottom:3px;">Origen de Leads</h3>
+      ${sourceTable}
+    </div>
+  </div>
+
+  <h3 style="font-size:12px;color:${navy};margin:12px 0 6px;border-bottom:1px solid ${gold};padding-bottom:3px;">Programas más Solicitados (Top 5)</h3>
+  ${programTable}
+
+  <h3 style="font-size:12px;color:${navy};margin:12px 0 6px;border-bottom:1px solid ${gold};padding-bottom:3px;">Actividades del Mes</h3>
+  ${actTable}
+
+  ${emp.report_notes ? `<div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:10px;margin-top:8px;"><p style="font-size:10px;font-weight:600;color:#6b7280;margin:0 0 4px;">Notas del informe de cierre:</p><p style="font-size:11px;color:#374151;margin:0;">${emp.report_notes}</p></div>` : ''}
+</div>`
+  }).join('')
+
+  // §4 — Duplicados
+  const dupRows = data.duplicate_pairs.map((p, i) => tr([
+    p.match_type === 'phone' ? 'Teléfono' : 'Correo',
+    `${p.lead1.nombre} ${p.lead1.apellido}`,
+    p.match_type === 'phone' ? (p.lead1.telefono ?? '—') : (p.lead1.email ?? '—'),
+    p.lead1.employee_name,
+    `${p.lead2.nombre} ${p.lead2.apellido}`,
+    p.match_type === 'phone' ? (p.lead2.telefono ?? '—') : (p.lead2.email ?? '—'),
+    p.lead2.employee_name,
+  ], i % 2 === 1))
+
+  const dupSection = dupRows.length === 0
+    ? `<p style="font-size:12px;color:#16a34a;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 14px;">✓ No se detectaron duplicados en el período.</p>`
+    : `<table style="${tblStyle}">
+        ${thead(['Coincidencia', 'Lead 1 — Nombre', 'Valor', 'Representante', 'Lead 2 — Nombre', 'Valor', 'Representante'])}
+        <tbody>${dupRows.join('')}</tbody>
+      </table>`
+
+  // §5 — Leads detallados
+  const leadRows = data.leads.map((l, i) => tr([
+    l.employee_name,
+    `${l.nombre} ${l.apellido}`,
+    l.telefono ?? '—',
+    l.email ?? '—',
+    l.campus ?? '—',
+    l.programa_interes ?? '—',
+    l.status,
+    l.source_label,
+    new Date(l.created_at).toLocaleDateString('es-PR'),
+  ], i % 2 === 1))
+
+  const leadsTable = leadRows.length === 0
+    ? noData()
+    : `<table style="${tblStyle}">
+        ${thead(['Representante', 'Nombre', 'Teléfono', 'Correo', 'Recinto', 'Programa', 'Estado', 'Fuente', 'Fecha'])}
+        <tbody>${leadRows.join('')}</tbody>
+      </table>`
+
+  const convGlobal = pct(data.totals.total_matriculados, data.totals.total_leads)
+
+  return `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Informe General — ${label}</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: Arial, sans-serif; color: #1f2937; margin: 0; padding: 32px; font-size: 12px; }
+  h1 { font-size: 20px; color: ${navy}; margin: 0 0 4px; }
+  h2 { font-size: 14px; color: ${navy}; margin: 20px 0 8px; border-bottom: 2px solid ${gold}; padding-bottom: 4px; }
+  h3 { font-size: 12px; color: ${navy}; margin: 12px 0 6px; }
+  @media print { body { padding: 16px; } h2 { page-break-after: avoid; } }
+</style>
+</head>
+<body>
+
+<div style="text-align:center;margin-bottom:24px;">
+  <p style="font-size:11px;font-weight:700;letter-spacing:2px;color:${navy};text-transform:uppercase;margin:0 0 4px;">D'MART INSTITUTE</p>
+  <h1>INFORME GENERAL DE DESEMPEÑO</h1>
+  <p style="font-size:12px;color:#6b7280;margin:2px 0;">Período: <strong>${label}</strong> &nbsp;·&nbsp; Generado el ${now}</p>
+</div>
+
+<h2>Resumen Ejecutivo</h2>
+<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;">
+  ${kpi('Representantes activos', data.totals.total_employees)}
+  ${kpi('Total leads', data.totals.total_leads)}
+  ${kpi('Matriculados', data.totals.total_matriculados, `${convGlobal} conversión`)}
+  ${kpi('Actividades completadas', data.totals.total_activities_completed)}
+  ${kpi('Contratos privados', data.totals.total_contracts)}
+  ${kpi('Duplicados detectados', data.totals.duplicate_pairs_count)}
+</div>
+
+<h2>Desglose por Representante</h2>
+${empSections || noData('No hay representantes con datos en este período.')}
+
+<h2>Duplicados Detectados</h2>
+${dupSection}
+
+<h2>Leads Detallados (${data.leads.length} leads)</h2>
+${leadsTable}
+
+<p style="font-size:9px;color:#9ca3af;text-align:center;margin-top:32px;">
+  D'MART Institute · Informe generado automáticamente — uso interno.
+</p>
+
+</body>
+</html>`
 }
 
 function SummaryPanel() {
@@ -1228,6 +1473,28 @@ function SummaryPanel() {
             <Zap className="h-4 w-4" />
             {loading ? 'Generando…' : 'Generar Informe'}
           </button>
+
+          {data && (
+            <button
+              onClick={() => {
+                const label = monthLabel(data.month)
+                const html = buildAdminHtml(data, label)
+                const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
+                const url = URL.createObjectURL(blob)
+                const a = document.createElement('a')
+                a.href = url
+                a.download = `informe-general-${selectedMonth}.html`
+                document.body.appendChild(a)
+                a.click()
+                document.body.removeChild(a)
+                URL.revokeObjectURL(url)
+              }}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gold text-white text-sm font-semibold hover:bg-gold/90 transition-colors"
+            >
+              <Download className="h-4 w-4" />
+              Descargar HTML
+            </button>
+          )}
         </div>
 
         {error && (
