@@ -61,3 +61,25 @@ export async function getStaleLeadIds(campusFilter?: string[] | null): Promise<s
   if (error || !data) return []
   return data.map((l) => l.id)
 }
+
+// Returns lead IDs that have a follow-up scheduled (status 'programado') whose
+// due_date has arrived (<= today), restricted to leads visible by recinto.
+export async function getDueFollowupLeadIds(campusFilter?: string[] | null): Promise<string[]> {
+  const supabase = getServiceClient()
+
+  const today = new Date().toISOString().slice(0, 10)
+  const { data: due, error } = await supabase
+    .from('lead_followups')
+    .select('lead_id')
+    .eq('status', 'programado')
+    .lte('due_date', today)
+  if (error || !due || due.length === 0) return []
+
+  const dueIds = Array.from(new Set(due.map((f) => f.lead_id)))
+
+  // Filtrar a los leads visibles por recinto.
+  let leadQuery = supabase.from('leads').select('id').in('id', dueIds)
+  if (campusFilter) leadQuery = leadQuery.or(leadCampusOrFilter(campusFilter))
+  const { data: visible } = await leadQuery
+  return (visible ?? []).map((l) => l.id)
+}

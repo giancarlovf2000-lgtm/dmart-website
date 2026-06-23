@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { X, AlertCircle, Camera } from 'lucide-react'
 import { createClient as createBrowserSupabase } from '@/lib/supabase/client'
 import Button from '@/components/ui/Button'
+import CommTypeSelect from '@/components/portal/CommTypeSelect'
 import type { LeadStatus, CommunicationType } from '@/lib/types'
 
 const STATUSES: LeadStatus[] = [
@@ -22,15 +23,6 @@ const STATUSES: LeadStatus[] = [
   'Desinteresado / Rechazado',
   'Graduado',
   'Graduado con Reválida',
-]
-
-const COMMUNICATION_TYPES: CommunicationType[] = [
-  'Llamada',
-  'Mensaje de texto',
-  'Email',
-  'Visita presencial',
-  'WhatsApp',
-  'Otro',
 ]
 
 interface StatusChangeModalProps {
@@ -195,17 +187,13 @@ export default function StatusChangeModal({
           </div>
 
           <div>
-            <label className="form-label">Tipo de Comunicación <span className="text-red-500">*</span></label>
-            <select
+            <label className="form-label">Tipo de Seguimiento <span className="text-red-500">*</span></label>
+            <CommTypeSelect
               value={communicationType}
-              onChange={(e) => setCommunicationType(e.target.value as CommunicationType)}
+              onChange={(v) => setCommunicationType(v)}
+              placeholder="Seleccionar tipo…"
               className="form-input"
-            >
-              <option value="">Seleccionar tipo…</option>
-              {COMMUNICATION_TYPES.map((t) => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-            </select>
+            />
           </div>
 
           <div>

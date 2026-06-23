@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServerSupabase } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
 import { canAccessLeadCampus } from '@/lib/portal/leadAccess'
-import type { LeadStatus, CommunicationType } from '@/lib/types'
+import { resolveCommunicationType, autoCompleteDueFollowups } from '@/lib/portal/followups'
+import type { LeadStatus } from '@/lib/types'
 
 function getAdminClient() {
   return createClient(
@@ -19,10 +20,6 @@ const VALID_STATUSES: LeadStatus[] = [
   'Graduado', 'Graduado con Reválida',
 ]
 
-const VALID_COMM_TYPES: CommunicationType[] = [
-  'Llamada', 'Mensaje de texto', 'Email', 'Visita presencial', 'WhatsApp', 'Otro',
-]
-
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -36,12 +33,15 @@ export async function PATCH(
 
   if (!VALID_STATUSES.includes(new_status))
     return NextResponse.json({ error: 'Estado inválido.' }, { status: 400 })
-  if (!VALID_COMM_TYPES.includes(communication_type))
-    return NextResponse.json({ error: 'Tipo de comunicación inválido.' }, { status: 400 })
   if (!note || typeof note !== 'string' || note.trim().length < 20)
     return NextResponse.json({ error: 'La nota debe tener al menos 20 caracteres.' }, { status: 400 })
 
   const admin = getAdminClient()
+
+  // El tipo de seguimiento se valida contra la tabla communication_types (editable).
+  const commType = await resolveCommunicationType(admin, communication_type)
+  if (!commType)
+    return NextResponse.json({ error: 'Tipo de comunicación inválido.' }, { status: 400 })
 
   const { data: employee } = await admin
     .from('employees')
@@ -73,7 +73,7 @@ export async function PATCH(
       action_type: 'status_change',
       old_status: lead.status,
       new_status,
-      communication_type,
+      communication_type: commType,
       note: note.trim(),
     }),
   ])
@@ -82,6 +82,9 @@ export async function PATCH(
     console.error('Status update error:', updateResult.error, historyResult.error)
     return NextResponse.json({ error: 'Error al actualizar el estado.' }, { status: 500 })
   }
+
+  // Cierre automático de follow-ups vencidos al registrar actividad.
+  await autoCompleteDueFollowups(admin, params.id, user.id)
 
   return NextResponse.json({ success: true })
 }

@@ -101,11 +101,13 @@ export async function PATCH(
     return NextResponse.json({ success: true })
   }
 
-  // ── Contact info update (telefono / email / campus / programa_interes / horario) ──
+  // ── Contact / profile info update ──
   if (body.telefono !== undefined || body.email !== undefined ||
-      body.campus !== undefined || body.programa_interes !== undefined || body.horario !== undefined) {
+      body.campus !== undefined || body.programa_interes !== undefined || body.horario !== undefined ||
+      body.nombre !== undefined || body.apellido !== undefined || body.start_date !== undefined) {
     // Verify this employee has access to the lead (por recinto)
-    const { data: lead } = await admin.from('leads').select('assigned_to, campus').eq('id', params.id).single()
+    const { data: lead } = await admin.from('leads')
+      .select('assigned_to, campus, nombre, apellido, start_date').eq('id', params.id).single()
     if (!lead) return NextResponse.json({ error: 'Lead no encontrado.' }, { status: 404 })
 
     if (!canAccessLeadCampus(employee, lead.campus))
@@ -113,6 +115,29 @@ export async function PATCH(
 
     const updates: Record<string, unknown> = { last_action_at: new Date().toISOString() }
     const changes: string[] = []
+
+    // Nombre / apellido — se registra el cambio de qué a qué.
+    if (body.nombre !== undefined || body.apellido !== undefined) {
+      const newNombre = body.nombre !== undefined ? String(body.nombre).trim().slice(0, 100) : lead.nombre
+      const newApellido = body.apellido !== undefined ? String(body.apellido).trim().slice(0, 100) : lead.apellido
+      const oldFull = `${lead.nombre} ${lead.apellido}`.trim()
+      const newFull = `${newNombre} ${newApellido}`.trim()
+      if (newNombre.length >= 1 && newApellido.length >= 1 && newFull !== oldFull) {
+        updates.nombre = newNombre
+        updates.apellido = newApellido
+        changes.push(`Nombre actualizado: "${oldFull}" → "${newFull}"`)
+      }
+    }
+
+    // Fecha de comienzo — editable, se registra el cambio.
+    if (body.start_date !== undefined) {
+      const val = String(body.start_date).trim()
+      const newDate = val || null
+      if (newDate !== (lead.start_date ?? null)) {
+        updates.start_date = newDate
+        changes.push(`Fecha de comienzo: ${lead.start_date ?? '—'} → ${newDate ?? '—'}`)
+      }
+    }
 
     if (body.telefono !== undefined) {
       const tel = String(body.telefono).trim()
@@ -139,6 +164,9 @@ export async function PATCH(
       updates.horario = val || null
       if (val) changes.push(`Horario actualizado a ${val}`)
     }
+
+    if (changes.length === 0)
+      return NextResponse.json({ success: true })
 
     const { error } = await admin.from('leads').update(updates).eq('id', params.id)
     if (error) return NextResponse.json({ error: 'Error al actualizar el lead.' }, { status: 500 })

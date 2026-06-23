@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient as createServerSupabase } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
-import { promoteNewLeadsToCritico, getStaleLeadIds } from '@/lib/portal/alerts'
+import { promoteNewLeadsToCritico, getStaleLeadIds, getDueFollowupLeadIds } from '@/lib/portal/alerts'
 import { applyCampusVisibility } from '@/lib/portal/leadAccess'
 import { checkSupervisorPlanningGate } from '@/lib/portal/planningGate'
 import { findDuplicatePairs, canonicalPairKey } from '@/lib/portal/duplicates'
@@ -13,7 +13,7 @@ import type { Lead, Employee, Activity } from '@/lib/types'
 import {
   AlertTriangle, Users, Calendar, GraduationCap, Flame,
   Clock, Phone, CalendarX2, RotateCcw, FileText, BookOpen,
-  Timer, XCircle, Copy,
+  Timer, XCircle, Copy, CalendarClock, Award,
 } from 'lucide-react'
 
 function getAdminClient() {
@@ -24,7 +24,7 @@ function getAdminClient() {
 }
 
 interface DashboardPageProps {
-  searchParams: { status?: string; campus?: string; source?: string; stale?: string; duplicates?: string }
+  searchParams: { status?: string; campus?: string; source?: string; stale?: string; duplicates?: string; followup?: string }
 }
 
 export default async function DashboardPage({ searchParams }: DashboardPageProps) {
@@ -68,9 +68,11 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   await promoteNewLeadsToCritico(campusFilter)
   const staleLeadIds = await getStaleLeadIds(campusFilter)
+  const followupLeadIds = await getDueFollowupLeadIds(campusFilter)
 
   const showDuplicates = searchParams.duplicates === '1'
   const showStale     = searchParams.stale === '1'
+  const showFollowup  = searchParams.followup === '1'
   const status        = searchParams.status
   const campus        = searchParams.campus
   const source        = searchParams.source
@@ -93,6 +95,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   if (source)   leadsQuery = leadsQuery.eq('source', source)
   if (showStale && staleLeadIds.length > 0) leadsQuery = leadsQuery.in('id', staleLeadIds)
   if (showStale && staleLeadIds.length === 0) leadsQuery = leadsQuery.eq('id', 'no-match')
+  if (showFollowup && followupLeadIds.length > 0) leadsQuery = leadsQuery.in('id', followupLeadIds)
+  if (showFollowup && followupLeadIds.length === 0) leadsQuery = leadsQuery.eq('id', 'no-match')
 
   const { data: leads } = await leadsQuery
 
@@ -124,6 +128,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     futuro:              countByStatus('Seguimiento a Futuro'),
     matriculado:         countByStatus('Matriculado'),
     desinteresado:       countByStatus('Desinteresado / Rechazado'),
+    graduado:            countByStatus('Graduado'),
+    graduado_revalida:   countByStatus('Graduado con Reválida'),
   }
 
   // ── Duplicate count (server-side, for the alert + badge) ──────────────────
@@ -171,6 +177,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     { label: 'Orientado',                filterValue: 'Orientado (En Proceso de Matricularse)',    value: counts.orientado,           icon: BookOpen,     color: 'text-emerald-600', iconBg: 'bg-emerald-50' },
     { label: 'Seguimiento a Futuro',     filterValue: 'Seguimiento a Futuro',                     value: counts.futuro,              icon: Timer,        color: 'text-slate-500',   iconBg: 'bg-slate-50' },
     { label: 'Matriculado',              filterValue: 'Matriculado',                              value: counts.matriculado,         icon: GraduationCap,color: 'text-green-600',   iconBg: 'bg-green-50' },
+    { label: 'Graduado',                 filterValue: 'Graduado',                                 value: counts.graduado,            icon: GraduationCap,color: 'text-emerald-700', iconBg: 'bg-emerald-50' },
+    { label: 'Graduado con Reválida',    filterValue: 'Graduado con Reválida',                    value: counts.graduado_revalida,   icon: Award,        color: 'text-cyan-700',    iconBg: 'bg-cyan-50' },
     { label: 'Desinteresado / Rechazado',filterValue: 'Desinteresado / Rechazado',                value: counts.desinteresado,       icon: XCircle,      color: 'text-gray-500',    iconBg: 'bg-gray-100' },
   ]
 
@@ -194,6 +202,23 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                 </p>
                 <p className="text-xs text-amber-700 mt-0.5">
                   Más de 7 días sin actividad. Haz clic para filtrarlos.
+                </p>
+              </div>
+            </div>
+          </a>
+        )}
+
+        {followupLeadIds.length > 0 && (
+          <a href={showFollowup ? '/portal/dashboard' : '/portal/dashboard?followup=1'}
+            className="block mb-3 p-4 rounded-2xl bg-blue-50 border border-blue-200 hover:bg-blue-100 transition-colors">
+            <div className="flex gap-3 items-start">
+              <CalendarClock className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-blue-800">
+                  {followupLeadIds.length} lead{followupLeadIds.length > 1 ? 's' : ''} con follow-up programado para hoy
+                </p>
+                <p className="text-xs text-blue-700 mt-0.5">
+                  Follow-up que tú o un compañero del recinto programaron. Haz clic para filtrarlos.
                 </p>
               </div>
             </div>
@@ -229,6 +254,17 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           >
             <AlertTriangle className="h-3.5 w-3.5" />
             Seguimiento pendiente · {staleLeadIds.length}
+          </a>
+          <a
+            href={showFollowup ? '/portal/dashboard' : '/portal/dashboard?followup=1'}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-full border text-xs font-semibold transition-all ${
+              showFollowup
+                ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                : 'bg-white border-blue-200 text-blue-700 hover:bg-blue-50'
+            }`}
+          >
+            <CalendarClock className="h-3.5 w-3.5" />
+            Follow-up · {followupLeadIds.length}
           </a>
           <a
             href={showDuplicates ? '/portal/dashboard' : '/portal/dashboard?duplicates=1'}
@@ -284,6 +320,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
               <h2 className="text-sm font-semibold text-ink font-display">
                 {showStale
                   ? `Seguimiento pendiente · ${staleLeadIds.length} leads`
+                  : showFollowup
+                  ? `Follow-up programado · ${followupLeadIds.length} leads`
                   : `${isAdmin ? 'Todos los leads' : 'Leads de mi recinto'} · ${counts.total} total`}
               </h2>
               <div className="flex items-center gap-3">
@@ -301,6 +339,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             <LeadTable
               leads={sortedLeads as Lead[]}
               staleLeadIds={staleLeadIds}
+              followupLeadIds={followupLeadIds}
               employee={employee as Employee}
               activities={(activities ?? []) as Activity[]}
               sources={sources}

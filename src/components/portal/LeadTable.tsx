@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { AlertTriangle, Plus, ChevronRight, Filter, Trash2, Search } from 'lucide-react'
+import { AlertTriangle, Plus, ChevronRight, Filter, Trash2, Search, CalendarClock } from 'lucide-react'
 import LeadStatusBadge from './LeadStatusBadge'
 import AddLeadModal from './AddLeadModal'
 import type { Lead, Activity, LeadStatus, Employee } from '@/lib/types'
@@ -19,6 +19,7 @@ const ALL_STATUSES: LeadStatus[] = [
 interface LeadTableProps {
   leads: Lead[]
   staleLeadIds: string[]
+  followupLeadIds?: string[]
   employee: Pick<Employee, 'id' | 'full_name' | 'campus' | 'role'>
   activities: Pick<Activity, 'id' | 'name'>[]
   sources?: string[]
@@ -32,7 +33,7 @@ function formatDate(dateStr: string) {
   })
 }
 
-export default function LeadTable({ leads, staleLeadIds, employee, activities, sources = [], currentSource = '', teamMembers = [] }: LeadTableProps) {
+export default function LeadTable({ leads, staleLeadIds, followupLeadIds = [], employee, activities, sources = [], currentSource = '', teamMembers = [] }: LeadTableProps) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -43,6 +44,7 @@ export default function LeadTable({ leads, staleLeadIds, employee, activities, s
 
   const isAdmin = employee.role === 'admin'
   const staleSet = new Set(staleLeadIds)
+  const followupSet = new Set(followupLeadIds)
 
   function updateFilter(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString())
@@ -208,6 +210,7 @@ export default function LeadTable({ leads, staleLeadIds, employee, activities, s
               <tbody className="divide-y divide-gray-50">
                 {filteredLeads.map((lead) => {
                   const isStale = staleSet.has(lead.id)
+                  const hasFollowup = followupSet.has(lead.id)
                   const isChecked = selected.has(lead.id)
                   return (
                     <tr
@@ -229,6 +232,11 @@ export default function LeadTable({ leads, staleLeadIds, employee, activities, s
                           {isStale && (
                             <span title="Seguimiento pendiente (7+ días sin actividad)">
                               <AlertTriangle className="h-3.5 w-3.5 text-amber-500 flex-shrink-0" />
+                            </span>
+                          )}
+                          {hasFollowup && (
+                            <span title="Follow-up programado para hoy o antes">
+                              <CalendarClock className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
                             </span>
                           )}
                           {lead.nombre} {lead.apellido}

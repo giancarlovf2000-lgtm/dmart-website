@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Phone, Mail, MapPin, BookOpen, Clock, Calendar, User, AlertCircle, Trash2, Pencil, Check, X, MessageSquarePlus, FileText } from 'lucide-react'
+import { ArrowLeft, Phone, Mail, MapPin, BookOpen, Clock, Calendar, CalendarClock, CalendarPlus, User, AlertCircle, Trash2, Pencil, Check, X, MessageSquarePlus, FileText } from 'lucide-react'
 import LeadStatusBadge from '@/components/portal/LeadStatusBadge'
 import StatusChangeModal from '@/components/portal/StatusChangeModal'
-import type { Lead, LeadHistory } from '@/lib/types'
+import CommTypeSelect from '@/components/portal/CommTypeSelect'
+import type { Lead, LeadHistory, LeadFollowup } from '@/lib/types'
 import { formatPhone, ALL_PROGRAMS } from '@/lib/utils'
 
 const CAMPUSES = ['Barranquitas', 'Vega Alta', 'No tengo preferencia']
@@ -30,6 +31,20 @@ const ACTION_LABELS: Record<string, string> = {
   note_added: 'Nota',
   lead_created: 'Lead creado',
   lead_assigned: 'Lead asignado',
+  followup_scheduled: 'Follow-up programado',
+  followup_done: 'Follow-up cerrado',
+}
+
+function formatDate(dateStr: string) {
+  return new Date(dateStr + 'T00:00:00').toLocaleDateString('es-PR', {
+    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
+  })
+}
+
+function addDays(n: number): string {
+  const d = new Date()
+  d.setDate(d.getDate() + n)
+  return d.toISOString().slice(0, 10)
 }
 
 export default function LeadDetailPage({ params }: { params: { id: string } }) {
@@ -45,6 +60,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
   const [reassigning, setReassigning] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [editContact, setEditContact] = useState<{
+    nombre: string; apellido: string; start_date: string
     telefono: string; email: string
     campus: string; programa_interes: string; horario: string
   } | null>(null)
@@ -53,6 +69,10 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
   const [noteForm, setNoteForm] = useState({ communication_type: 'Llamada', note: '' })
   const [savingNote, setSavingNote] = useState(false)
   const [noteError, setNoteError] = useState('')
+  // Follow-ups
+  const [followups, setFollowups] = useState<LeadFollowup[]>([])
+  const [fuForm, setFuForm] = useState({ due_date: addDays(7), note: '' })
+  const [savingFu, setSavingFu] = useState(false)
 
   async function load() {
     setLoading(true)
@@ -68,6 +88,11 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
     setIsAdmin(data.currentEmployeeRole === 'admin')
     setIsSupervisor(data.currentEmployeeRole === 'supervisor')
     setAssignableEmployees(data.assignableEmployees ?? [])
+
+    fetch(`/api/portal/leads/${params.id}/followups`)
+      .then((r) => r.ok ? r.json() : { followups: [] })
+      .then((d) => setFollowups(d.followups ?? []))
+      .catch(() => {})
 
     if (data.currentEmployeeRole === 'supervisor') {
       fetch('/api/portal/supervisor-plan/gate')
@@ -113,6 +138,9 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        nombre: editContact.nombre,
+        apellido: editContact.apellido,
+        start_date: editContact.start_date,
         telefono: editContact.telefono,
         email: editContact.email,
         campus: editContact.campus,
@@ -127,6 +155,33 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
       alert('Error al guardar los cambios.')
     }
     setSavingContact(false)
+  }
+
+  async function handleScheduleFollowup() {
+    if (!fuForm.due_date) return
+    setSavingFu(true)
+    const res = await fetch(`/api/portal/leads/${params.id}/followups`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(fuForm),
+    })
+    if (res.ok) {
+      setFuForm({ due_date: addDays(7), note: '' })
+      await load()
+    } else {
+      alert('Error al programar el follow-up.')
+    }
+    setSavingFu(false)
+  }
+
+  async function handleCloseFollowup(fid: string, status: 'completado' | 'cancelado') {
+    const res = await fetch(`/api/portal/leads/${params.id}/followups/${fid}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    })
+    if (res.ok) await load()
+    else alert('Error al actualizar el follow-up.')
   }
 
   async function handleSaveNote() {
@@ -229,6 +284,22 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {editContact ? (
               <>
+                <EditField icon={User} label="Nombre">
+                  <input
+                    type="text"
+                    value={editContact.nombre}
+                    onChange={(e) => setEditContact((p) => p && ({ ...p, nombre: e.target.value }))}
+                    className="w-full text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-accent-ring"
+                  />
+                </EditField>
+                <EditField icon={User} label="Apellido">
+                  <input
+                    type="text"
+                    value={editContact.apellido}
+                    onChange={(e) => setEditContact((p) => p && ({ ...p, apellido: e.target.value }))}
+                    className="w-full text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-accent-ring"
+                  />
+                </EditField>
                 <EditField icon={Phone} label="Teléfono">
                   <input
                     type="tel"
@@ -265,6 +336,14 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
                     {HORARIOS.map((h) => <option key={h} value={h}>{h}</option>)}
                   </select>
                 </EditField>
+                <EditField icon={CalendarPlus} label="Fecha de comienzo">
+                  <input
+                    type="date"
+                    value={editContact.start_date}
+                    onChange={(e) => setEditContact((p) => p && ({ ...p, start_date: e.target.value }))}
+                    className="w-full text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-accent-ring"
+                  />
+                </EditField>
                 <div className="sm:col-span-2">
                   <EditField icon={BookOpen} label="Programa de Interés">
                     <select
@@ -285,6 +364,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
                 <InfoRow icon={MapPin} label="Recinto" value={lead.campus ?? '—'} />
                 <InfoRow icon={Clock} label="Horario" value={lead.horario ?? '—'} />
                 <InfoRow icon={BookOpen} label="Programa de Interés" value={lead.programa_interes ?? '—'} />
+                <InfoRow icon={CalendarPlus} label="Fecha de comienzo" value={lead.start_date ? formatDate(lead.start_date) : '—'} />
               </>
             )}
             <InfoRow icon={Calendar} label="Fecha del Lead" value={formatDateTime(lead.created_at)} />
@@ -346,6 +426,9 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
                 )}
                 <button
                   onClick={() => setEditContact({
+                    nombre: lead.nombre ?? '',
+                    apellido: lead.apellido ?? '',
+                    start_date: lead.start_date ?? '',
                     telefono: lead.telefono ?? '',
                     email: lead.email ?? '',
                     campus: lead.campus ?? '',
@@ -359,6 +442,101 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
                 </button>
               </>
             )}
+          </div>
+        </div>
+
+        {/* Follow-up scheduler */}
+        <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <CalendarClock className="h-4 w-4 text-blue-600" />
+            <h2 className="text-sm font-bold text-ink font-display">Follow-up programado</h2>
+          </div>
+
+          {/* Lista de follow-ups */}
+          {followups.length > 0 && (
+            <div className="space-y-2 mb-5">
+              {followups.map((fu) => {
+                const isProg = fu.status === 'programado'
+                const isDue = isProg && fu.due_date <= new Date().toISOString().slice(0, 10)
+                return (
+                  <div key={fu.id} className={`flex items-start justify-between gap-3 rounded-xl border px-3.5 py-2.5 ${
+                    isDue ? 'bg-blue-50 border-blue-200' : isProg ? 'bg-gray-50 border-gray-200' : 'bg-gray-50 border-gray-100 opacity-70'
+                  }`}>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-semibold text-ink">{formatDate(fu.due_date)}</span>
+                        <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${
+                          fu.status === 'programado' ? (isDue ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-700')
+                          : fu.status === 'completado' ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500'
+                        }`}>
+                          {fu.status === 'programado' ? (isDue ? 'Pendiente hoy' : 'Programado') : fu.status === 'completado' ? 'Hecho' : 'Cancelado'}
+                        </span>
+                      </div>
+                      {fu.note && <p className="text-sm text-gray-600 mt-0.5">{fu.note}</p>}
+                      <p className="text-xs text-gray-400 mt-0.5">Programado por {fu.employee?.full_name ?? 'empleado'}</p>
+                    </div>
+                    {isProg && (
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <button onClick={() => handleCloseFollowup(fu.id, 'completado')}
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-ink text-white text-xs font-semibold hover:bg-black transition-colors" title="Marcar como hecho">
+                          <Check className="h-3 w-3" /> Hecho
+                        </button>
+                        <button onClick={() => handleCloseFollowup(fu.id, 'cancelado')}
+                          className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 transition-colors" title="Cancelar">
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {/* Formulario para programar */}
+          <div className="p-4 rounded-xl border border-gray-200 bg-gray-50 space-y-3">
+            <p className="text-xs font-semibold text-gray-700">Programar un follow-up</p>
+            <div className="flex flex-wrap items-end gap-3">
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Fecha</label>
+                <input
+                  type="date"
+                  value={fuForm.due_date}
+                  min={new Date().toISOString().slice(0, 10)}
+                  onChange={(e) => setFuForm((p) => ({ ...p, due_date: e.target.value }))}
+                  className="text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-accent-ring"
+                />
+              </div>
+              <div className="flex items-center gap-1.5">
+                {[7, 10, 30].map((n) => (
+                  <button key={n} type="button" onClick={() => setFuForm((p) => ({ ...p, due_date: addDays(n) }))}
+                    className="px-2.5 py-1.5 rounded-full border border-gray-200 bg-white text-xs font-semibold text-gray-600 hover:bg-gray-100 transition-colors">
+                    +{n} días
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 mb-1 block">Nota (opcional)</label>
+              <input
+                type="text"
+                value={fuForm.note}
+                onChange={(e) => setFuForm((p) => ({ ...p, note: e.target.value }))}
+                placeholder="Motivo o recordatorio…"
+                maxLength={500}
+                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-accent-ring"
+              />
+            </div>
+            <div className="flex justify-end">
+              <button
+                onClick={handleScheduleFollowup}
+                disabled={savingFu || !fuForm.due_date}
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50"
+              >
+                <CalendarPlus className="h-3.5 w-3.5" />
+                {savingFu ? 'Programando…' : 'Programar follow-up'}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -388,16 +566,11 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
                 </div>
               )}
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">Tipo de comunicación</label>
-                <select
+                <label className="text-xs text-gray-500 mb-1 block">Tipo de seguimiento</label>
+                <CommTypeSelect
                   value={noteForm.communication_type}
-                  onChange={(e) => setNoteForm((p) => ({ ...p, communication_type: e.target.value }))}
-                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-accent-ring"
-                >
-                  {['Llamada', 'Mensaje de texto', 'Email', 'Visita presencial', 'WhatsApp', 'Otro'].map((t) => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
-                </select>
+                  onChange={(v) => setNoteForm((p) => ({ ...p, communication_type: v }))}
+                />
               </div>
               <div>
                 <label className="text-xs text-gray-500 mb-1 block">Nota <span className="text-gray-400">(mín. 20 caracteres)</span></label>

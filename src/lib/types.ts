@@ -76,15 +76,39 @@ export type LeadStatus =
   | 'Graduado'
   | 'Graduado con Reválida'
 
-export type CommunicationType =
-  | 'Llamada'
-  | 'Mensaje de texto'
-  | 'Email'
-  | 'Visita presencial'
-  | 'WhatsApp'
-  | 'Otro'
+// Los tipos de comunicación / seguimiento ahora viven en la tabla
+// communication_types (los empleados pueden agregar nuevos), así que es texto libre.
+export type CommunicationType = string
 
-export type ActionType = 'status_change' | 'note_added' | 'lead_created' | 'lead_assigned'
+export interface CommunicationTypeRow {
+  id: string
+  name: string
+  created_by: string | null
+  created_at: string
+}
+
+export type ActionType =
+  | 'status_change'
+  | 'note_added'
+  | 'lead_created'
+  | 'lead_assigned'
+  | 'followup_scheduled'
+  | 'followup_done'
+
+export type FollowupStatus = 'programado' | 'completado' | 'cancelado'
+
+export interface LeadFollowup {
+  id: string
+  lead_id: string
+  employee_id: string | null
+  due_date: string
+  note: string | null
+  status: FollowupStatus
+  created_at: string
+  completed_at: string | null
+  completed_by: string | null
+  employee?: Pick<Employee, 'full_name'>
+}
 
 export type AssignmentSource = 'website' | 'manual' | 'import'
 
@@ -161,6 +185,7 @@ export interface Lead {
   page_source: string | null
   status: LeadStatus
   notes: string | null
+  start_date: string | null
   assigned_to: string | null
   assignment_source: AssignmentSource | null
   last_action_at: string
