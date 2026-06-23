@@ -198,11 +198,15 @@ export default function ReportesPage() {
       setReports(d.reports ?? [])
       if (d.role) {
         setRole(d.role)
-        if (d.role === 'supervisor') {
+        // El calendario de planificación es para empleados y supervisores.
+        if (d.role === 'empleado' || d.role === 'supervisor') {
           fetch(`/api/portal/supervisor-plan?month=${planMonth.slice(0, 7)}`)
             .then((r) => r.json())
             .then((pd) => { if (pd.notes) setPlanNotes(pd.notes) })
             .catch(() => {})
+        }
+        // El gate de planificación solo aplica a supervisores.
+        if (d.role === 'supervisor') {
           fetch('/api/portal/supervisor-plan/gate').then((r) => r.json()).then(setGateStatus).catch(() => {})
         }
       }
@@ -215,7 +219,7 @@ export default function ReportesPage() {
   useEffect(() => { loadData() }, [loadData])
 
   useEffect(() => {
-    if (role !== 'supervisor') return
+    if (role !== 'empleado' && role !== 'supervisor') return
     setPlanNotes({})
     fetch(`/api/portal/supervisor-plan?month=${planMonth.slice(0, 7)}`)
       .then((r) => r.json())
@@ -544,8 +548,8 @@ ${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads este mes.</p
               </button>
             </div>
 
-            {/* ── Calendario de planificación — supervisores ── */}
-            {role === 'supervisor' && (() => {
+            {/* ── Calendario de planificación — empleados y supervisores ── */}
+            {(role === 'empleado' || role === 'supervisor') && (() => {
               const calDate = new Date(planMonth + 'T00:00:00')
               const calYear = calDate.getFullYear()
               const calMonth = calDate.getMonth()
@@ -553,6 +557,18 @@ ${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads este mes.</p
               const firstDayOfWeek = new Date(calYear, calMonth, 1).getDay()
               const blanks = Array(firstDayOfWeek).fill(null)
               const days = Array.from({ length: daysInCalMonth }, (_, i) => i + 1)
+
+              // Actividades del mes mostrado, agrupadas por día (aparecen solas en el calendario).
+              const actsByDay: Record<number, Activity[]> = {}
+              for (const a of activities) {
+                if (!a.activity_date) continue
+                const ad = new Date(a.activity_date + 'T00:00:00')
+                if (ad.getFullYear() === calYear && ad.getMonth() === calMonth) {
+                  const d = ad.getDate()
+                  ;(actsByDay[d] ??= []).push(a)
+                }
+              }
+
               return (
                 <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5">
                   <div className="flex items-center gap-2 mb-1">
@@ -566,7 +582,7 @@ ${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads este mes.</p
                     </div>
                   </div>
                   <p className="text-xs text-amber-700 mb-4">
-                    Escribe en cada día qué actividades planeas realizar.
+                    Escribe en cada día qué actividades planeas realizar. Las actividades que creas aparecen marcadas en su fecha.
                   </p>
                   <div className="grid grid-cols-7 gap-1 mb-1">
                     {['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'].map((d) => (
@@ -578,6 +594,16 @@ ${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads este mes.</p
                     {days.map((day) => (
                       <div key={day} className="bg-white border border-amber-100 rounded-lg p-1.5 min-h-[72px] flex flex-col">
                         <span className="text-xs font-bold text-amber-800 mb-1">{day}</span>
+                        {actsByDay[day]?.map((a) => (
+                          <span
+                            key={a.id}
+                            title={a.name}
+                            className="mb-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-accent-soft text-accent text-[10px] font-semibold leading-tight truncate"
+                          >
+                            <MapPin className="h-2.5 w-2.5 flex-shrink-0" />
+                            <span className="truncate">{a.name}</span>
+                          </span>
+                        ))}
                         <textarea
                           rows={2}
                           value={planNotes[String(day)] ?? ''}

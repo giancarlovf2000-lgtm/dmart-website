@@ -9,22 +9,25 @@ function getAdminClient() {
   )
 }
 
-async function requireSupervisor() {
+// El calendario de planificación es individual por empleado: cualquier empleado
+// activo puede leer/guardar su propio plan (la columna supervisor_id guarda el id
+// del empleado dueño del plan).
+async function requireEmployee() {
   const supabase = await createServerSupabase()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
   const admin = getAdminClient()
   const { data: employee } = await admin
     .from('employees')
-    .select('id, role')
+    .select('id, active')
     .eq('id', user.id)
     .single()
-  if (!employee || employee.role !== 'supervisor') return null
+  if (!employee || !employee.active) return null
   return user
 }
 
 export async function GET(request: NextRequest) {
-  const user = await requireSupervisor()
+  const user = await requireEmployee()
   if (!user) return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
 
   const month = request.nextUrl.searchParams.get('month')
@@ -43,7 +46,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const user = await requireSupervisor()
+  const user = await requireEmployee()
   if (!user) return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
 
   const body = await request.json()
