@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient as createServerSupabase } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
 import { promoteNewLeadsToCritico, getStaleLeadIds } from '@/lib/portal/alerts'
+import { applyCampusVisibility } from '@/lib/portal/leadAccess'
 import { checkSupervisorPlanningGate } from '@/lib/portal/planningGate'
 import { findDuplicatePairs, canonicalPairKey } from '@/lib/portal/duplicates'
 import PortalHeader from '@/components/portal/PortalHeader'
@@ -49,36 +50,23 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     if (gate.required && !gate.complete) redirect('/portal/reportes?planning=required')
   }
 
-  // Get team members (supervisor by supervisor_id, director by campus)
-  let supervisedIds: string[] = []
+  // Colegas del mismo recinto (para la reasignación inline del LeadTable). Admin no la usa.
   let supervisedEmployees: { id: string; full_name: string }[] = []
-  if (isSupervisor) {
-    const { data: supervised } = await adminClient
+  if (!isAdmin) {
+    const { data: campusEmps } = await adminClient
       .from('employees')
       .select('id, full_name')
-      .eq('supervisor_id', user.id)
+      .overlaps('campus', employee.campus as string[])
       .eq('active', true)
-    supervisedEmployees = (supervised ?? []) as { id: string; full_name: string }[]
-    supervisedIds = supervisedEmployees.map((e) => e.id)
-  } else if (isDirector) {
-    const directorCampus = (employee.campus as string[])[0]
-    if (directorCampus) {
-      const { data: campusEmps } = await adminClient
-        .from('employees')
-        .select('id, full_name')
-        .contains('campus', [directorCampus])
-        .eq('active', true)
-        .neq('id', user.id)
-      supervisedEmployees = (campusEmps ?? []) as { id: string; full_name: string }[]
-      supervisedIds = supervisedEmployees.map((e) => e.id)
-    }
+      .neq('id', user.id)
+    supervisedEmployees = (campusEmps ?? []) as { id: string; full_name: string }[]
   }
 
-  const teamIds = (isSupervisor || isDirector) ? [user!.id, ...supervisedIds] : []
-  const employeeIdFilter = isAdmin ? undefined : (isSupervisor || isDirector) ? teamIds : user!.id
+  // Filtro de recinto para las alertas: admin = todos; el resto = su(s) recinto(s).
+  const campusFilter = isAdmin ? undefined : (employee.campus as string[])
 
-  await promoteNewLeadsToCritico(employeeIdFilter)
-  const staleLeadIds = await getStaleLeadIds(employeeIdFilter)
+  await promoteNewLeadsToCritico(campusFilter)
+  const staleLeadIds = await getStaleLeadIds(campusFilter)
 
   const showDuplicates = searchParams.duplicates === '1'
   const showStale     = searchParams.stale === '1'
@@ -88,9 +76,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function applyRoleFilter(query: any) {
-    if (isAdmin) return query
-    if (isSupervisor || isDirector) return query.in('assigned_to', teamIds.length > 0 ? teamIds : ['no-match'])
-    return query.eq('assigned_to', user!.id)
+    return applyCampusVisibility(query, employee!)
   }
 
   // ── Leads query (filtered, for the table) ──────────────────────────────────
@@ -291,7 +277,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
               <h2 className="text-sm font-semibold text-gray-700">
                 {showStale
                   ? `Seguimiento pendiente · ${staleLeadIds.length} leads`
-                  : `${isAdmin ? 'Todos los leads' : (isSupervisor || isDirector) ? 'Leads de mi equipo' : 'Mis leads'} · ${counts.total} total`}
+                  : `${isAdmin ? 'Todos los leads' : 'Leads de mi recinto'} · ${counts.total} total`}
               </h2>
               <div className="flex items-center gap-3">
                 {isAdmin ? (

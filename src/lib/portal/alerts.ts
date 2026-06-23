@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { leadCampusOrFilter } from '@/lib/portal/leadAccess'
 
 function getServiceClient() {
   return createClient(
@@ -8,8 +9,8 @@ function getServiceClient() {
 }
 
 // Promotes "Nuevo Lead" leads to "Crítico" if untouched for 24+ hours.
-// Runs on dashboard load.
-export async function promoteNewLeadsToCritico(employeeId?: string | string[]) {
+// Runs on dashboard load. `campusFilter` undefined/null = admin = todos los recintos.
+export async function promoteNewLeadsToCritico(campusFilter?: string[] | null) {
   const supabase = getServiceClient()
 
   let query = supabase
@@ -18,12 +19,7 @@ export async function promoteNewLeadsToCritico(employeeId?: string | string[]) {
     .eq('status', 'Nuevo Lead')
     .lt('last_action_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
 
-  if (Array.isArray(employeeId)) {
-    if (employeeId.length === 0) return
-    query = query.in('assigned_to', employeeId)
-  } else if (employeeId) {
-    query = query.eq('assigned_to', employeeId)
-  }
+  if (campusFilter) query = query.or(leadCampusOrFilter(campusFilter))
 
   const { data: stale, error } = await query
   if (error || !stale || stale.length === 0) return
@@ -50,7 +46,7 @@ export async function promoteNewLeadsToCritico(employeeId?: string | string[]) {
 
 // Returns lead IDs that have been in their current status for 7+ days
 // (for any non-terminal, non-new status). Used for visual "Seguimiento pendiente" alerts.
-export async function getStaleLeadIds(employeeId?: string | string[]): Promise<string[]> {
+export async function getStaleLeadIds(campusFilter?: string[] | null): Promise<string[]> {
   const supabase = getServiceClient()
 
   let query = supabase
@@ -59,12 +55,7 @@ export async function getStaleLeadIds(employeeId?: string | string[]): Promise<s
     .lt('last_action_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
     .not('status', 'in', '("Nuevo Lead","Crítico","Matriculado","Desinteresado / Rechazado")')
 
-  if (Array.isArray(employeeId)) {
-    if (employeeId.length === 0) return []
-    query = query.in('assigned_to', employeeId)
-  } else if (employeeId) {
-    query = query.eq('assigned_to', employeeId)
-  }
+  if (campusFilter) query = query.or(leadCampusOrFilter(campusFilter))
 
   const { data, error } = await query
   if (error || !data) return []

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServerSupabase } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
+import { canAccessLeadCampus } from '@/lib/portal/leadAccess'
 import type { LeadStatus, CommunicationType } from '@/lib/types'
 
 function getAdminClient() {
@@ -52,32 +53,15 @@ export async function PATCH(
 
   const { data: lead, error: leadError } = await admin
     .from('leads')
-    .select('id, status, assigned_to')
+    .select('id, status, assigned_to, campus')
     .eq('id', params.id)
     .single()
 
   if (leadError || !lead)
     return NextResponse.json({ error: 'Lead no encontrado.' }, { status: 404 })
 
-  if (employee.role !== 'admin') {
-    if (employee.role === 'supervisor') {
-      const { data: teamMember } = await admin
-        .from('employees')
-        .select('id')
-        .eq('id', lead.assigned_to)
-        .eq('supervisor_id', user.id)
-        .single()
-      if (lead.assigned_to !== user.id && !teamMember)
-        return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
-    } else if (employee.role === 'director') {
-      const { data: campusMember } = await admin.from('employees').select('id')
-        .eq('id', lead.assigned_to).contains('campus', employee.campus as string[]).single()
-      if (!campusMember)
-        return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
-    } else if (lead.assigned_to !== user.id) {
-      return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
-    }
-  }
+  if (!canAccessLeadCampus(employee, lead.campus))
+    return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
 
   const now = new Date().toISOString()
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServerSupabase } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
+import { canAccessLeadCampus } from '@/lib/portal/leadAccess'
 
 function getAdminClient() {
   return createClient(
@@ -36,26 +37,9 @@ export async function GET(
   if (leadError || !lead)
     return NextResponse.json({ error: 'Lead no encontrado.' }, { status: 404 })
 
-  // Access check: admin sees all; supervisor/director sees team; employee sees own
-  if (employee.role !== 'admin') {
-    if (employee.role === 'supervisor') {
-      const { data: teamMember } = await admin
-        .from('employees')
-        .select('id')
-        .eq('id', lead.assigned_to)
-        .eq('supervisor_id', user.id)
-        .single()
-      if (lead.assigned_to !== user.id && !teamMember)
-        return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
-    } else if (employee.role === 'director') {
-      const { data: campusMember } = await admin.from('employees').select('id')
-        .eq('id', lead.assigned_to).contains('campus', employee.campus as string[]).single()
-      if (!campusMember)
-        return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
-    } else if (lead.assigned_to !== user.id) {
-      return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
-    }
-  }
+  // Access check: admin ve todo; el resto ve los leads de su(s) recinto(s).
+  if (!canAccessLeadCampus(employee, lead.campus))
+    return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
 
   const { data: history } = await admin
     .from('lead_history')
@@ -63,18 +47,14 @@ export async function GET(
     .eq('lead_id', params.id)
     .order('created_at', { ascending: false })
 
-  // Build list of employees this user can reassign to
+  // Empleados a los que se puede reasignar: admin → todos; el resto → colegas de su(s) recinto(s).
   let assignableEmployees: { id: string; full_name: string }[] = []
   if (employee.role === 'admin') {
     const { data: all } = await admin.from('employees').select('id, full_name').eq('active', true).order('full_name')
     assignableEmployees = all ?? []
-  } else if (employee.role === 'supervisor') {
-    const { data: team } = await admin.from('employees').select('id, full_name').eq('supervisor_id', user.id).eq('active', true).order('full_name')
-    const { data: self } = await admin.from('employees').select('id, full_name').eq('id', user.id).single()
-    assignableEmployees = [self, ...(team ?? [])].filter(Boolean) as { id: string; full_name: string }[]
-  } else if (employee.role === 'director') {
+  } else {
     const { data: campusEmps } = await admin.from('employees').select('id, full_name')
-      .contains('campus', employee.campus as string[]).eq('active', true).order('full_name')
+      .overlaps('campus', employee.campus as string[]).eq('active', true).order('full_name')
     assignableEmployees = campusEmps ?? []
   }
 
@@ -100,18 +80,10 @@ export async function PATCH(
     const newAssignee: string = body.assigned_to
 
     if (employee.role !== 'admin') {
-      if (employee.role === 'supervisor') {
-        if (newAssignee !== user.id) {
-          const { data: teamCheck } = await admin.from('employees').select('id').eq('id', newAssignee).eq('supervisor_id', user.id).single()
-          if (!teamCheck) return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
-        }
-      } else if (employee.role === 'director') {
-        const { data: campusCheck } = await admin.from('employees').select('id')
-          .eq('id', newAssignee).contains('campus', employee.campus as string[]).single()
-        if (!campusCheck) return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
-      } else {
-        return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
-      }
+      // No-admin solo puede reasignar a un empleado activo que comparta su(s) recinto(s).
+      const { data: campusCheck } = await admin.from('employees').select('id')
+        .eq('id', newAssignee).eq('active', true).overlaps('campus', employee.campus as string[]).single()
+      if (!campusCheck) return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
     }
 
     const { data: targetEmp } = await admin.from('employees').select('full_name').eq('id', newAssignee).single()
@@ -132,24 +104,12 @@ export async function PATCH(
   // ── Contact info update (telefono / email / campus / programa_interes / horario) ──
   if (body.telefono !== undefined || body.email !== undefined ||
       body.campus !== undefined || body.programa_interes !== undefined || body.horario !== undefined) {
-    // Verify this employee has access to the lead
-    const { data: lead } = await admin.from('leads').select('assigned_to').eq('id', params.id).single()
+    // Verify this employee has access to the lead (por recinto)
+    const { data: lead } = await admin.from('leads').select('assigned_to, campus').eq('id', params.id).single()
     if (!lead) return NextResponse.json({ error: 'Lead no encontrado.' }, { status: 404 })
 
-    if (employee.role !== 'admin') {
-      if (employee.role === 'supervisor') {
-        const { data: teamMember } = await admin.from('employees').select('id').eq('id', lead.assigned_to).eq('supervisor_id', user.id).single()
-        if (lead.assigned_to !== user.id && !teamMember)
-          return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
-      } else if (employee.role === 'director') {
-        const { data: campusMember } = await admin.from('employees').select('id')
-          .eq('id', lead.assigned_to).contains('campus', employee.campus as string[]).single()
-        if (!campusMember)
-          return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
-      } else if (lead.assigned_to !== user.id) {
-        return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
-      }
-    }
+    if (!canAccessLeadCampus(employee, lead.campus))
+      return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
 
     const updates: Record<string, unknown> = { last_action_at: new Date().toISOString() }
     const changes: string[] = []

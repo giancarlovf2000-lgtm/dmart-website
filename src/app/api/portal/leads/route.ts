@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServerSupabase } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
+import { applyCampusVisibility } from '@/lib/portal/leadAccess'
 
 function getAdminClient() {
   return createClient(
@@ -27,7 +28,7 @@ export async function GET(request: NextRequest) {
   const auth = await getAuthenticatedEmployee(supabase)
   if (!auth) return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
 
-  const { user, employee } = auth
+  const { employee } = auth
   const { searchParams } = new URL(request.url)
   const status = searchParams.get('status')
   const campus = searchParams.get('campus')
@@ -42,25 +43,8 @@ export async function GET(request: NextRequest) {
     .order('last_action_at', { ascending: false })
     .range(offset, offset + pageSize - 1)
 
-  if (employee.role === 'admin') {
-    // no filter — sees all leads
-  } else if (employee.role === 'supervisor') {
-    const { data: team } = await admin.from('employees').select('id').eq('supervisor_id', user.id)
-    const teamIds = (team ?? []).map((e: { id: string }) => e.id)
-    const allIds = [user.id, ...teamIds]
-    query = query.in('assigned_to', allIds)
-  } else if (employee.role === 'director') {
-    const directorCampus = (employee.campus as string[])[0]
-    if (directorCampus) {
-      const { data: campusTeam } = await admin.from('employees').select('id').contains('campus', [directorCampus]).eq('active', true)
-      const campusIds = (campusTeam ?? []).map((e: { id: string }) => e.id)
-      query = query.in('assigned_to', campusIds)
-    } else {
-      query = query.eq('assigned_to', user.id)
-    }
-  } else {
-    query = query.eq('assigned_to', user.id)
-  }
+  // Visibilidad por recinto: admin ve todo; el resto ve los leads de su(s) recinto(s).
+  query = applyCampusVisibility(query, employee)
   if (status) query = query.eq('status', status)
   if (campus) query = query.eq('campus', campus)
 
