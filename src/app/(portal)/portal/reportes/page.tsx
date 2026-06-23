@@ -569,6 +569,10 @@ ${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads este mes.</p
                 }
               }
 
+              // Contadores del mes: total de actividades y leads generados por ellas.
+              const totalActs = activities.length
+              const totalLeads = activities.reduce((s, a) => s + (a.actual_leads ?? 0), 0)
+
               return (
                 <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5">
                   <div className="flex items-center gap-2 mb-1">
@@ -613,6 +617,18 @@ ${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads este mes.</p
                         />
                       </div>
                     ))}
+                  </div>
+
+                  {/* Contadores del mes */}
+                  <div className="flex flex-wrap justify-end gap-2 mt-3">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-amber-200 text-xs font-semibold text-amber-800">
+                      <Calendar className="h-3.5 w-3.5 text-amber-600" />
+                      Actividades · {totalActs}
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-amber-200 text-xs font-semibold text-amber-800">
+                      <TrendingUp className="h-3.5 w-3.5 text-green-600" />
+                      Leads generados · {totalLeads}
+                    </span>
                   </div>
                 </div>
               )
