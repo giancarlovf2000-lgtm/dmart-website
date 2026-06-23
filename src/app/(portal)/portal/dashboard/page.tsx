@@ -5,6 +5,7 @@ import { promoteNewLeadsToCritico, getStaleLeadIds } from '@/lib/portal/alerts'
 import { applyCampusVisibility } from '@/lib/portal/leadAccess'
 import { checkSupervisorPlanningGate } from '@/lib/portal/planningGate'
 import { findDuplicatePairs, canonicalPairKey } from '@/lib/portal/duplicates'
+import { leadStatusRank } from '@/lib/utils'
 import PortalHeader from '@/components/portal/PortalHeader'
 import LeadTable from '@/components/portal/LeadTable'
 import DuplicatesView from '@/components/portal/DuplicatesView'
@@ -94,6 +95,14 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   if (showStale && staleLeadIds.length === 0) leadsQuery = leadsQuery.eq('id', 'no-match')
 
   const { data: leads } = await leadsQuery
+
+  // Orden por defecto: por prioridad de estado ("por urgencia"). El query ya viene
+  // ordenado por última actividad, así que un sort estable conserva ese orden
+  // dentro de cada estado. El filtrado del empleado (estado/recinto/origen) se
+  // aplica antes en el query, no afecta este orden.
+  const sortedLeads = [...(leads ?? [])].sort(
+    (a, b) => leadStatusRank(a.status) - leadStatusRank(b.status)
+  )
 
   // ── Stats query ────────────────────────────────────────────────────────────
   let statsQuery = adminClient.from('leads').select('status', { count: 'exact', head: false })
@@ -290,7 +299,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
               </div>
             </div>
             <LeadTable
-              leads={(leads ?? []) as Lead[]}
+              leads={sortedLeads as Lead[]}
               staleLeadIds={staleLeadIds}
               employee={employee as Employee}
               activities={(activities ?? []) as Activity[]}

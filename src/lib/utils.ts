@@ -16,6 +16,35 @@ export function formatPhone(phone: string): string {
 }
 
 /**
+ * Default lead ordering by status priority ("por urgencia"): lo que necesita
+ * acción inmediata primero, los estados cerrados al final. Se usa como orden
+ * por defecto del listado de leads (dentro de cada estado se mantiene el orden
+ * por última actividad).
+ */
+export const LEAD_STATUS_ORDER: string[] = [
+  'Crítico',
+  'Nuevo Lead',
+  'Contacto Inicial (Pendiente de Respuesta)',
+  'No Asistió a la Cita',
+  'Reagendado',
+  'Cita Programada',
+  'Contacto Establecido',
+  'En Espera de Documentos',
+  'Orientado (En Proceso de Matricularse)',
+  'Seguimiento a Futuro',
+  'Matriculado',
+  'Graduado con Reválida',
+  'Graduado',
+  'Desinteresado / Rechazado',
+]
+
+/** Posición de un estado en el orden por defecto (estados desconocidos van al final). */
+export function leadStatusRank(status: string): number {
+  const i = LEAD_STATUS_ORDER.indexOf(status)
+  return i === -1 ? LEAD_STATUS_ORDER.length : i
+}
+
+/**
  * Convert a string to a URL-friendly slug
  */
 export function slugify(text: string): string {
