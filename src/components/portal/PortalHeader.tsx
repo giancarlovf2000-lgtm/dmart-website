@@ -146,8 +146,8 @@ function TutorialModal({ role, onClose }: { role: string; onClose: () => void })
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <div className="flex items-center gap-2">
-            <BookOpen className="h-4 w-4 text-navy" />
-            <span className="text-sm font-bold text-gray-900">Tutorial</span>
+            <BookOpen className="h-4 w-4 text-accent" />
+            <span className="text-sm font-bold text-ink font-display">Tutorial</span>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
             <X className="h-4 w-4 text-gray-500" />
@@ -157,12 +157,12 @@ function TutorialModal({ role, onClose }: { role: string; onClose: () => void })
         {/* Step content */}
         <div className="px-6 py-6 flex-1">
           <div className="flex items-center justify-center mb-5">
-            <div className="h-14 w-14 rounded-2xl bg-navy/10 flex items-center justify-center">
-              <Icon className="h-7 w-7 text-navy" />
+            <div className="h-14 w-14 rounded-2xl bg-accent-soft flex items-center justify-center">
+              <Icon className="h-7 w-7 text-accent" />
             </div>
           </div>
 
-          <h2 className="text-base font-bold text-gray-900 text-center mb-2">{step.title}</h2>
+          <h2 className="text-base font-bold text-ink text-center mb-2 font-display">{step.title}</h2>
           <p className="text-sm text-gray-600 text-center leading-relaxed">{step.description}</p>
 
           {step.tip && (
@@ -180,7 +180,7 @@ function TutorialModal({ role, onClose }: { role: string; onClose: () => void })
             <button
               key={i}
               onClick={() => setCurrent(i)}
-              className={`h-1.5 rounded-full transition-all ${i === current ? 'w-5 bg-navy' : 'w-1.5 bg-gray-200 hover:bg-gray-300'}`}
+              className={`h-1.5 rounded-full transition-all ${i === current ? 'w-5 bg-accent' : 'w-1.5 bg-gray-200 hover:bg-gray-300'}`}
             />
           ))}
         </div>
@@ -201,14 +201,14 @@ function TutorialModal({ role, onClose }: { role: string; onClose: () => void })
           {isLast ? (
             <button
               onClick={onClose}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-navy text-white text-sm font-semibold hover:bg-navy/90 transition-colors"
+              className="portal-btn"
             >
               ¡Listo!
             </button>
           ) : (
             <button
               onClick={() => setCurrent((c) => c + 1)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold text-navy hover:bg-navy/5 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-semibold text-accent hover:bg-accent-soft transition-colors"
             >
               Siguiente
               <ChevronRight className="h-4 w-4" />
@@ -230,15 +230,15 @@ export default function PortalHeader({ employee }: PortalHeaderProps) {
 
   return (
     <>
-      <header className="bg-white border-b border-gray-200 px-4 md:px-6 py-4">
+      <header className="bg-white/80 backdrop-blur border-b border-black/[0.06] px-4 md:px-6 py-3.5 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-full bg-navy text-white flex items-center justify-center text-sm font-bold flex-shrink-0">
+            <div className="h-9 w-9 rounded-full bg-ink text-white flex items-center justify-center text-sm font-bold flex-shrink-0 font-display">
               {employee.full_name.charAt(0).toUpperCase()}
             </div>
             <div>
-              <p className="text-sm font-semibold text-gray-900">{employee.full_name}</p>
-              <p className="text-xs text-gray-500 capitalize">
+              <p className="text-sm font-semibold text-ink font-display">{employee.full_name}</p>
+              <p className="text-xs text-ink-muted capitalize">
                 {employee.role === 'admin' ? 'Administrador' : employee.role === 'supervisor' ? 'Supervisor de Admisiones' : employee.role === 'director' ? 'Director de Recinto' : 'Representante de Admisiones'}
               </p>
             </div>
@@ -250,7 +250,7 @@ export default function PortalHeader({ employee }: PortalHeaderProps) {
                 {employee.campus.map((c) => (
                   <span
                     key={c}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-navy/10 text-navy"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-accent-soft text-accent"
                   >
                     <Building2 className="h-3 w-3" />
                     {c}
@@ -261,7 +261,7 @@ export default function PortalHeader({ employee }: PortalHeaderProps) {
 
             <button
               onClick={() => setShowTutorial(true)}
-              className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors px-2 py-1.5 rounded-lg hover:bg-gray-100"
+              className="flex items-center gap-1.5 text-sm font-medium text-ink-muted hover:text-ink hover:bg-surface transition-colors px-3 py-1.5 rounded-full"
             >
               <BookOpen className="h-4 w-4" />
               <span className="hidden sm:inline">Tutorial</span>
@@ -269,7 +269,7 @@ export default function PortalHeader({ employee }: PortalHeaderProps) {
 
             <a
               href="/portal/dashboard"
-              className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors px-2 py-1.5 rounded-lg hover:bg-gray-100"
+              className="flex items-center gap-1.5 text-sm font-medium text-ink-muted hover:text-ink hover:bg-surface transition-colors px-3 py-1.5 rounded-full"
             >
               <LayoutDashboard className="h-4 w-4" />
               <span className="hidden sm:inline">Dashboard</span>
@@ -278,7 +278,7 @@ export default function PortalHeader({ employee }: PortalHeaderProps) {
             {employee.role === 'admin' ? (
               <a
                 href="/portal/admin"
-                className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors px-2 py-1.5 rounded-lg hover:bg-gray-100"
+                className="flex items-center gap-1.5 text-sm font-medium text-ink-muted hover:text-ink hover:bg-surface transition-colors px-3 py-1.5 rounded-full"
               >
                 <ClipboardList className="h-4 w-4" />
                 <span className="hidden sm:inline">Panel Admin</span>
@@ -286,7 +286,7 @@ export default function PortalHeader({ employee }: PortalHeaderProps) {
             ) : (
               <a
                 href="/portal/reportes"
-                className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors px-2 py-1.5 rounded-lg hover:bg-gray-100"
+                className="flex items-center gap-1.5 text-sm font-medium text-ink-muted hover:text-ink hover:bg-surface transition-colors px-3 py-1.5 rounded-full"
               >
                 <ClipboardList className="h-4 w-4" />
                 <span className="hidden sm:inline">Plan y Reportes</span>
@@ -295,7 +295,7 @@ export default function PortalHeader({ employee }: PortalHeaderProps) {
 
             <a
               href="/portal/contratos-privados"
-              className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors px-2 py-1.5 rounded-lg hover:bg-gray-100"
+              className="flex items-center gap-1.5 text-sm font-medium text-ink-muted hover:text-ink hover:bg-surface transition-colors px-3 py-1.5 rounded-full"
             >
               <Scissors className="h-4 w-4" />
               <span className="hidden sm:inline">Prog. Privados</span>
@@ -303,7 +303,7 @@ export default function PortalHeader({ employee }: PortalHeaderProps) {
 
             <button
               onClick={handleLogout}
-              className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors px-2 py-1.5 rounded-lg hover:bg-gray-100"
+              className="flex items-center gap-1.5 text-sm font-medium text-ink-muted hover:text-ink hover:bg-surface transition-colors px-3 py-1.5 rounded-full"
             >
               <LogOut className="h-4 w-4" />
               <span className="hidden sm:inline">Cerrar sesión</span>

@@ -38,16 +38,16 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-surface flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="flex justify-center mb-8">
           <Image src="/logo.png" alt="D'Mart Institute" width={160} height={60} className="h-14 w-auto" />
         </div>
 
-        <div className="bg-white rounded-2xl shadow-card p-8">
+        <div className="bg-white rounded-2xl shadow-soft border border-black/[0.06] p-8">
           <div className="mb-6">
-            <h1 className="text-xl font-bold text-navy">Portal de Empleados</h1>
+            <h1 className="text-xl font-bold text-ink font-display">Portal de Empleados</h1>
             <p className="text-sm text-gray-500 mt-1">Acceso exclusivo para personal autorizado.</p>
           </div>
 

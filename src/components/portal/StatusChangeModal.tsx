@@ -246,7 +246,7 @@ export default function StatusChangeModal({
                   <button
                     type="button"
                     onClick={() => fileRef.current?.click()}
-                    className="text-sm text-navy hover:underline font-medium"
+                    className="text-sm text-ink hover:underline font-medium"
                   >
                     {photoPreview ? 'Cambiar foto' : 'Subir foto'}
                   </button>

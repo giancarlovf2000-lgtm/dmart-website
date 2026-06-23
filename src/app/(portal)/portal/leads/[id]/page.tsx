@@ -153,19 +153,19 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin h-8 w-8 rounded-full border-4 border-navy border-t-transparent" />
+      <div className="min-h-screen bg-surface flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 rounded-full border-4 border-ink border-t-transparent" />
       </div>
     )
   }
 
   if (error || !lead) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-surface flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-3" />
           <p className="text-gray-600">{error || 'Lead no encontrado.'}</p>
-          <button onClick={() => router.back()} className="mt-4 text-sm text-navy hover:underline">← Volver</button>
+          <button onClick={() => router.back()} className="mt-4 text-sm text-ink hover:underline">← Volver</button>
         </div>
       </div>
     )
@@ -183,7 +183,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-surface">
       {/* Nav bar */}
       <div className="bg-white border-b border-gray-200 px-4 md:px-6 py-4">
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
@@ -207,7 +207,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
             )}
             <button
               onClick={() => setShowStatusModal(true)}
-              className="px-4 py-2 rounded-xl bg-navy text-white text-sm font-semibold hover:bg-navy/90 transition-colors"
+              className="px-4 py-2 rounded-xl bg-ink text-white text-sm font-semibold hover:bg-black transition-colors"
             >
               Cambiar Estado
             </button>
@@ -217,10 +217,10 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
 
       <div className="max-w-4xl mx-auto px-4 md:px-6 py-6 space-y-5">
         {/* Lead info card */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-6">
+        <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-6">
           <div className="flex flex-wrap items-start justify-between gap-3 mb-5">
             <div>
-              <h1 className="text-xl font-bold text-gray-900">{lead.nombre} {lead.apellido}</h1>
+              <h1 className="text-2xl font-bold text-ink font-display">{lead.nombre} {lead.apellido}</h1>
               <p className="text-sm text-gray-500 mt-0.5">{sourceDisplay()}</p>
             </div>
             <LeadStatusBadge status={lead.status} />
@@ -234,7 +234,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
                     type="tel"
                     value={editContact.telefono}
                     onChange={(e) => setEditContact((p) => p && ({ ...p, telefono: e.target.value }))}
-                    className="w-full text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-navy/20"
+                    className="w-full text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-accent-ring"
                   />
                 </EditField>
                 <EditField icon={Mail} label="Correo">
@@ -242,14 +242,14 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
                     type="email"
                     value={editContact.email}
                     onChange={(e) => setEditContact((p) => p && ({ ...p, email: e.target.value }))}
-                    className="w-full text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-navy/20"
+                    className="w-full text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-accent-ring"
                   />
                 </EditField>
                 <EditField icon={MapPin} label="Recinto">
                   <select
                     value={editContact.campus}
                     onChange={(e) => setEditContact((p) => p && ({ ...p, campus: e.target.value }))}
-                    className="w-full text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-navy/20"
+                    className="w-full text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-accent-ring"
                   >
                     <option value="">Sin especificar</option>
                     {CAMPUSES.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -259,7 +259,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
                   <select
                     value={editContact.horario}
                     onChange={(e) => setEditContact((p) => p && ({ ...p, horario: e.target.value }))}
-                    className="w-full text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-navy/20"
+                    className="w-full text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-accent-ring"
                   >
                     <option value="">Sin especificar</option>
                     {HORARIOS.map((h) => <option key={h} value={h}>{h}</option>)}
@@ -270,7 +270,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
                     <select
                       value={editContact.programa_interes}
                       onChange={(e) => setEditContact((p) => p && ({ ...p, programa_interes: e.target.value }))}
-                      className="w-full text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-navy/20"
+                      className="w-full text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-accent-ring"
                     >
                       <option value="">Sin especificar</option>
                       {ALL_PROGRAMS.map((p) => <option key={p} value={p}>{p}</option>)}
@@ -297,7 +297,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
                     value={lead.assigned_to ?? ''}
                     onChange={(e) => handleReassign(e.target.value)}
                     disabled={reassigning}
-                    className="text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-navy/20 disabled:opacity-50"
+                    className="text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-accent-ring disabled:opacity-50"
                   >
                     {assignableEmployees.map((e) => (
                       <option key={e.id} value={e.id}>{e.full_name}</option>
@@ -327,7 +327,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
                 <button
                   onClick={handleSaveContact}
                   disabled={savingContact}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-navy text-white text-sm font-semibold hover:bg-navy/90 transition-colors disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-ink text-white text-sm font-semibold hover:bg-black transition-colors disabled:opacity-50"
                 >
                   <Check className="h-3.5 w-3.5" />
                   {savingContact ? 'Guardando…' : 'Guardar'}
@@ -338,7 +338,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
                 {lead.programa_interes && PRIVATE_PROGRAM_KEYS[lead.programa_interes] && (
                   <a
                     href={`/portal/contratos-privados?program=${PRIVATE_PROGRAM_KEYS[lead.programa_interes]}&nombre=${encodeURIComponent(`${lead.nombre} ${lead.apellido}`)}&telefono=${encodeURIComponent(lead.telefono ?? '')}&email=${encodeURIComponent(lead.email ?? '')}`}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gold text-white text-sm font-semibold hover:bg-gold/90 transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent text-white text-sm font-semibold hover:bg-accent-hover transition-colors"
                   >
                     <FileText className="h-3.5 w-3.5" />
                     Generar Contrato
@@ -363,7 +363,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
         </div>
 
         {/* History */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-6">
+        <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-bold text-gray-900">Historial de Actividad</h2>
             {!showNoteForm && (
@@ -392,7 +392,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
                 <select
                   value={noteForm.communication_type}
                   onChange={(e) => setNoteForm((p) => ({ ...p, communication_type: e.target.value }))}
-                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-navy/20"
+                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-accent-ring"
                 >
                   {['Llamada', 'Mensaje de texto', 'Email', 'Visita presencial', 'WhatsApp', 'Otro'].map((t) => (
                     <option key={t} value={t}>{t}</option>
@@ -406,7 +406,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
                   value={noteForm.note}
                   onChange={(e) => setNoteForm((p) => ({ ...p, note: e.target.value }))}
                   placeholder="Describe el seguimiento realizado…"
-                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-navy/20 resize-none"
+                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-accent-ring resize-none"
                 />
                 <p className={`text-xs mt-0.5 ${noteForm.note.trim().length >= 20 ? 'text-green-600' : 'text-gray-400'}`}>
                   {noteForm.note.trim().length}/20 caracteres mínimos
@@ -423,7 +423,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
                 <button
                   onClick={handleSaveNote}
                   disabled={savingNote}
-                  className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-navy text-white text-sm font-semibold hover:bg-navy/90 transition-colors disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-ink text-white text-sm font-semibold hover:bg-black transition-colors disabled:opacity-50"
                 >
                   <Check className="h-3.5 w-3.5" />
                   {savingNote ? 'Guardando…' : 'Guardar seguimiento'}
@@ -439,7 +439,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
               {history.map((entry, i) => (
                 <div key={entry.id} className="flex gap-3">
                   <div className="flex flex-col items-center">
-                    <div className="h-2.5 w-2.5 rounded-full bg-navy mt-1.5 flex-shrink-0" />
+                    <div className="h-2.5 w-2.5 rounded-full bg-ink mt-1.5 flex-shrink-0" />
                     {i < history.length - 1 && <div className="w-px flex-1 bg-gray-200 mt-1" />}
                   </div>
                   <div className="pb-4 flex-1 min-w-0">

@@ -116,14 +116,14 @@ export default function LeadTable({ leads, staleLeadIds, employee, activities, s
             placeholder="Buscar por nombre…"
             value={searchName}
             onChange={(e) => setSearchName(e.target.value)}
-            className="text-sm border border-gray-200 rounded-lg pl-8 pr-3 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-navy/20 w-44"
+            className="text-sm border border-gray-200 rounded-lg pl-8 pr-3 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-accent-ring w-44"
           />
         </div>
 
         <select
           value={currentStatus}
           onChange={(e) => updateFilter('status', e.target.value)}
-          className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-navy/20"
+          className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-accent-ring"
         >
           <option value="">Todos los estados</option>
           {ALL_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -132,7 +132,7 @@ export default function LeadTable({ leads, staleLeadIds, employee, activities, s
         <select
           value={currentCampus}
           onChange={(e) => updateFilter('campus', e.target.value)}
-          className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-navy/20"
+          className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-accent-ring"
         >
           <option value="">Todos los recintos</option>
           <option value="Barranquitas">Barranquitas</option>
@@ -143,7 +143,7 @@ export default function LeadTable({ leads, staleLeadIds, employee, activities, s
           <select
             value={currentSource}
             onChange={(e) => updateFilter('source', e.target.value)}
-            className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-navy/20"
+            className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-accent-ring"
           >
             <option value="">Todos los orígenes</option>
             {sources.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -156,7 +156,7 @@ export default function LeadTable({ leads, staleLeadIds, employee, activities, s
           <button
             onClick={deleteSelected}
             disabled={deleting}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-50"
           >
             <Trash2 className="h-4 w-4" />
             {deleting ? 'Eliminando…' : `Eliminar (${selected.size})`}
@@ -165,7 +165,7 @@ export default function LeadTable({ leads, staleLeadIds, employee, activities, s
 
         <button
           onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gold text-white text-sm font-semibold hover:bg-gold/90 transition-colors shadow-sm"
+          className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-accent text-white text-sm font-semibold hover:bg-accent-hover transition-colors shadow-sm"
         >
           <Plus className="h-4 w-4" />
           Agregar Lead
@@ -174,12 +174,12 @@ export default function LeadTable({ leads, staleLeadIds, employee, activities, s
 
       {/* Table */}
       {filteredLeads.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+        <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-12 text-center">
           <p className="text-gray-500 font-medium">No hay leads que mostrar.</p>
           <p className="text-sm text-gray-400 mt-1">Ajusta los filtros o agrega un nuevo lead.</p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -190,7 +190,7 @@ export default function LeadTable({ leads, staleLeadIds, employee, activities, s
                         type="checkbox"
                         checked={allSelected}
                         onChange={toggleAll}
-                        className="h-4 w-4 rounded border-gray-300 text-navy focus:ring-navy/20 cursor-pointer"
+                        className="h-4 w-4 rounded border-gray-300 text-ink focus:ring-accent-ring cursor-pointer"
                         title={allSelected ? 'Deseleccionar todos' : 'Seleccionar todos'}
                       />
                     </th>
@@ -220,7 +220,7 @@ export default function LeadTable({ leads, staleLeadIds, employee, activities, s
                             type="checkbox"
                             checked={isChecked}
                             onChange={() => toggleOne(lead.id)}
-                            className="h-4 w-4 rounded border-gray-300 text-navy focus:ring-navy/20 cursor-pointer"
+                            className="h-4 w-4 rounded border-gray-300 text-ink focus:ring-accent-ring cursor-pointer"
                           />
                         </td>
                       )}

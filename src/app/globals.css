@@ -93,6 +93,76 @@
   .text-gradient-gold {
     @apply bg-gradient-to-r from-gold to-gold-light bg-clip-text text-transparent;
   }
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     Portal design system (Fynix-inspired, red accent). Opt-in: only used by
+     components under /portal. Does not affect the public marketing site.
+     ───────────────────────────────────────────────────────────────────────── */
+  .portal-card {
+    @apply bg-white rounded-2xl border border-black/[0.06] shadow-soft;
+  }
+
+  /* Dashboard stat / filter card */
+  .portal-stat-card {
+    @apply flex items-center gap-3 px-4 py-3.5 rounded-2xl border border-black/[0.06]
+           bg-white shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-card-hover;
+  }
+  .portal-stat-card--active {
+    @apply bg-ink border-ink text-white shadow-card-hover;
+  }
+
+  /* Circular icon chip */
+  .portal-chip {
+    @apply h-9 w-9 rounded-full bg-surface grid place-items-center flex-shrink-0;
+  }
+
+  /* Pills (filters) */
+  .portal-pill {
+    @apply inline-flex items-center gap-2 px-3.5 py-2 rounded-full border border-black/[0.08]
+           bg-white text-ink-muted text-xs font-semibold transition-all hover:bg-surface;
+  }
+  .portal-pill--active {
+    @apply bg-accent border-accent text-white hover:bg-accent;
+  }
+
+  /* Tabs (segmented control) */
+  .portal-tabs {
+    @apply inline-flex gap-1 p-1 rounded-full bg-surface-soft;
+  }
+  .portal-tab {
+    @apply px-5 py-2 rounded-full text-sm font-semibold text-ink-muted transition-all hover:text-ink;
+  }
+  .portal-tab--active {
+    @apply bg-accent text-white shadow-sm hover:text-white;
+  }
+
+  /* Buttons */
+  .portal-btn {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full
+           bg-ink text-white text-sm font-semibold transition-all hover:bg-black
+           disabled:opacity-50 disabled:pointer-events-none;
+  }
+  .portal-btn-accent {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full
+           bg-accent text-white text-sm font-semibold transition-all hover:bg-accent-hover
+           disabled:opacity-50 disabled:pointer-events-none;
+  }
+  .portal-btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full
+           border border-black/[0.1] bg-white text-ink text-sm font-semibold transition-all
+           hover:bg-surface disabled:opacity-50 disabled:pointer-events-none;
+  }
+
+  /* Inputs */
+  .portal-input {
+    @apply w-full px-3.5 py-2.5 rounded-xl border border-black/[0.1]
+           bg-white text-ink placeholder-ink-muted/60 text-sm
+           focus:outline-none focus:ring-2 focus:ring-accent-ring focus:border-accent
+           transition-all;
+  }
+  .portal-label {
+    @apply block text-xs font-semibold text-ink-muted mb-1.5;
+  }
 }
 
 @layer utilities {

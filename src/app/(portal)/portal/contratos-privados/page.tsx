@@ -388,8 +388,8 @@ function ContratosPrivadosContent() {
 
   if (!employee) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin h-8 w-8 rounded-full border-4 border-navy border-t-transparent" />
+      <div className="min-h-screen bg-surface flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 rounded-full border-4 border-ink border-t-transparent" />
       </div>
     )
   }
@@ -397,13 +397,13 @@ function ContratosPrivadosContent() {
   // ── Step indicators ────────────────────────────────────────────────────────
   const steps = ['Programa', 'Estudiante', 'Pagos', 'Contrato']
 
-  const inputCls = 'w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy/20 bg-white'
+  const inputCls = 'w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent-ring bg-white'
   const labelCls = 'text-xs font-medium text-gray-600 mb-1 block'
 
   return (
     <>
       <PortalHeader employee={employee} />
-      <div className="min-h-screen bg-gray-50 pb-16">
+      <div className="min-h-screen bg-surface pb-16">
         <div className="bg-white border-b border-gray-200 px-4 md:px-6 py-4">
           <div className="max-w-3xl mx-auto">
             <h1 className="text-base font-bold text-gray-900">Programas Privados Cortos</h1>
@@ -422,10 +422,10 @@ function ContratosPrivadosContent() {
               return (
                 <div key={label} className="flex items-center flex-1 last:flex-none">
                   <div className="flex flex-col items-center">
-                    <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${done ? 'bg-green-500 text-white' : active ? 'bg-navy text-white' : 'bg-gray-100 text-gray-400'}`}>
+                    <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${done ? 'bg-green-500 text-white' : active ? 'bg-ink text-white' : 'bg-gray-100 text-gray-400'}`}>
                       {done ? <Check className="h-4 w-4" /> : n}
                     </div>
-                    <span className={`text-xs mt-1 font-medium ${active ? 'text-navy' : done ? 'text-green-600' : 'text-gray-400'}`}>{label}</span>
+                    <span className={`text-xs mt-1 font-medium ${active ? 'text-ink' : done ? 'text-green-600' : 'text-gray-400'}`}>{label}</span>
                   </div>
                   {i < steps.length - 1 && (
                     <div className={`flex-1 h-0.5 mx-1 mb-5 transition-colors ${done ? 'bg-green-400' : 'bg-gray-200'}`} />
@@ -437,14 +437,14 @@ function ContratosPrivadosContent() {
 
           {/* ── Step 1: Program selection ────────────────────────────────── */}
           {step === 1 && (
-            <div className="bg-white rounded-2xl border border-gray-200 p-6">
+            <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-6">
               <h2 className="text-sm font-bold text-gray-900 mb-4">¿Qué programa desea el prospecto?</h2>
               <div className="space-y-3">
                 {(Object.entries(PROGRAMS) as [ProgramKey, { label: string; equipCost: number; noEquipment: boolean }][]).map(([key, prog]) => (
                   <button
                     key={key}
                     onClick={() => { setProgram(key); setEqPlan(prog.noEquipment ? 'none' : null) }}
-                    className={`w-full text-left border-2 rounded-xl p-4 transition-all ${program === key ? 'border-navy bg-navy/5' : 'border-gray-200 hover:border-gray-300'}`}
+                    className={`w-full text-left border-2 rounded-xl p-4 transition-all ${program === key ? 'border-ink bg-surface' : 'border-gray-200 hover:border-gray-300'}`}
                   >
                     <div className="flex items-center justify-between">
                       <div>
@@ -458,7 +458,7 @@ function ContratosPrivadosContent() {
                           }
                         </div>
                       </div>
-                      <div className={`h-6 w-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${program === key ? 'border-navy bg-navy' : 'border-gray-300'}`}>
+                      <div className={`h-6 w-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${program === key ? 'border-ink bg-ink' : 'border-gray-300'}`}>
                         {program === key && <Check className="h-3.5 w-3.5 text-white" />}
                       </div>
                     </div>
@@ -469,7 +469,7 @@ function ContratosPrivadosContent() {
                 <button
                   onClick={() => setStep(2)}
                   disabled={!program}
-                  className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-navy text-white text-sm font-semibold hover:bg-navy/90 disabled:opacity-40 transition-colors"
+                  className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-ink text-white text-sm font-semibold hover:bg-black disabled:opacity-40 transition-colors"
                 >
                   Continuar <ChevronRight className="h-4 w-4" />
                 </button>
@@ -479,7 +479,7 @@ function ContratosPrivadosContent() {
 
           {/* ── Step 2: Student info ─────────────────────────────────────── */}
           {step === 2 && (
-            <div className="bg-white rounded-2xl border border-gray-200 p-6">
+            <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-6">
               <h2 className="text-sm font-bold text-gray-900 mb-4">Información del Estudiante</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="sm:col-span-2">
@@ -568,7 +568,7 @@ function ContratosPrivadosContent() {
                 <button
                   onClick={() => setStep(3)}
                   disabled={!student.nombre.trim() || !student.telefono.trim() || !student.fecha_inicio}
-                  className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-navy text-white text-sm font-semibold hover:bg-navy/90 disabled:opacity-40 transition-colors"
+                  className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-ink text-white text-sm font-semibold hover:bg-black disabled:opacity-40 transition-colors"
                 >
                   Continuar <ChevronRight className="h-4 w-4" />
                 </button>
@@ -580,7 +580,7 @@ function ContratosPrivadosContent() {
           {step === 3 && program && (
             <div className="space-y-4">
               {/* Program payment */}
-              <div className="bg-white rounded-2xl border border-gray-200 p-6">
+              <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-6">
                 <h2 className="text-sm font-bold text-gray-900 mb-1">Sección A — Plan de Pago del Programa</h2>
                 <p className="text-xs text-gray-400 mb-4">Cargo de admisión de $25.00 se cobra por separado en todos los casos.</p>
                 <div className="space-y-3">
@@ -589,14 +589,14 @@ function ContratosPrivadosContent() {
                     { key: 'deferred' as const, title: 'Plan Diferido', desc: `11 cuotas de ≈$47.27/semana · Cargo administrativo $25.00 incluido · Sin descuento aplicado` },
                   ]).map(({ key, title, desc }) => (
                     <button key={key} onClick={() => setProgPlan(key)}
-                      className={`w-full text-left border-2 rounded-xl p-4 transition-all ${progPlan === key ? 'border-navy bg-navy/5' : 'border-gray-200 hover:border-gray-300'}`}
+                      className={`w-full text-left border-2 rounded-xl p-4 transition-all ${progPlan === key ? 'border-ink bg-surface' : 'border-gray-200 hover:border-gray-300'}`}
                     >
                       <div className="flex items-center justify-between gap-3">
                         <div>
                           <p className="font-semibold text-gray-900 text-sm">{title}</p>
                           <p className="text-xs text-gray-500 mt-0.5">{desc}</p>
                         </div>
-                        <div className={`h-5 w-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${progPlan === key ? 'border-navy bg-navy' : 'border-gray-300'}`}>
+                        <div className={`h-5 w-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${progPlan === key ? 'border-ink bg-ink' : 'border-gray-300'}`}>
                           {progPlan === key && <Check className="h-3 w-3 text-white" />}
                         </div>
                       </div>
@@ -607,7 +607,7 @@ function ContratosPrivadosContent() {
 
               {/* Equipment payment — only when program requires equipment */}
               {!PROGRAMS[program].noEquipment ? (
-                <div className="bg-white rounded-2xl border border-gray-200 p-6">
+                <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-6">
                   <h2 className="text-sm font-bold text-gray-900 mb-1">Sección B — Equipo / Materiales / Kit</h2>
                   <p className="text-xs text-gray-400 mb-4">Costo base del equipo para {PROGRAMS[program].label}: ${PROGRAMS[program].equipCost}.00</p>
                   <div className="space-y-3">
@@ -617,14 +617,14 @@ function ContratosPrivadosContent() {
                       { key: 'student' as const, title: 'El estudiante aporta su propio equipo', desc: 'El estudiante adquiere el equipo fuera de la institución · Debe ser validado por el Academic Officer antes del inicio' },
                     ]).map(({ key, title, desc }) => (
                       <button key={key} onClick={() => setEqPlan(key)}
-                        className={`w-full text-left border-2 rounded-xl p-4 transition-all ${eqPlan === key ? 'border-navy bg-navy/5' : 'border-gray-200 hover:border-gray-300'}`}
+                        className={`w-full text-left border-2 rounded-xl p-4 transition-all ${eqPlan === key ? 'border-ink bg-surface' : 'border-gray-200 hover:border-gray-300'}`}
                       >
                         <div className="flex items-center justify-between gap-3">
                           <div>
                             <p className="font-semibold text-gray-900 text-sm">{title}</p>
                             <p className="text-xs text-gray-500 mt-0.5">{desc}</p>
                           </div>
-                          <div className={`h-5 w-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${eqPlan === key ? 'border-navy bg-navy' : 'border-gray-300'}`}>
+                          <div className={`h-5 w-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${eqPlan === key ? 'border-ink bg-ink' : 'border-gray-300'}`}>
                             {eqPlan === key && <Check className="h-3 w-3 text-white" />}
                           </div>
                         </div>
@@ -681,7 +681,7 @@ function ContratosPrivadosContent() {
                 <button
                   onClick={() => setStep(4)}
                   disabled={!progPlan || !eqPlan}
-                  className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-navy text-white text-sm font-semibold hover:bg-navy/90 disabled:opacity-40 transition-colors"
+                  className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-ink text-white text-sm font-semibold hover:bg-black disabled:opacity-40 transition-colors"
                 >
                   Ver Contrato <ChevronRight className="h-4 w-4" />
                 </button>
@@ -692,7 +692,7 @@ function ContratosPrivadosContent() {
           {/* ── Step 4: Summary + print ──────────────────────────────────── */}
           {step === 4 && program && progPlan && eqPlan && prices && (
             <div className="space-y-4">
-              <div className="bg-white rounded-2xl border border-gray-200 p-6">
+              <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-6">
                 <h2 className="text-sm font-bold text-gray-900 mb-4">Resumen del Contrato</h2>
                 <div className="grid sm:grid-cols-2 gap-3 text-sm">
                   {[
@@ -743,7 +743,7 @@ function ContratosPrivadosContent() {
                     <button
                       onClick={handlePrint}
                       disabled={saving}
-                      className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gold text-white text-sm font-semibold hover:bg-gold/90 disabled:opacity-50 transition-colors"
+                      className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent text-white text-sm font-semibold hover:bg-accent-hover disabled:opacity-50 transition-colors"
                     >
                       <Printer className="h-4 w-4" />
                       {saving ? 'Guardando…' : 'Generar e Imprimir Contrato'}
@@ -755,13 +755,13 @@ function ContratosPrivadosContent() {
           )}
 
           {/* ── History ───────────────────────────────────────────────────── */}
-          <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+          <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-100">
               <h2 className="text-sm font-bold text-gray-900">Contratos Generados</h2>
             </div>
             {loadingContracts ? (
               <div className="p-10 flex justify-center">
-                <div className="animate-spin h-6 w-6 rounded-full border-4 border-navy border-t-transparent" />
+                <div className="animate-spin h-6 w-6 rounded-full border-4 border-ink border-t-transparent" />
               </div>
             ) : contracts.length === 0 ? (
               <div className="p-10 text-center">
@@ -807,8 +807,8 @@ function ContratosPrivadosContent() {
 export default function ContratosPrivadosPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin h-8 w-8 rounded-full border-4 border-navy border-t-transparent" />
+      <div className="min-h-screen bg-surface flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 rounded-full border-4 border-ink border-t-transparent" />
       </div>
     }>
       <ContratosPrivadosContent />

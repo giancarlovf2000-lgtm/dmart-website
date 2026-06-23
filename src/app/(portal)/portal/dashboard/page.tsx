@@ -166,15 +166,17 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   ]
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-surface">
       <PortalHeader employee={employee as Employee} />
 
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
 
+        <h1 className="text-2xl font-bold font-display text-ink mb-5">Dashboard</h1>
+
         {/* ── Alert banners ────────────────────────────────────────── */}
         {staleLeadIds.length > 0 && (
           <a href={showStale ? '/portal/dashboard' : '/portal/dashboard?stale=1'}
-            className="block mb-3 p-4 rounded-xl bg-amber-50 border border-amber-200 hover:bg-amber-100 transition-colors">
+            className="block mb-3 p-4 rounded-2xl bg-amber-50 border border-amber-200 hover:bg-amber-100 transition-colors">
             <div className="flex gap-3 items-start">
               <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
               <div>
@@ -191,7 +193,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
         {duplicateCount > 0 && (
           <a href={showDuplicates ? '/portal/dashboard' : '/portal/dashboard?duplicates=1'}
-            className="block mb-5 p-4 rounded-xl bg-red-50 border border-red-200 hover:bg-red-100 transition-colors">
+            className="block mb-5 p-4 rounded-2xl bg-red-50 border border-red-200 hover:bg-red-100 transition-colors">
             <div className="flex gap-3 items-start">
               <Copy className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
               <div>
@@ -210,7 +212,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         <div className="flex gap-2 mb-3">
           <a
             href={showStale ? '/portal/dashboard' : '/portal/dashboard?stale=1'}
-            className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-semibold transition-all ${
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-full border text-xs font-semibold transition-all ${
               showStale
                 ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
                 : 'bg-white border-amber-200 text-amber-700 hover:bg-amber-50'
@@ -221,7 +223,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           </a>
           <a
             href={showDuplicates ? '/portal/dashboard' : '/portal/dashboard?duplicates=1'}
-            className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-semibold transition-all ${
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-full border text-xs font-semibold transition-all ${
               showDuplicates
                 ? 'bg-red-600 text-white border-red-600 shadow-sm'
                 : 'bg-white border-red-200 text-red-700 hover:bg-red-50'
@@ -240,18 +242,14 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             return (
               <a key={label} href={href}
                 title={isActive ? `Quitar filtro: ${label}` : `Filtrar por: ${label}`}
-                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border transition-all ${
-                  isActive
-                    ? 'bg-navy text-white border-navy shadow-sm'
-                    : 'bg-white border-gray-200 hover:border-navy/40 hover:shadow-sm'
-                }`}
+                className={`portal-stat-card ${isActive ? 'portal-stat-card--active' : ''}`}
               >
-                <div className={`flex-shrink-0 p-1 rounded-md ${isActive ? 'bg-white/20' : iconBg}`}>
-                  <Icon className={`h-3.5 w-3.5 ${isActive ? 'text-white' : color}`} />
+                <div className={`portal-chip ${isActive ? 'bg-white/15' : iconBg}`}>
+                  <Icon className={`h-4 w-4 ${isActive ? 'text-white' : color}`} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className={`text-xs leading-tight truncate ${isActive ? 'text-white/90' : 'text-gray-500'}`}>{label}</p>
-                  <p className={`text-sm font-bold leading-tight ${isActive ? 'text-white' : 'text-gray-800'}`}>{value}</p>
+                  <p className={`text-xs leading-tight truncate ${isActive ? 'text-white/80' : 'text-ink-muted'}`}>{label}</p>
+                  <p className={`text-base font-bold leading-tight font-display ${isActive ? 'text-white' : 'text-ink'}`}>{value}</p>
                 </div>
               </a>
             )
@@ -262,10 +260,10 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         {showDuplicates ? (
           <>
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-gray-700">
+              <h2 className="text-sm font-semibold text-ink font-display">
                 Leads duplicados · {duplicateCount} par{duplicateCount !== 1 ? 'es' : ''} detectado{duplicateCount !== 1 ? 's' : ''}
               </h2>
-              <a href="/portal/dashboard" className="text-xs text-navy hover:underline font-medium">
+              <a href="/portal/dashboard" className="text-xs text-accent hover:underline font-semibold">
                 ← Volver a todos los leads
               </a>
             </div>
@@ -274,18 +272,18 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         ) : (
           <>
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-gray-700">
+              <h2 className="text-sm font-semibold text-ink font-display">
                 {showStale
                   ? `Seguimiento pendiente · ${staleLeadIds.length} leads`
                   : `${isAdmin ? 'Todos los leads' : 'Leads de mi recinto'} · ${counts.total} total`}
               </h2>
               <div className="flex items-center gap-3">
                 {isAdmin ? (
-                  <a href="/portal/admin" className="text-xs text-navy hover:underline font-medium">
+                  <a href="/portal/admin" className="text-xs text-accent hover:underline font-semibold">
                     Panel Admin →
                   </a>
                 ) : (
-                  <a href="/portal/reportes" className="text-xs text-navy hover:underline font-medium">
+                  <a href="/portal/reportes" className="text-xs text-accent hover:underline font-semibold">
                     {(isSupervisor || isDirector) ? 'Reportes del Equipo →' : 'Plan y Reportes →'}
                   </a>
                 )}

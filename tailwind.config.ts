@@ -24,9 +24,26 @@ const config: Config = {
           50: '#fff0f0',
           100: '#ffd6d6',
         },
+        // Portal-only design system (Fynix-inspired, red accent)
+        ink: {
+          DEFAULT: '#1A1A1A',
+          muted: '#5A5A5A',
+        },
+        surface: {
+          DEFAULT: '#F4F3F1',
+          soft: '#ECEBE8',
+        },
+        accent: {
+          DEFAULT: '#D40000',
+          hover: '#b00000',
+          soft: '#FFECEC',
+          ring: 'rgba(212,0,0,0.18)',
+        },
       },
       fontFamily: {
         sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
+        display: ['var(--font-display)', 'system-ui', 'sans-serif'],
+        body: ['var(--font-body)', 'system-ui', 'sans-serif'],
       },
       backgroundImage: {
         'gradient-navy': 'linear-gradient(135deg, #111111 0%, #222222 50%, #333333 100%)',
@@ -51,6 +68,7 @@ const config: Config = {
         'navy': '0 4px 24px rgba(17, 17, 17, 0.4)',
         'card': '0 2px 16px rgba(10, 22, 40, 0.08)',
         'card-hover': '0 8px 32px rgba(10, 22, 40, 0.16)',
+        'soft': '0 1px 3px rgba(0,0,0,0.04), 0 10px 30px rgba(17,17,17,0.05)',
       },
     },
   },

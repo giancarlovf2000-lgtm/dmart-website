@@ -452,24 +452,24 @@ ${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads este mes.</p
   const scoreCfg = score ? SCORE_CONFIG[score] : null
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-surface">
       <div className="bg-white border-b border-gray-200 px-4 md:px-6 py-4">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <h1 className="text-base font-bold text-gray-900">Plan y Reportes</h1>
-          <a href="/portal/dashboard" className="text-sm text-navy hover:underline">← Dashboard</a>
+          <a href="/portal/dashboard" className="text-sm text-ink hover:underline">← Dashboard</a>
         </div>
       </div>
 
       <div className="max-w-4xl mx-auto px-4 md:px-6 py-6">
         {/* Tabs */}
-        <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-xl w-fit">
+        <div className="portal-tabs mb-6 w-fit">
           {([
             { key: 'plan',   label: 'Plan del Mes' },
             { key: 'cierre', label: 'Informe de Cierre' },
             ...((role === 'supervisor' || role === 'director') ? [{ key: 'equipo', label: 'Equipo' }] : []),
           ] as { key: 'plan' | 'cierre' | 'equipo'; label: string }[]).map(({ key, label }) => (
             <button key={key} onClick={() => setActiveTab(key)}
-              className={`px-5 py-2 rounded-lg text-sm font-semibold transition-colors ${activeTab === key ? 'bg-white text-navy shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              className={`portal-tab ${activeTab === key ? 'portal-tab--active' : ''}`}
             >
               {label}
             </button>
@@ -506,7 +506,7 @@ ${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads este mes.</p
                   <select
                     value={planMonth}
                     onChange={(e) => setPlanMonth(e.target.value)}
-                    className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-navy/20 capitalize"
+                    className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-accent-ring capitalize"
                   >
                     {opts.map((m) => (
                       <option key={m} value={m} className="capitalize">{monthLabel(m)}</option>
@@ -539,7 +539,7 @@ ${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads este mes.</p
                   : 'Planifica las actividades que realizarás este mes para generar leads.'}
               </p>
               <button onClick={() => setShowNewActivity(!showNewActivity)}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gold text-white text-sm font-semibold hover:bg-gold/90 transition-colors">
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-accent text-white text-sm font-semibold hover:bg-accent-hover transition-colors">
                 <Plus className="h-4 w-4" /> Nueva Actividad
               </button>
             </div>
@@ -593,7 +593,7 @@ ${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads este mes.</p
             })()}
 
             {showNewActivity && (
-              <form onSubmit={createActivity} className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
+              <form onSubmit={createActivity} className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-5 space-y-3">
                 <h3 className="text-sm font-bold text-gray-900">Nueva Actividad</h3>
                 <div className="grid sm:grid-cols-2 gap-3">
                   <div>
@@ -631,11 +631,11 @@ ${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads este mes.</p
             )}
 
             {loading ? (
-              <div className="bg-white rounded-xl border border-gray-200 p-10 flex justify-center">
-                <div className="animate-spin h-6 w-6 rounded-full border-4 border-navy border-t-transparent" />
+              <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-10 flex justify-center">
+                <div className="animate-spin h-6 w-6 rounded-full border-4 border-ink border-t-transparent" />
               </div>
             ) : activities.length === 0 && !showNewActivity ? (
-              <div className="bg-white rounded-xl border border-gray-200 p-10 text-center">
+              <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-10 text-center">
                 <QrCode className="h-10 w-10 text-gray-300 mx-auto mb-3" />
                 <p className="text-gray-500 text-sm">No hay actividades planificadas para este mes.</p>
                 <p className="text-xs text-gray-400 mt-1">Agrega una actividad para generar un código QR de captación.</p>
@@ -646,7 +646,7 @@ ${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads este mes.</p
                   const qrUrl = origin ? `${origin}/intake?activity_id=${act.id}` : ''
                   const isTerminating = terminating === act.id
                   return (
-                    <div key={act.id} className="bg-white rounded-xl border border-gray-200 p-5 flex flex-col gap-4">
+                    <div key={act.id} className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-5 flex flex-col gap-4">
                       {/* Card header */}
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
@@ -704,7 +704,7 @@ ${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads este mes.</p
                         <button
                           onClick={() => markTerminada(act.id)}
                           disabled={isTerminating}
-                          className="flex items-center justify-center gap-1.5 w-full px-3 py-2 rounded-lg bg-navy text-white text-xs font-semibold hover:bg-navy/90 transition-colors disabled:opacity-40"
+                          className="flex items-center justify-center gap-1.5 w-full px-3 py-2 rounded-lg bg-ink text-white text-xs font-semibold hover:bg-black transition-colors disabled:opacity-40"
                         >
                           <Flag className="h-3.5 w-3.5" />
                           {isTerminating ? 'Marcando…' : 'Marcar como terminada'}
@@ -726,13 +726,13 @@ ${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads este mes.</p
               <div className="pt-2 border-t border-gray-200 space-y-3">
                 <h3 className="text-sm font-bold text-gray-700">Actividades del Recinto</h3>
                 {campusActivities.length === 0 ? (
-                  <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+                  <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-8 text-center">
                     <p className="text-sm text-gray-400">No hay actividades en tu recinto para este mes.</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
                     {campusActivities.map((act) => (
-                      <div key={act.id} className="bg-white rounded-xl border border-gray-200 p-4 flex items-start justify-between gap-3">
+                      <div key={act.id} className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-4 flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <p className="font-semibold text-gray-900 text-sm">{act.name}</p>
@@ -762,15 +762,15 @@ ${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads este mes.</p
                     <div className="space-y-3 pt-2">
                       <h3 className="text-sm font-bold text-gray-700">Calendarios de Planificación — {monthLabel(planMonth)}</h3>
                       {campusCalendars.length === 0 ? (
-                        <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+                        <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-8 text-center">
                           <p className="text-sm text-gray-400">Ningún supervisor ha completado su calendario para este mes.</p>
                         </div>
                       ) : (
                         <div className="space-y-4">
                           {campusCalendars.map((plan) => (
-                            <div key={plan.supervisor_id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                            <div key={plan.supervisor_id} className="bg-white rounded-2xl border border-black/[0.06] shadow-soft overflow-hidden">
                               <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
-                                <div className="h-7 w-7 rounded-full bg-navy/10 text-navy flex items-center justify-center text-xs font-bold flex-shrink-0">
+                                <div className="h-7 w-7 rounded-full bg-surface text-ink flex items-center justify-center text-xs font-bold flex-shrink-0">
                                   {plan.full_name.charAt(0).toUpperCase()}
                                 </div>
                                 <div>
@@ -809,7 +809,7 @@ ${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads este mes.</p
         {/* ── CIERRE TAB ──────────────────────────────────────────── */}
         {activeTab === 'cierre' && (
           <div className="space-y-5">
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-6">
               <div className="flex items-start justify-between gap-4 mb-4">
                 <div>
                   <h2 className="text-sm font-bold text-gray-900">Informe de Cierre del Mes</h2>
@@ -827,7 +827,7 @@ ${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads este mes.</p
                 <button
                   onClick={loadAutoStats}
                   disabled={loadingAuto}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-navy text-white text-sm font-semibold hover:bg-navy/90 transition-colors disabled:opacity-40 mb-5"
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-ink text-white text-sm font-semibold hover:bg-black transition-colors disabled:opacity-40 mb-5"
                 >
                   <Zap className="h-4 w-4" />
                   {loadingAuto ? 'Calculando…' : 'Generar reporte automático'}
@@ -857,8 +857,8 @@ ${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads este mes.</p
                   {/* Metrics grid */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     {[
-                      { icon: Users,         label: 'Total Leads',        value: autoStats.leads_acquired,         color: 'text-navy' },
-                      { icon: TrendingUp,    label: 'De Actividades',     value: autoStats.leads_from_activities,  color: 'text-gold' },
+                      { icon: Users,         label: 'Total Leads',        value: autoStats.leads_acquired,         color: 'text-ink' },
+                      { icon: TrendingUp,    label: 'De Actividades',     value: autoStats.leads_from_activities,  color: 'text-accent' },
                       { icon: Users,         label: 'Manuales',           value: autoStats.leads_manual,           color: 'text-gray-600' },
                       { icon: GraduationCap, label: 'Matriculados',       value: autoStats.leads_enrolled,         color: 'text-green-600' },
                     ].map(({ icon: Icon, label, value, color }) => (
@@ -954,7 +954,7 @@ ${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads este mes.</p
             </div>
 
             {/* Scoring rubric */}
-            <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-5">
               <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-3">Tabla de Puntuación</p>
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
@@ -991,7 +991,7 @@ ${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads este mes.</p
 
             {/* All submitted reports history */}
             {allPerformanceReports.length > 0 && (
-              <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-5">
                 <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-4">
                   Historial de Informes Enviados
                 </p>
@@ -1005,7 +1005,7 @@ ${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads este mes.</p
                           <div className="flex items-center gap-2 flex-wrap">
                             <p className="text-sm font-semibold text-gray-800 capitalize">{monthLabel(r.month)}</p>
                             {isCurrentMonth && (
-                              <span className="text-xs px-2 py-0.5 rounded-full bg-navy/10 text-navy font-medium">Este mes</span>
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-surface text-ink font-medium">Este mes</span>
                             )}
                           </div>
                           <p className="text-xs text-gray-500 mt-0.5">
@@ -1033,7 +1033,7 @@ ${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads este mes.</p
         {/* ── EQUIPO TAB (supervisor / director) ───────────────────── */}
         {activeTab === 'equipo' && (role === 'supervisor' || role === 'director') && (
           <div className="space-y-5">
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-6">
               <div className="mb-5">
                 <h2 className="text-sm font-bold text-gray-900">Reporte del Equipo</h2>
                 <p className="text-xs text-gray-500 mt-0.5">Descarga el reporte completo de leads del mes seleccionado.</p>
@@ -1066,7 +1066,7 @@ ${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads este mes.</p
                   <button
                     onClick={() => downloadReport('html')}
                     disabled={loadingReport}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-navy text-white text-sm font-semibold hover:bg-navy/90 transition-colors disabled:opacity-40"
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-ink text-white text-sm font-semibold hover:bg-black transition-colors disabled:opacity-40"
                   >
                     <Download className="h-4 w-4" />
                     {loadingReport ? 'Generando…' : 'Descargar HTML'}

@@ -110,8 +110,8 @@ export default function DuplicatesView() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl border border-gray-200 p-16 flex items-center justify-center">
-        <div className="animate-spin h-8 w-8 rounded-full border-4 border-navy border-t-transparent" />
+      <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-16 flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 rounded-full border-4 border-ink border-t-transparent" />
       </div>
     )
   }
@@ -127,7 +127,7 @@ export default function DuplicatesView() {
 
   if (pairs.length === 0) {
     return (
-      <div className="bg-white rounded-xl border border-gray-200 p-16 text-center">
+      <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-16 text-center">
         <Users className="h-10 w-10 text-gray-300 mx-auto mb-3" />
         <p className="font-medium text-gray-600">No hay leads duplicados detectados</p>
         <p className="text-sm text-gray-400 mt-1">Todos los leads han sido revisados o no hay coincidencias.</p>
@@ -142,7 +142,7 @@ export default function DuplicatesView() {
       {pairs.map((pair) => {
         const isActing = actionLoading === pair.key
         return (
-          <div key={pair.key} className="bg-white rounded-xl border border-gray-200 p-5">
+          <div key={pair.key} className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-5">
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-50 border border-red-100 text-xs font-medium text-red-700">
@@ -160,7 +160,7 @@ export default function DuplicatesView() {
                 <button
                   onClick={() => handleMerge(pair)}
                   disabled={isActing}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-navy text-white text-xs font-semibold hover:bg-navy/90 transition-colors disabled:opacity-40"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-ink text-white text-xs font-semibold hover:bg-black transition-colors disabled:opacity-40"
                 >
                   <GitMerge className="h-3.5 w-3.5" />
                   {isActing ? 'Fusionando…' : 'Fusionar'}

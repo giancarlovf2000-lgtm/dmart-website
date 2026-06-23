@@ -159,7 +159,7 @@ function CreateEmployeeModal({ onClose, onCreated, allEmployees }: { onClose: ()
                         type="checkbox"
                         checked={form.supervisee_ids.includes(emp.id)}
                         onChange={() => toggleSupervisee(emp.id)}
-                        className="rounded border-gray-300 text-navy"
+                        className="rounded border-gray-300 text-ink"
                       />
                       <span className="text-sm text-gray-800">{emp.full_name}</span>
                       <span className="text-xs text-gray-400 ml-auto">{(emp.campus as string[]).join(', ')}</span>
@@ -177,7 +177,7 @@ function CreateEmployeeModal({ onClose, onCreated, allEmployees }: { onClose: ()
                   key={c}
                   type="button"
                   onClick={() => toggleCampus(c)}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${form.campus.includes(c) ? 'bg-navy text-white border-navy' : 'bg-white text-gray-700 border-gray-200 hover:border-navy/40'}`}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${form.campus.includes(c) ? 'bg-ink text-white border-ink' : 'bg-white text-gray-700 border-gray-200 hover:border-ink/30'}`}
                 >
                   <Building2 className="h-3.5 w-3.5" />
                   {c}
@@ -319,7 +319,7 @@ function EditEmployeeModal({ employee, allEmployees, onClose, onSaved }: {
                         type="checkbox"
                         checked={form.supervisee_ids.includes(emp.id)}
                         onChange={() => toggleSupervisee(emp.id)}
-                        className="rounded border-gray-300 text-navy"
+                        className="rounded border-gray-300 text-ink"
                       />
                       <span className="text-sm text-gray-800">{emp.full_name}</span>
                       <span className="text-xs text-gray-400 ml-auto">{(emp.campus as string[]).join(', ')}</span>
@@ -337,7 +337,7 @@ function EditEmployeeModal({ employee, allEmployees, onClose, onSaved }: {
                   key={c}
                   type="button"
                   onClick={() => toggleCampus(c)}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${form.campus.includes(c) ? 'bg-navy text-white border-navy' : 'bg-white text-gray-700 border-gray-200 hover:border-navy/40'}`}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${form.campus.includes(c) ? 'bg-ink text-white border-ink' : 'bg-white text-gray-700 border-gray-200 hover:border-ink/30'}`}
                 >
                   <Building2 className="h-3.5 w-3.5" />
                   {c}
@@ -534,7 +534,7 @@ function CsvImportModal({ onClose }: { onClose: () => void }) {
                 Selecciona un archivo CSV exportado de Airtable. Las columnas serán detectadas automáticamente.
               </p>
               <div
-                className="border-2 border-dashed border-gray-200 rounded-xl p-10 text-center cursor-pointer hover:border-navy/40 transition-colors"
+                className="border-2 border-dashed border-gray-200 rounded-xl p-10 text-center cursor-pointer hover:border-ink/30 transition-colors"
                 onClick={() => fileRef.current?.click()}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleFile(f) }}
@@ -550,7 +550,7 @@ function CsvImportModal({ onClose }: { onClose: () => void }) {
           {step === 'map' && (
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <FileText className="h-4 w-4 text-navy" />
+                <FileText className="h-4 w-4 text-ink" />
                 <p className="text-sm text-gray-700 font-medium">{rows.length} filas detectadas</p>
               </div>
 
@@ -579,7 +579,7 @@ function CsvImportModal({ onClose }: { onClose: () => void }) {
                     <select
                       value={colMap[field] !== undefined ? String(colMap[field]) : ''}
                       onChange={(e) => updateColMap(field, e.target.value)}
-                      className="w-full text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-navy/20"
+                      className="w-full text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-accent-ring"
                     >
                       <option value="">— No incluir —</option>
                       {headers.map((h, i) => <option key={i} value={String(i)}>{h}</option>)}
@@ -599,14 +599,14 @@ function CsvImportModal({ onClose }: { onClose: () => void }) {
 
           {step === 'importing' && (
             <div className="py-8 text-center">
-              <div className="animate-spin h-8 w-8 rounded-full border-4 border-navy border-t-transparent mx-auto mb-4" />
+              <div className="animate-spin h-8 w-8 rounded-full border-4 border-ink border-t-transparent mx-auto mb-4" />
               <p className="text-sm font-medium text-gray-700">Importando leads…</p>
               <p className="text-xs text-gray-500 mt-1">
                 {progress.imported + progress.skipped} / {progress.total} procesados
               </p>
               <div className="mt-4 h-2 bg-gray-100 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-navy transition-all duration-300"
+                  className="h-full bg-ink transition-all duration-300"
                   style={{ width: `${progress.total > 0 ? ((progress.imported + progress.skipped) / progress.total) * 100 : 0}%` }}
                 />
               </div>
@@ -802,7 +802,7 @@ function ActivitiesPanel() {
           <select
             value={activitiesMonth}
             onChange={(e) => setActivitiesMonth(e.target.value)}
-            className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-navy/20 capitalize"
+            className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-accent-ring capitalize"
           >
             {monthOptions.map((m) => (
               <option key={m} value={m} className="capitalize">{monthLabel(m)}</option>
@@ -810,8 +810,8 @@ function ActivitiesPanel() {
           </select>
         </div>
         {loading ? (
-          <div className="bg-white rounded-xl border border-gray-200 p-12 flex justify-center">
-            <div className="animate-spin h-7 w-7 rounded-full border-4 border-navy border-t-transparent" />
+          <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-12 flex justify-center">
+            <div className="animate-spin h-7 w-7 rounded-full border-4 border-ink border-t-transparent" />
           </div>
         ) : fetchError ? (
           <div className="bg-white rounded-xl border border-red-100 p-10 text-center">
@@ -819,7 +819,7 @@ function ActivitiesPanel() {
             <p className="text-sm text-red-600">{fetchError}</p>
           </div>
         ) : activities.length === 0 ? (
-          <div className="bg-white rounded-xl border border-gray-200 p-14 text-center">
+          <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-14 text-center">
             <CalendarDays className="h-10 w-10 text-gray-300 mx-auto mb-3" />
             <p className="font-medium text-gray-500">No hay actividades planificadas este mes.</p>
           </div>
@@ -828,7 +828,7 @@ function ActivitiesPanel() {
             {Array.from(byEmployee.entries()).map(([empName, acts]) => (
               <div key={empName}>
                 <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">{empName}</h3>
-                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft overflow-hidden">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-gray-100 bg-gray-50">
@@ -892,7 +892,7 @@ function ActivitiesPanel() {
           <select
             value={calendarMonth}
             onChange={(e) => setCalendarMonth(e.target.value)}
-            className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-navy/20 capitalize"
+            className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-accent-ring capitalize"
           >
             {calendarMonthOptions.map((m) => (
               <option key={m} value={m} className="capitalize">{calendarMonthLabel(m)}</option>
@@ -901,11 +901,11 @@ function ActivitiesPanel() {
         </div>
 
         {calendarLoading ? (
-          <div className="bg-white rounded-xl border border-gray-200 p-10 flex justify-center">
-            <div className="animate-spin h-6 w-6 rounded-full border-4 border-navy border-t-transparent" />
+          <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-10 flex justify-center">
+            <div className="animate-spin h-6 w-6 rounded-full border-4 border-ink border-t-transparent" />
           </div>
         ) : calendarPlans.length === 0 ? (
-          <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+          <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-12 text-center">
             <CalendarDays className="h-9 w-9 text-gray-300 mx-auto mb-2" />
             <p className="text-sm text-gray-500">Ningún supervisor ha completado su calendario para este mes.</p>
           </div>
@@ -914,9 +914,9 @@ function ActivitiesPanel() {
             {calendarPlans.map((plan) => {
               const hs = historyState[plan.supervisor_id]
               return (
-                <div key={plan.supervisor_id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div key={plan.supervisor_id} className="bg-white rounded-2xl border border-black/[0.06] shadow-soft overflow-hidden">
                   <div className="px-5 py-3 border-b border-gray-100 flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-full bg-navy/10 text-navy flex items-center justify-center text-sm font-bold flex-shrink-0">
+                    <div className="h-8 w-8 rounded-full bg-surface text-ink flex items-center justify-center text-sm font-bold flex-shrink-0">
                       {plan.full_name.charAt(0).toUpperCase()}
                     </div>
                     <div>
@@ -931,7 +931,7 @@ function ActivitiesPanel() {
                       </span>
                       <button
                         onClick={() => toggleHistory(plan.supervisor_id)}
-                        className="text-xs text-navy hover:underline"
+                        className="text-xs text-ink hover:underline"
                       >
                         {hs?.open ? 'Ocultar historial' : 'Ver historial'}
                       </button>
@@ -960,7 +960,7 @@ function ActivitiesPanel() {
                       <p className="text-xs font-semibold text-gray-700 mb-3">Historial de ediciones</p>
                       {hs.loading ? (
                         <div className="flex justify-center py-4">
-                          <div className="animate-spin h-5 w-5 rounded-full border-4 border-navy border-t-transparent" />
+                          <div className="animate-spin h-5 w-5 rounded-full border-4 border-ink border-t-transparent" />
                         </div>
                       ) : hs.changes.length === 0 ? (
                         <p className="text-xs text-gray-400">Sin historial de ediciones para este mes.</p>
@@ -1023,8 +1023,8 @@ function ReportsPanel() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl border border-gray-200 p-12 flex justify-center">
-        <div className="animate-spin h-7 w-7 rounded-full border-4 border-navy border-t-transparent" />
+      <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-12 flex justify-center">
+        <div className="animate-spin h-7 w-7 rounded-full border-4 border-ink border-t-transparent" />
       </div>
     )
   }
@@ -1040,7 +1040,7 @@ function ReportsPanel() {
 
   if (reports.length === 0) {
     return (
-      <div className="bg-white rounded-xl border border-gray-200 p-14 text-center">
+      <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-14 text-center">
         <ClipboardList className="h-10 w-10 text-gray-300 mx-auto mb-3" />
         <p className="font-medium text-gray-500">No hay informes de cierre enviados aún.</p>
         <p className="text-sm text-gray-400 mt-1">Aparecerán aquí cuando los representantes envíen sus informes mensuales.</p>
@@ -1067,20 +1067,20 @@ function ReportsPanel() {
               const scoreCfg = report.performance_score ? SCORE_CONFIG[report.performance_score] : null
               const isExpanded = expanded === report.id
               return (
-                <div key={report.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div key={report.id} className="bg-white rounded-2xl border border-black/[0.06] shadow-soft overflow-hidden">
                   <button
                     onClick={() => setExpanded(isExpanded ? null : report.id)}
                     className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors text-left"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="h-9 w-9 rounded-full bg-navy/10 text-navy flex items-center justify-center text-sm font-bold flex-shrink-0">
+                      <div className="h-9 w-9 rounded-full bg-surface text-ink flex items-center justify-center text-sm font-bold flex-shrink-0">
                         {report.employee?.full_name.charAt(0).toUpperCase() ?? '?'}
                       </div>
                       <div>
                         <p className="font-semibold text-gray-900 text-sm">{report.employee?.full_name ?? 'Empleado'}</p>
                         <div className="flex items-center gap-2 mt-0.5">
                           {report.employee?.campus.map((c) => (
-                            <span key={c} className="text-xs px-2 py-0.5 rounded-full bg-navy/10 text-navy font-medium">{c}</span>
+                            <span key={c} className="text-xs px-2 py-0.5 rounded-full bg-surface text-ink font-medium">{c}</span>
                           ))}
                         </div>
                       </div>
@@ -1450,7 +1450,7 @@ function SummaryPanel() {
   return (
     <div className="space-y-5">
       {/* Controls */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
+      <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-5">
         <h2 className="text-sm font-bold text-gray-900 mb-1">Informe General del Mes</h2>
         <p className="text-xs text-gray-500 mb-4">
           Resumen de actividades, leads y matriculados de todos los representantes para el mes seleccionado.
@@ -1468,7 +1468,7 @@ function SummaryPanel() {
           <button
             onClick={generate}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-navy text-white text-sm font-semibold hover:bg-navy/90 transition-colors disabled:opacity-40"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-ink text-white text-sm font-semibold hover:bg-black transition-colors disabled:opacity-40"
           >
             <Zap className="h-4 w-4" />
             {loading ? 'Generando…' : 'Generar Informe'}
@@ -1489,7 +1489,7 @@ function SummaryPanel() {
                 document.body.removeChild(a)
                 URL.revokeObjectURL(url)
               }}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gold text-white text-sm font-semibold hover:bg-gold/90 transition-colors"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent text-white text-sm font-semibold hover:bg-accent-hover transition-colors"
             >
               <Download className="h-4 w-4" />
               Descargar HTML
@@ -1508,13 +1508,13 @@ function SummaryPanel() {
       {data && (
         <>
           {/* Global totals */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-5">
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4 capitalize">
               {monthLabel(data.month)} · Resumen general
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
               {[
-                { icon: Users,         label: 'Representantes',    value: data.totals.total_employees,             color: 'text-navy' },
+                { icon: Users,         label: 'Representantes',    value: data.totals.total_employees,             color: 'text-ink' },
                 { icon: TrendingUp,    label: 'Total Leads',       value: data.totals.total_leads,                 color: 'text-blue-600' },
                 { icon: GraduationCap, label: 'Matriculados',      value: data.totals.total_matriculados,          color: 'text-green-600' },
                 { icon: CalendarDays,  label: 'Actividades Plan.', value: data.totals.total_activities_planned,    color: 'text-indigo-600' },
@@ -1539,11 +1539,11 @@ function SummaryPanel() {
                   ? SCORE_CONFIG_SUMMARY[emp.performance_score as keyof typeof SCORE_CONFIG_SUMMARY]
                   : null
                 return (
-                  <div key={emp.id} className="bg-white rounded-xl border border-gray-200 p-5">
+                  <div key={emp.id} className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-5">
                     {/* Employee header */}
                     <div className="flex items-start justify-between gap-3 mb-4">
                       <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-navy/10 text-navy flex items-center justify-center text-sm font-bold flex-shrink-0">
+                        <div className="h-10 w-10 rounded-full bg-surface text-ink flex items-center justify-center text-sm font-bold flex-shrink-0">
                           {emp.full_name.charAt(0).toUpperCase()}
                         </div>
                         <div>
@@ -1555,7 +1555,7 @@ function SummaryPanel() {
                           </div>
                           <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                             {emp.campus.map((c) => (
-                              <span key={c} className="text-xs px-2 py-0.5 rounded-full bg-navy/10 text-navy font-medium">{c}</span>
+                              <span key={c} className="text-xs px-2 py-0.5 rounded-full bg-surface text-ink font-medium">{c}</span>
                             ))}
                           </div>
                         </div>
@@ -1654,8 +1654,8 @@ function SolicitudesPanel() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl border border-gray-200 p-12 flex justify-center">
-        <div className="animate-spin h-7 w-7 rounded-full border-4 border-navy border-t-transparent" />
+      <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-12 flex justify-center">
+        <div className="animate-spin h-7 w-7 rounded-full border-4 border-ink border-t-transparent" />
       </div>
     )
   }
@@ -1671,7 +1671,7 @@ function SolicitudesPanel() {
 
   if (requests.length === 0) {
     return (
-      <div className="bg-white rounded-xl border border-gray-200 p-16 text-center">
+      <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-16 text-center">
         <Briefcase className="h-10 w-10 text-gray-300 mx-auto mb-3" />
         <p className="text-gray-500 font-medium">No hay solicitudes de empleo aún.</p>
         <p className="text-gray-400 text-sm mt-1">Las solicitudes aparecerán aquí cuando alguien contacte a un egresado desde /egresados.</p>
@@ -1684,7 +1684,7 @@ function SolicitudesPanel() {
       {requests.map((req) => {
         const cfg = JOB_STATUS_CONFIG[req.status]
         return (
-          <div key={req.id} className="bg-white rounded-xl border border-gray-200 p-5">
+          <div key={req.id} className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-5">
             <div className="flex items-start justify-between gap-3 mb-3">
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
@@ -1706,7 +1706,7 @@ function SolicitudesPanel() {
               <select
                 value={req.status}
                 onChange={(e) => updateStatus(req.id, e.target.value)}
-                className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-navy/20 flex-shrink-0"
+                className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-accent-ring flex-shrink-0"
               >
                 <option value="pendiente">Pendiente</option>
                 <option value="en_proceso">En proceso</option>
@@ -1774,32 +1774,32 @@ export default function AdminPage() {
   const adminEmployee = employees.find((e) => e.role === 'admin') as Employee | undefined
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-surface">
       {adminEmployee && <PortalHeader employee={adminEmployee} />}
 
       <div className="max-w-5xl mx-auto px-4 md:px-6 py-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Administración</h1>
+            <h1 className="text-2xl font-bold text-ink font-display">Administración</h1>
             <p className="text-sm text-gray-500 mt-0.5">{employees.length} empleado{employees.length !== 1 ? 's' : ''} registrado{employees.length !== 1 ? 's' : ''}</p>
           </div>
           <div className="flex gap-3">
-            <a href="/portal/dashboard" className="text-sm text-navy hover:underline font-medium py-2">
+            <a href="/portal/dashboard" className="text-sm text-ink hover:underline font-medium py-2">
               ← Dashboard
             </a>
             {activeTab === 'empleados' && (
               <>
                 <button
                   onClick={() => setShowImport(true)}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-navy text-navy text-sm font-semibold hover:bg-navy/5 transition-colors"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-ink text-ink text-sm font-semibold hover:bg-ink/5 transition-colors"
                 >
                   <Upload className="h-4 w-4" />
                   Importar CSV
                 </button>
                 <button
                   onClick={() => setShowModal(true)}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gold text-white text-sm font-semibold hover:bg-gold/90 transition-colors"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-accent text-white text-sm font-semibold hover:bg-accent-hover transition-colors"
                 >
                   <UserPlus className="h-4 w-4" />
                   Agregar Empleado
@@ -1821,7 +1821,7 @@ export default function AdminPage() {
             <button
               key={key}
               onClick={() => setActiveTab(key)}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${activeTab === key ? 'bg-white text-navy shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${activeTab === key ? 'bg-white text-ink shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
             >
               <Icon className="h-4 w-4" />
               {label}
@@ -1832,11 +1832,11 @@ export default function AdminPage() {
         {/* Employees tab */}
         {activeTab === 'empleados' && (
           loading ? (
-            <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-              <div className="animate-spin h-8 w-8 rounded-full border-4 border-navy border-t-transparent mx-auto" />
+            <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-12 text-center">
+              <div className="animate-spin h-8 w-8 rounded-full border-4 border-ink border-t-transparent mx-auto" />
             </div>
           ) : (
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft overflow-hidden">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-100 bg-gray-50">
@@ -1853,7 +1853,7 @@ export default function AdminPage() {
                     <tr key={emp.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2.5">
-                          <div className="h-8 w-8 rounded-full bg-navy/10 text-navy flex items-center justify-center text-sm font-bold flex-shrink-0">
+                          <div className="h-8 w-8 rounded-full bg-surface text-ink flex items-center justify-center text-sm font-bold flex-shrink-0">
                             {emp.full_name.charAt(0).toUpperCase()}
                           </div>
                           <span className="font-medium text-gray-900">{emp.full_name}</span>
@@ -1862,7 +1862,7 @@ export default function AdminPage() {
                       <td className="px-4 py-3 hidden sm:table-cell">
                         <div className="flex flex-wrap gap-1">
                           {emp.campus.map((c) => (
-                            <span key={c} className="text-xs px-2 py-0.5 rounded-full bg-navy/10 text-navy font-medium">{c}</span>
+                            <span key={c} className="text-xs px-2 py-0.5 rounded-full bg-surface text-ink font-medium">{c}</span>
                           ))}
                         </div>
                       </td>
@@ -1894,7 +1894,7 @@ export default function AdminPage() {
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => setEditEmployee(emp)}
-                            className="p-1.5 rounded-lg text-gray-400 hover:text-navy hover:bg-navy/10 transition-colors"
+                            className="p-1.5 rounded-lg text-gray-400 hover:text-ink hover:bg-ink/10 transition-colors"
                             title="Editar"
                           >
                             <Pencil className="h-3.5 w-3.5" />
