@@ -44,9 +44,10 @@ const steps = [
 ]
 
 const requirements = [
-  'Transcripción de crédito',
-  'Certificado de Inmunización para menores de 21 años',
-  'Cuota de admisión',
+  '16 años o más (programas de salud: 18 años o más)',
+  'Diploma o Transcripción de Crédito con 4to año aprobado',
+  'Certificado de Vacunas (PVAC-3), si es menor de 21 años',
+  'Cuota de Admisión',
 ]
 
 const financialAidOptions: { name: string; desc: string; type: string }[] = []

@@ -301,11 +301,10 @@ export default async function ProgramPage({ params }: PageProps) {
                 <div className="bg-gold-50 border border-gold/20 rounded-2xl p-6">
                   <ul className="space-y-2">
                     {[
-                      'Diploma de escuela superior o equivalente (GED)',
-                      'Formulario de solicitud completado',
-                      'Entrevista con representante de admisiones',
-                      'Documentos de identificación válidos',
-                      'Solicitud de Asistencia Económica (FAFSA) si aplica',
+                      '16 años o más (programas de salud: 18 años o más)',
+                      'Diploma o Transcripción de Crédito con 4to año aprobado',
+                      'Certificado de Vacunas (PVAC-3), si es menor de 21 años',
+                      'Cuota de Admisión',
                     ].map((req) => (
                       <li key={req} className="flex items-start gap-2 text-sm text-gray-700">
                         <CheckCircle className="h-4 w-4 text-gold flex-shrink-0 mt-0.5" />

@@ -8,7 +8,7 @@ import { STUDENT_SERVICES } from '@/lib/utils'
 export const metadata: Metadata = {
   title: 'Servicios Estudiantiles',
   description:
-    "D'Mart Institute ofrece servicios completos de apoyo estudiantil: Centro de Recursos, Retención, Colocaciones, Registraduría, Asistencia Económica y más.",
+    "D'Mart Institute ofrece servicios completos de apoyo estudiantil: Centro de Recursos, Retención, Colocaciones, Oficina de Registro, Asistencia Económica y más.",
 }
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {

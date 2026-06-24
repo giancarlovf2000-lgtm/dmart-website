@@ -249,7 +249,7 @@ export const STUDENT_SERVICES = [
   },
   {
     id: 4,
-    name: 'Registraduría',
+    name: 'Oficina de Registro',
     description: 'Gestiona tus trámites académicos: transcripciones, certificaciones, cambios de programa y documentación oficial.',
     icon: 'FileText',
   },
@@ -261,7 +261,7 @@ export const STUDENT_SERVICES = [
   },
   {
     id: 6,
-    name: 'Tesorera',
+    name: 'Oficina de Tesorería',
     description: 'Gestiona tus pagos, planes de pago y asuntos financieros relacionados con tu matrícula y costos del programa.',
     icon: 'CreditCard',
   },
@@ -494,9 +494,9 @@ export const STATIC_PROGRAMS = [
     category_id: 'tecnico',
     description:
       'El programa de Técnico de Refrigeración y Aire Acondicionado prepara a los estudiantes para instalar, mantener y reparar sistemas de refrigeración y aire acondicionado residenciales, comerciales e industriales, incorporando tecnología PLC y energía renovable.',
-    duration_weeks: 32,
-    duration_months: 8,
-    credits: 44.5,
+    duration_weeks: 36,
+    duration_months: 9,
+    credits: 32,
     hours: 800,
     schedule_options: ['Diurno', 'Nocturno'],
     active: true,
@@ -537,7 +537,7 @@ export const FAQ_DATA = [
   {
     id: 1,
     question: '¿Cuáles son los requisitos de admisión?',
-    answer: 'Para admisión se requiere: (1) Transcripción de crédito, (2) Certificación de vacunas, (3) Cuota de admisión. Los requisitos específicos pueden variar según el programa. Contáctanos para más información.',
+    answer: 'Para admisión se requiere: (1) 16 años o más (programas de salud: 18 años o más), (2) Diploma o Transcripción de Crédito con 4to año aprobado, (3) Certificado de Vacunas (PVAC-3) si es menor de 21 años, (4) Cuota de Admisión. Contáctanos para más información.',
   },
   {
     id: 2,
