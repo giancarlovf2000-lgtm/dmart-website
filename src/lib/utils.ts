@@ -105,6 +105,12 @@ export const ALL_PROGRAMS = [
   'Corte y Estilo Caballeros',
   'Corte y Estilo Damas',
   'Facturación a Planes Médicos',
+  'Maquillaje',
+  'Terapia de Masaje y Tratamiento Corporal',
+  'Repostería',
+  'Lenguaje de Señas',
+  'Floristería',
+  'Bartending y Mesero',
   'No sé aún',
 ]
 
