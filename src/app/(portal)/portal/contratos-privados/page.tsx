@@ -20,6 +20,7 @@ const PROGRAM_COST        = 495
 const ADMISSION           = 25
 const PROG_DEFERRED_ADMIN = 25
 const EQ_DEFERRED_ADMIN   = 20
+const EQ_DEPOSIT_RATE     = 0.50
 const DISCOUNT            = 0.10
 const WEEKS               = 11
 
@@ -31,10 +32,12 @@ function calcPrices(prog: ProgramKey, progPlan: 'complete' | 'deferred', eqPlan:
   const progCompleteAmt    = PROGRAM_COST * (1 - DISCOUNT)                // 445.50
   const progDeferredWeekly = (PROGRAM_COST + PROG_DEFERRED_ADMIN) / WEEKS // 47.27
   const eqCompleteAmt      = eq * (1 - DISCOUNT)
-  const eqDeferredWeekly   = (eq + EQ_DEFERRED_ADMIN) / WEEKS
+  // Plan diferido del kit: depósito del 50% + $20 al inicio; el 50% restante en 11 cuotas.
+  const eqDeferredDeposit  = eq * EQ_DEPOSIT_RATE + EQ_DEFERRED_ADMIN
+  const eqDeferredWeekly   = (eq * EQ_DEPOSIT_RATE) / WEEKS
 
   const progInitial = progPlan === 'complete' ? progCompleteAmt : 0
-  const eqInitial   = eqPlan   === 'complete' ? eqCompleteAmt  : 0
+  const eqInitial   = eqPlan === 'complete' ? eqCompleteAmt : eqPlan === 'deferred' ? eqDeferredDeposit : 0
   const initial     = ADMISSION + progInitial + eqInitial
 
   const weeklyProg  = progPlan === 'deferred' ? progDeferredWeekly : 0
@@ -49,7 +52,7 @@ function calcPrices(prog: ProgramKey, progPlan: 'complete' | 'deferred', eqPlan:
     ? (eqPlan === 'complete' ? 1 : eqPlan === 'deferred' ? 2 : 5)
     : (eqPlan === 'complete' ? 3 : eqPlan === 'deferred' ? 4 : 6)
 
-  return { initial, weeklyProg, weeklyEq, weeklyTotal, totalContract, scenario, progCompleteAmt, eqCompleteAmt, progDeferredWeekly, eqDeferredWeekly }
+  return { initial, weeklyProg, weeklyEq, weeklyTotal, totalContract, scenario, progCompleteAmt, eqCompleteAmt, progDeferredWeekly, eqDeferredWeekly, eqDeferredDeposit }
 }
 
 // ─── Student info type ───────────────────────────────────────────────────────
@@ -99,6 +102,7 @@ function buildContractHtml(params: {
 
   const eqCompleteLabel = `${fmt(prices.eqCompleteAmt)} (10% desc.)`
   const eqDeferredLabel = `11 cuotas de ≈${fmt(prices.eqDeferredWeekly)}/sem`
+  const eqDepositLabel  = fmt(prices.eqDeferredDeposit)
 
   const termsAndConditions = `
 <h3 style="margin:20px 0 8px;font-size:13px;border-bottom:2px solid #c9a227;padding-bottom:3px;">TÉRMINOS Y CONDICIONES</h3>
@@ -110,8 +114,8 @@ function buildContractHtml(params: {
   <li style="margin-bottom:6px;"><strong>Cargo de Admisión.</strong> El cargo de admisión de $25.00 es no reembolsable, se cobra por separado al inicio en todos los escenarios, NO se acredita al costo del programa, no reduce el monto a financiar y no se distribuye dentro de los 11 pagos semanales.</li>
   <li style="margin-bottom:6px;"><strong>Independencia de Planes de Pago del Programa y Equipo.</strong> La selección del plan de pago del programa es independiente de la selección del equipo/materiales/kit. El pago completo del programa no obliga el pago completo del equipo, y viceversa. El descuento del 10% aplica solo al componente pagado en su totalidad antes del inicio.</li>
   <li style="margin-bottom:6px;"><strong>Costos Base y Descuento por Pago Completo de Equipo/Materiales/Kit.</strong> Costos base: Corte y Estilo Caballeros $110.00, Corte y Estilo Damas $80.00, Técnica de Uñas $40.00. El pago completo antes del inicio oficial recibe descuento del 10%: Caballeros $99.00, Damas $72.00, Uñas $36.00.</li>
-  <li style="margin-bottom:6px;"><strong>Plan de Pago Diferido de Equipo.</strong> El estudiante que utilice el plan diferido de equipo paga el costo del equipo más $20.00 de cargo administrativo, distribuido en 11 pagos semanales sin descuento. Valores referenciales: Caballeros ≈$11.82/sem, Damas ≈$9.09/sem, Uñas ≈$5.45/sem.</li>
-  <li style="margin-bottom:6px;"><strong>Cargo Administrativo del Plan Diferido de Equipo.</strong> El cargo de $20.00 aplica solo cuando el estudiante selecciona el plan diferido de equipo. Si paga el equipo completamente antes del inicio: aplica el 10% de descuento y NO aplica el cargo administrativo. El equipo diferido no recibe descuento.</li>
+  <li style="margin-bottom:6px;"><strong>Plan de Pago Diferido de Equipo.</strong> El estudiante que utilice el plan diferido de equipo paga al inicio un depósito equivalente al 50% del costo del kit más $20.00 de cargo administrativo, y financia el 50% restante del kit en 11 pagos semanales sin descuento. Valores referenciales — Caballeros: depósito $75.00 y ≈$5.00/sem; Damas: depósito $60.00 y ≈$3.64/sem; Uñas: depósito $40.00 y ≈$1.82/sem.</li>
+  <li style="margin-bottom:6px;"><strong>Cargo Administrativo del Plan Diferido de Equipo.</strong> El cargo de $20.00 aplica solo cuando el estudiante selecciona el plan diferido de equipo y se cobra dentro del depósito inicial. Si paga el equipo completamente antes del inicio: aplica el 10% de descuento y NO aplica el cargo administrativo ni el depósito. El equipo diferido no recibe descuento.</li>
   <li style="margin-bottom:6px;"><strong>Opción de Equipo Aportado por el Estudiante.</strong> El estudiante puede aportar o adquirir el equipo, materiales o kit fuera de la institución. En tal caso no aplican cargos por el componente de equipo. La equivalencia técnica debe ser validada por el Academic Officer de la institución antes del inicio del programa.</li>
   <li style="margin-bottom:6px;"><strong>No Reembolsabilidad del Equipo Adquirido.</strong> El equipo, materiales o kits educativos adquiridos a través de la institución no son reembolsables una vez entregados.</li>
   <li style="margin-bottom:6px;"><strong>Responsabilidad del Estudiante por Daños.</strong> El estudiante es responsable por daños intencionales o uso negligente del equipo, herramientas, mobiliario o propiedad institucional. La institución podrá requerir reparación, restitución o compensación económica.</li>
@@ -202,7 +206,7 @@ function buildContractHtml(params: {
   <thead><tr><th>Sel.</th><th>Opción</th><th>Monto</th><th>Cuota Semanal</th></tr></thead>
   <tbody>
     <tr class="check-row"><td>${check(eqPlan === 'complete')}</td><td>Pago completo antes o al inicio (10% de descuento)</td><td>${eqCompleteLabel}</td><td>$0.00</td></tr>
-    <tr class="check-row"><td>${check(eqPlan === 'deferred')}</td><td>Plan diferido — 11 cuotas semanales (cargo administrativo $20.00 incluido)</td><td>${fmt(eq + EQ_DEFERRED_ADMIN)}</td><td>${eqDeferredLabel}</td></tr>
+    <tr class="check-row"><td>${check(eqPlan === 'deferred')}</td><td>Plan diferido — depósito 50% del kit + $20.00 al inicio, resto en 11 cuotas semanales</td><td>${eqDepositLabel} depósito</td><td>${eqDeferredLabel}</td></tr>
     <tr class="check-row"><td>${check(eqPlan === 'student')}</td><td>El estudiante aporta su propio equipo (debe ser validado por Academic Officer)</td><td>$0.00</td><td>$0.00</td></tr>
     <tr class="check-row"><td>${check(eqPlan === 'none')}</td><td>Este programa no requiere kit institucional</td><td>—</td><td>—</td></tr>
   </tbody>
@@ -214,7 +218,7 @@ function buildContractHtml(params: {
   <tr><td class="label">Programa seleccionado</td><td colspan="3">${progLabel} (Escenario #${prices.scenario})</td></tr>
   <tr><td class="label">Cargo de admisión (no reembolsable, separado)</td><td colspan="3">$25.00</td></tr>
   <tr><td class="label">Plan de pago del programa</td><td colspan="3">${progPlan === 'complete' ? 'Pago completo — $445.50' : 'Plan diferido — 11 cuotas de ≈$47.27/sem'}</td></tr>
-  <tr><td class="label">Tratamiento de equipo</td><td colspan="3">${eqPlan === 'complete' ? `Pago completo — ${eqCompleteLabel}` : eqPlan === 'deferred' ? `Plan diferido — ${eqDeferredLabel}` : 'Estudiante aporta su propio equipo'}</td></tr>
+  <tr><td class="label">Tratamiento de equipo</td><td colspan="3">${eqPlan === 'complete' ? `Pago completo — ${eqCompleteLabel}` : eqPlan === 'deferred' ? `Plan diferido — depósito ${eqDepositLabel} (50% del kit + $20) + ${eqDeferredLabel}` : 'Estudiante aporta su propio equipo'}</td></tr>
   <tr style="background:#fef9c3;"><td class="label"><strong>Pago inicial mínimo a cobrar HOY</strong></td><td colspan="3"><strong>${fmt(prices.initial)}</strong> (incluye cargo admisión de $25.00)</td></tr>
   <tr><td class="label">Cuota semanal — Programa</td><td colspan="3">${prices.weeklyProg > 0 ? fmt(prices.weeklyProg) : '$0.00'}</td></tr>
   <tr><td class="label">Cuota semanal — Equipo/materiales</td><td colspan="3">${prices.weeklyEq > 0 ? fmt(prices.weeklyEq) : '$0.00'}</td></tr>
@@ -628,7 +632,7 @@ function ContratosPrivadosContent() {
                   <div className="space-y-3">
                     {([
                       { key: 'complete' as const, title: 'Pago Completo de Equipo', desc: `${fmt(PROGRAMS[program].equipCost * (1 - DISCOUNT))} (10% desc.) · Un solo pago antes o al inicio del programa` },
-                      { key: 'deferred' as const, title: 'Plan Diferido de Equipo', desc: `11 cuotas de ≈${fmt((PROGRAMS[program].equipCost + EQ_DEFERRED_ADMIN) / WEEKS)}/semana · Cargo administrativo $20.00 incluido · Sin descuento` },
+                      { key: 'deferred' as const, title: 'Plan Diferido de Equipo', desc: `Depósito ${fmt(PROGRAMS[program].equipCost * EQ_DEPOSIT_RATE + EQ_DEFERRED_ADMIN)} hoy (50% del kit + $20) · resto en 11 cuotas de ≈${fmt((PROGRAMS[program].equipCost * EQ_DEPOSIT_RATE) / WEEKS)}/semana · Sin descuento` },
                       { key: 'student' as const, title: 'El estudiante aporta su propio equipo', desc: 'El estudiante adquiere el equipo fuera de la institución · Debe ser validado por el Academic Officer antes del inicio' },
                     ]).map(({ key, title, desc }) => (
                       <button key={key} onClick={() => setEqPlan(key)}
@@ -663,6 +667,7 @@ function ContratosPrivadosContent() {
                       ['Cargo de admisión (separado)', fmt(ADMISSION)],
                       [progPlan === 'complete' ? 'Programa (pago completo, 10% desc.)' : 'Programa (diferido, 11 cuotas)', progPlan === 'complete' ? fmt(prices.progCompleteAmt) : `11 × ${fmt(prices.progDeferredWeekly)}`],
                       [eqPlan === 'none' ? 'Equipo (no aplica)' : eqPlan === 'complete' ? 'Equipo (pago completo, 10% desc.)' : eqPlan === 'deferred' ? 'Equipo (diferido, 11 cuotas)' : 'Equipo (aportado por estudiante)', eqPlan === 'none' ? 'No aplica' : eqPlan === 'complete' ? fmt(prices.eqCompleteAmt) : eqPlan === 'deferred' ? `11 × ${fmt(prices.eqDeferredWeekly)}` : '$0.00'],
+                      ...(eqPlan === 'deferred' ? [['Depósito de equipo (hoy, 50% + $20)', fmt(prices.eqDeferredDeposit)]] : []),
                     ].map(([label, value]) => (
                       <div key={label} className="flex justify-between text-amber-800">
                         <span className="text-xs">{label}</span>
