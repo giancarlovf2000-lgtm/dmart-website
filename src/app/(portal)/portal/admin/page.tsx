@@ -214,6 +214,7 @@ function EditEmployeeModal({ employee, allEmployees, onClose, onSaved }: {
     role: employee.role,
     campus: (employee.campus as string[]).slice(),
     supervisee_ids: currentSupervisees,
+    web_intake: !!employee.web_intake,
   })
   const [newPassword, setNewPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -238,7 +239,7 @@ function EditEmployeeModal({ employee, allEmployees, onClose, onSaved }: {
     if (newPassword && newPassword.length < 8) { setError('La contraseña debe tener al menos 8 caracteres.'); return }
     setLoading(true)
 
-    const body: Record<string, unknown> = { full_name: form.full_name, role: form.role, campus: form.campus, supervisee_ids: form.supervisee_ids }
+    const body: Record<string, unknown> = { full_name: form.full_name, role: form.role, campus: form.campus, supervisee_ids: form.supervisee_ids, web_intake: form.web_intake }
     if (newPassword) body.password = newPassword
 
     const res = await fetch(`/api/portal/admin/employees/${employee.id}`, {
@@ -345,6 +346,19 @@ function EditEmployeeModal({ employee, allEmployees, onClose, onSaved }: {
               ))}
             </div>
           </div>
+
+          <label className="flex items-start gap-2.5 p-3 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-50">
+            <input
+              type="checkbox"
+              checked={form.web_intake}
+              onChange={(e) => setForm((prev) => ({ ...prev, web_intake: e.target.checked }))}
+              className="mt-0.5 rounded border-gray-300 text-ink"
+            />
+            <span>
+              <span className="block text-sm font-medium text-gray-800">Recibe leads del website</span>
+              <span className="block text-xs text-gray-500">Los leads del formulario público se reparten (round-robin) solo entre los empleados con esta opción activada.</span>
+            </span>
+          </label>
 
           <div className="pt-2 border-t border-gray-100">
             <label className="form-label">Nueva Contraseña <span className="text-gray-400 font-normal">(opcional)</span></label>
@@ -1857,6 +1871,9 @@ export default function AdminPage() {
                             {emp.full_name.charAt(0).toUpperCase()}
                           </div>
                           <span className="font-medium text-gray-900">{emp.full_name}</span>
+                          {emp.web_intake && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-accent-soft text-accent font-semibold" title="Recibe leads del website">Web</span>
+                          )}
                         </div>
                       </td>
                       <td className="px-4 py-3 hidden sm:table-cell">

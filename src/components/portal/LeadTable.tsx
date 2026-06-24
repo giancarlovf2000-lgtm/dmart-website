@@ -33,6 +33,25 @@ function formatDate(dateStr: string) {
   })
 }
 
+function initials(name?: string | null): string {
+  if (!name) return '—'
+  return name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('')
+}
+
+// Origen legible del lead para la tabla.
+function leadOrigin(lead: Lead): string {
+  const rep = lead.employee?.full_name
+  const act = lead.activity?.name
+  if (lead.assignment_source === 'manual') {
+    if (act) return `${initials(rep)} · ${act} · Manual`
+    return rep ? `${rep} · Manual` : 'Manual'
+  }
+  if (lead.assignment_source === 'actividad') {
+    return `${initials(rep)} · ${act ?? 'Actividad'} · QR`
+  }
+  return lead.source ?? '—'
+}
+
 export default function LeadTable({ leads, staleLeadIds, followupLeadIds = [], employee, activities, sources = [], currentSource = '', teamMembers = [] }: LeadTableProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -254,8 +273,8 @@ export default function LeadTable({ leads, staleLeadIds, followupLeadIds = [], e
                       <td className="px-4 py-3 whitespace-nowrap cursor-pointer" onClick={() => router.push(`/portal/leads/${lead.id}`)}>
                         <LeadStatusBadge status={lead.status} />
                       </td>
-                      <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap hidden xl:table-cell cursor-pointer max-w-[120px] truncate" title={lead.source ?? ''} onClick={() => router.push(`/portal/leads/${lead.id}`)}>
-                        {lead.source ?? '—'}
+                      <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap hidden xl:table-cell cursor-pointer max-w-[160px] truncate" title={leadOrigin(lead)} onClick={() => router.push(`/portal/leads/${lead.id}`)}>
+                        {leadOrigin(lead)}
                       </td>
                       <td className="px-4 py-3 text-gray-400 text-xs whitespace-nowrap hidden lg:table-cell cursor-pointer" onClick={() => router.push(`/portal/leads/${lead.id}`)}>
                         {formatDate(lead.created_at)}

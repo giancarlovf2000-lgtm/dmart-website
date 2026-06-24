@@ -85,7 +85,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   // ── Leads query (filtered, for the table) ──────────────────────────────────
   let leadsQuery = adminClient
     .from('leads')
-    .select('id, created_at, nombre, apellido, telefono, campus, programa_interes, status, source, last_action_at, assignment_source, lead_source_text, activity_id, assigned_to')
+    .select('id, created_at, nombre, apellido, telefono, campus, programa_interes, status, source, last_action_at, assignment_source, lead_source_text, activity_id, assigned_to, employee:assigned_to(full_name), activity:activity_id(name)')
     .order('last_action_at', { ascending: false })
     .range(0, 1999)
 
@@ -337,7 +337,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
               </div>
             </div>
             <LeadTable
-              leads={sortedLeads as Lead[]}
+              leads={sortedLeads as unknown as Lead[]}
               staleLeadIds={staleLeadIds}
               followupLeadIds={followupLeadIds}
               employee={employee as Employee}

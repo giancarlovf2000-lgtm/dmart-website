@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     program, scenario, student_name, student_phone, student_email,
     program_payment, equipment_option,
     initial_payment, weekly_total, total_contract,
-    start_date, campus,
+    start_date, campus, contract_html,
   } = body
 
   if (!program || !student_name || !program_payment || !equipment_option)
@@ -46,6 +46,7 @@ export async function POST(request: NextRequest) {
     total_contract: Number(total_contract),
     start_date: start_date || null,
     campus: campus || null,
+    contract_html: typeof contract_html === 'string' ? contract_html : null,
   }).select('id').single()
 
   if (error) {
@@ -61,9 +62,10 @@ export async function GET() {
   if (!auth) return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
   const { user, emp, admin } = auth
 
+  // Lista ligera (sin el HTML pesado del contrato).
   let query = admin
     .from('private_contracts')
-    .select('*')
+    .select('id, employee_id, program, scenario, student_name, initial_payment, weekly_total, total_contract, start_date, campus, created_at')
     .order('created_at', { ascending: false })
     .limit(100)
 

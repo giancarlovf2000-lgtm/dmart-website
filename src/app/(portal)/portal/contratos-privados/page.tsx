@@ -180,14 +180,11 @@ function buildContractHtml(params: {
   <tr><td class="label">Horario</td><td>${student.horario || '&nbsp;'}</td><td class="label">Modalidad</td><td>${student.modalidad || '&nbsp;'}</td></tr>
 </table>
 
-<h2>TABLA 1 — SELECCIÓN DE PROGRAMA</h2>
+<h2>TABLA 1 — PROGRAMA SELECCIONADO</h2>
 <table>
-  <thead><tr><th>Sel.</th><th>Programa</th><th>Horas</th><th>Costo Programa</th><th>Costo Equipo</th></tr></thead>
+  <thead><tr><th>Programa</th><th>Horas</th><th>Costo Programa</th><th>Costo Equipo</th></tr></thead>
   <tbody>
-    <tr class="check-row"><td>${check(program === 'caballeros')}</td><td>Corte y Estilo Caballeros</td><td>36</td><td>$495.00</td><td>$110.00</td></tr>
-    <tr class="check-row"><td>${check(program === 'damas')}</td><td>Corte y Estilo Damas</td><td>36</td><td>$495.00</td><td>$80.00</td></tr>
-    <tr class="check-row"><td>${check(program === 'unas')}</td><td>Técnica de Uñas</td><td>36</td><td>$495.00</td><td>$40.00</td></tr>
-    <tr class="check-row"><td>${check(program === 'facturacion')}</td><td>Facturación a Planes Médicos</td><td>36</td><td>$495.00</td><td>No aplica</td></tr>
+    <tr><td>${progLabel}</td><td>36</td><td>$495.00</td><td>${PROGRAMS[program].noEquipment ? 'No aplica' : fmt(eq)}</td></tr>
   </tbody>
 </table>
 
@@ -338,6 +335,11 @@ function ContratosPrivadosContent() {
     if (!program || !progPlan || !eqPlan || !prices) return
     setSaving(true); setSaveError(''); setSaved(false)
 
+    const html = buildContractHtml({
+      program, progPlan, eqPlan, student, prices,
+      employeeName: employee?.full_name ?? '',
+    })
+
     const res = await fetch('/api/portal/private-contracts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -353,6 +355,7 @@ function ContratosPrivadosContent() {
         total_contract: prices.totalContract,
         start_date: student.fecha_inicio,
         campus: student.horario ? undefined : undefined,
+        contract_html: html,
       }),
     })
 
@@ -374,15 +377,27 @@ function ContratosPrivadosContent() {
     }
     setSaving(false)
 
-    const html = buildContractHtml({
-      program, progPlan, eqPlan, student, prices,
-      employeeName: employee?.full_name ?? '',
-    })
     const win = window.open('', '_blank')
     if (win) {
       win.document.write(html)
       win.document.close()
       setTimeout(() => win.print(), 600)
+    }
+  }
+
+  // Reabrir un contrato del historial (HTML guardado).
+  async function handleViewContract(id: string) {
+    const res = await fetch(`/api/portal/private-contracts/${id}`)
+    if (!res.ok) { alert('No se pudo cargar el contrato.'); return }
+    const { contract_html } = await res.json()
+    if (!contract_html) {
+      alert('Este contrato no se puede abrir (fue generado antes de esta actualización).')
+      return
+    }
+    const win = window.open('', '_blank')
+    if (win) {
+      win.document.write(contract_html)
+      win.document.close()
     }
   }
 
@@ -778,6 +793,7 @@ function ContratosPrivadosContent() {
                       <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs hidden md:table-cell">Esc.</th>
                       <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs">Total</th>
                       <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs hidden lg:table-cell">Generado por</th>
+                      <th className="text-right px-4 py-3 font-semibold text-gray-600 text-xs">Ver</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
@@ -791,6 +807,14 @@ function ContratosPrivadosContent() {
                         <td className="px-4 py-3 text-xs text-gray-500 hidden md:table-cell">#{c.scenario}</td>
                         <td className="px-4 py-3 text-xs font-medium text-gray-800">{fmt(c.total_contract)}</td>
                         <td className="px-4 py-3 text-xs text-gray-500 hidden lg:table-cell">{c.employee_name}</td>
+                        <td className="px-4 py-3 text-right">
+                          <button
+                            onClick={() => handleViewContract(c.id)}
+                            className="inline-flex items-center gap-1 px-3 py-1 rounded-full border border-black/[0.1] text-xs font-semibold text-ink hover:bg-surface transition-colors"
+                          >
+                            Ver
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>

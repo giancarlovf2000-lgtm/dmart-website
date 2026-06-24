@@ -48,6 +48,7 @@ export async function PATCH(
   if (body.campus !== undefined) updates.campus = body.campus
   if (body.role !== undefined) updates.role = body.role
   if (body.active !== undefined) updates.active = body.active
+  if (body.web_intake !== undefined) updates.web_intake = !!body.web_intake
 
   const { data, error } = await admin
     .from('employees')

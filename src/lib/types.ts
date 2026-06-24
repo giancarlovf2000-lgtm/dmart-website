@@ -110,7 +110,7 @@ export interface LeadFollowup {
   employee?: Pick<Employee, 'full_name'>
 }
 
-export type AssignmentSource = 'website' | 'manual' | 'import'
+export type AssignmentSource = 'website' | 'manual' | 'import' | 'actividad'
 
 export type EmployeeRole = 'admin' | 'supervisor' | 'director' | 'empleado'
 
@@ -122,6 +122,7 @@ export interface Employee {
   active: boolean
   round_robin_index: number
   supervisor_id?: string | null
+  web_intake?: boolean
   created_at: string
 }
 
