@@ -132,7 +132,7 @@ export default async function ContactanosPage() {
             <div className="lg:sticky lg:top-24">
               <LeadForm
                 title="Solicita Información"
-                subtitle="Completa el formulario y un consejero te llamará en menos de 24 horas."
+                subtitle="Completa el formulario y un representante te llamará en menos de 24 horas."
                 source="contactanos-page"
               />
             </div>

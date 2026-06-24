@@ -49,7 +49,7 @@ export default function LeadForm({
   className,
   compact = false,
   title = 'Solicita Información',
-  subtitle = 'Completa el formulario y un consejero se comunicará contigo.',
+  subtitle = 'Completa el formulario y un representante se comunicará contigo.',
 }: LeadFormProps) {
   const router = useRouter()
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle')

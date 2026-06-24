@@ -4,7 +4,7 @@ import { CheckCircle, Phone, ArrowRight, Clock, MapPin } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'Gracias — Información Recibida',
-  description: 'Tu solicitud de información ha sido recibida. Un consejero de D\'Mart Institute te contactará pronto.',
+  description: 'Tu solicitud de información ha sido recibida. Un representante de D\'Mart Institute te contactará pronto.',
   robots: { index: false, follow: false },
 }
 
@@ -31,7 +31,7 @@ export default function GraciasPage() {
               Gracias por tu interés en D'Mart Institute. Tu solicitud ha sido enviada exitosamente.
             </p>
             <p className="text-gray-500 leading-relaxed mb-10">
-              Uno de nuestros consejeros de admisiones se comunicará contigo
+              Uno de nuestros representantes se comunicará contigo
               <strong className="text-navy"> dentro de las próximas 24 horas</strong> para
               brindarte toda la información que necesitas sobre nuestros programas.
             </p>
@@ -41,7 +41,7 @@ export default function GraciasPage() {
               <h3 className="font-bold text-navy mb-4 text-center">¿Qué pasa ahora?</h3>
               <div className="space-y-3">
                 {[
-                  'Un consejero revisará tu solicitud',
+                  'Un representante revisará tu solicitud',
                   'Te llamarán al número que proporcionaste',
                   'Recibirás información sobre el programa de tu interés',
                   'Programaremos una visita al recinto si deseas',

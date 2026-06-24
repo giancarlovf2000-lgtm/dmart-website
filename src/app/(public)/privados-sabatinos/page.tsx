@@ -8,7 +8,7 @@ import { PRIVADOS_SABATINOS } from '@/lib/utils'
 export const metadata: Metadata = {
   title: 'Privados Sabatinos',
   description:
-    "Cursos sabatinos de tecnología y marketing en D'Mart Institute: Mercadeo Digital, Inteligencia Artificial, Diseño Gráfico, WordPress, Producción de Videos y más.",
+    "Cursos privados cortos sabatinos en D'Mart Institute: Maquillaje, Técnica de Uñas, Terapia de Masaje, Facturación a Planes Médicos, Repostería, Corte y Estilo, Lenguaje de Señas, Floristería, Bartending y más.",
 }
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {

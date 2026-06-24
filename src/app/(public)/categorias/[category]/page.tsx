@@ -136,7 +136,7 @@ export default async function CategoryPage({ params }: PageProps) {
 
       <CTABanner
         title={`¿Interesado en ${category.name}?`}
-        subtitle="Habla con un consejero y comienza tu camino profesional."
+        subtitle="Habla con un representante y comienza tu camino profesional."
       />
     </>
   )

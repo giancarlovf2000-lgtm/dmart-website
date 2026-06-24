@@ -89,7 +89,7 @@ export default async function IntakePage({ searchParams }: IntakePageProps) {
           source={source}
           activityId={activity.id}
           title="Solicita Información"
-          subtitle="Completa el formulario y un consejero académico se comunicará contigo."
+          subtitle="Completa el formulario y un representante se comunicará contigo."
           compact
         />
       </div>
