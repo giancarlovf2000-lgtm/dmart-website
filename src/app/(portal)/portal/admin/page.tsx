@@ -4,9 +4,10 @@ import { useEffect, useRef, useState } from 'react'
 import {
   UserPlus, Building2, CheckCircle, XCircle, AlertCircle, X, Upload,
   FileText, Users, ClipboardList, CalendarDays, MapPin, BarChart3,
-  GraduationCap, TrendingUp, Zap, Briefcase, Phone, Mail, Pencil, Download,
+  GraduationCap, TrendingUp, Zap, Briefcase, Phone, Mail, Pencil, Download, Megaphone,
 } from 'lucide-react'
 import PortalHeader from '@/components/portal/PortalHeader'
+import PostStudio from '@/components/portal/PostStudio'
 import Button from '@/components/ui/Button'
 import type { Employee } from '@/lib/types'
 
@@ -1763,7 +1764,7 @@ export default function AdminPage() {
   const [showModal, setShowModal] = useState(false)
   const [showImport, setShowImport] = useState(false)
   const [editEmployee, setEditEmployee] = useState<EmployeeWithCount | null>(null)
-  const [activeTab, setActiveTab] = useState<'empleados' | 'actividades' | 'informes' | 'informe_general' | 'solicitudes'>('actividades')
+  const [activeTab, setActiveTab] = useState<'empleados' | 'actividades' | 'informes' | 'informe_general' | 'solicitudes' | 'posts'>('actividades')
 
   async function loadEmployees() {
     const res = await fetch('/api/portal/admin/employees')
@@ -1831,6 +1832,7 @@ export default function AdminPage() {
             { key: 'informes',        label: 'Informes Enviados',   icon: ClipboardList },
             { key: 'informe_general', label: 'Informe General',     icon: BarChart3 },
             { key: 'solicitudes',     label: 'Solicitudes',         icon: Briefcase },
+            { key: 'posts',           label: 'Posts',               icon: Megaphone },
           ] as const).map(({ key, label, icon: Icon }) => (
             <button
               key={key}
@@ -1943,6 +1945,8 @@ export default function AdminPage() {
 
         {/* Job requests tab */}
         {activeTab === 'solicitudes' && <SolicitudesPanel />}
+
+        {activeTab === 'posts' && <PostStudio />}
       </div>
 
       {showModal && (
