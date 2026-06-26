@@ -18,6 +18,13 @@ const ADMISSION_REQS = [
 
 type PostType = 'programa' | 'sabatino' | 'requisitos' | 'evento'
 type BgStyle = 'rojo' | 'negro' | 'claro' | 'degradado' | 'foto'
+type LogoKind = 'blanco' | 'color' | 'icono' | 'none'
+
+const LOGO_SRC: Record<Exclude<LogoKind, 'none'>, string> = {
+  blanco: '/logo-dmart-blanco.png',
+  color: '/logo-dmart-color.png',
+  icono: '/logo-dmart-icono.png',
+}
 
 interface PostConfig {
   type: PostType
@@ -32,7 +39,7 @@ interface PostConfig {
   campusPhone: string
   handle: string
   website: string
-  showLogo: boolean
+  logo: LogoKind
 }
 
 const CAMPUS_OPTIONS = [
@@ -66,13 +73,24 @@ export default function PostStudio() {
   const [config, setConfig] = useState<PostConfig>(() => ({
     type: 'programa', bg: 'degradado', photo: null,
     kicker: '', title: '', body: '', chips: [], reqs: [], cta: '',
-    campusPhone: STATIC_CAMPUSES[0].phone, handle: '@dmartinstitute', website: 'dmartpr.net', showLogo: true,
+    campusPhone: STATIC_CAMPUSES[0].phone, handle: '@dmartinstitute', website: 'dmartpr.net', logo: 'blanco',
     ...defaultsFor('programa'),
   } as PostConfig))
   const [downloading, setDownloading] = useState(false)
+  // Si el usuario no ha elegido logo manualmente, se autoajusta según el fondo.
+  const [logoAuto, setLogoAuto] = useState(true)
   const exportRef = useRef<HTMLDivElement>(null)
 
   const set = (patch: Partial<PostConfig>) => setConfig((c) => ({ ...c, ...patch }))
+
+  // Cambiar fondo: ajusta el logo automáticamente (claro → color; resto → blanco) si no se eligió manual.
+  function changeBg(bg: BgStyle) {
+    setConfig((c) => ({ ...c, bg, ...(logoAuto ? { logo: (bg === 'claro' ? 'color' : 'blanco') as LogoKind } : {}) }))
+  }
+  function chooseLogo(logo: LogoKind) {
+    setLogoAuto(false)
+    set({ logo })
+  }
 
   function changeType(type: PostType) {
     set({ type, ...defaultsFor(type) })
@@ -98,7 +116,7 @@ export default function PostStudio() {
     const file = e.target.files?.[0]
     if (!file) return
     const reader = new FileReader()
-    reader.onload = () => set({ photo: reader.result as string, bg: 'foto' })
+    reader.onload = () => setConfig((c) => ({ ...c, photo: reader.result as string, bg: 'foto', ...(logoAuto ? { logo: 'blanco' as LogoKind } : {}) }))
     reader.readAsDataURL(file)
   }
 
@@ -200,7 +218,7 @@ export default function PostStudio() {
           <label className={labelCls}>Fondo</label>
           <div className="flex flex-wrap gap-2">
             {([['degradado', 'Degradado'], ['rojo', 'Rojo'], ['negro', 'Negro'], ['claro', 'Claro']] as [BgStyle, string][]).map(([k, l]) => (
-              <button key={k} onClick={() => set({ bg: k })}
+              <button key={k} onClick={() => changeBg(k)}
                 className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${config.bg === k ? 'bg-ink text-white border-ink' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
                 {l}
               </button>
@@ -230,10 +248,19 @@ export default function PostStudio() {
             <input className={inputCls} value={config.handle} onChange={(e) => set({ handle: e.target.value })} />
           </div>
         </div>
-        <label className="flex items-center gap-2 text-sm text-gray-700">
-          <input type="checkbox" checked={config.showLogo} onChange={(e) => set({ showLogo: e.target.checked })} className="rounded border-gray-300 text-ink" />
-          Mostrar logo
-        </label>
+        {/* Logo */}
+        <div>
+          <label className={labelCls}>Logo</label>
+          <div className="flex flex-wrap gap-2">
+            {([['blanco', 'Blanco'], ['color', 'Color'], ['icono', 'Ícono'], ['none', 'Ninguno']] as [LogoKind, string][]).map(([k, l]) => (
+              <button key={k} onClick={() => chooseLogo(k)}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${config.logo === k ? 'bg-ink text-white border-ink' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
+                {l}
+              </button>
+            ))}
+          </div>
+          <p className="text-[11px] text-gray-400 mt-1">Blanco para fondos oscuros · Color para fondo claro · Ícono = solo el swoosh.</p>
+        </div>
 
         <button onClick={download} disabled={downloading}
           className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-full bg-accent text-white text-sm font-semibold hover:bg-accent-hover transition-colors disabled:opacity-50">
@@ -297,12 +324,11 @@ function PostCard({ config }: { config: PostConfig }) {
       {/* Contenido */}
       <div style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', padding: '88px 84px' }}>
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          {config.showLogo ? (
-            <div style={{ background: '#fff', borderRadius: 18, padding: '14px 22px', display: 'flex', alignItems: 'center' }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logo.png" alt="D'Mart Institute" style={{ height: 60, width: 'auto', display: 'block' }} />
-            </div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: 96 }}>
+          {config.logo !== 'none' ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={LOGO_SRC[config.logo]} alt="D'Mart Institute"
+              style={{ height: config.logo === 'icono' ? 100 : 72, width: 'auto', display: 'block' }} />
           ) : <span />}
           {config.handle ? <span style={{ fontSize: 30, color: dark ? 'rgba(255,255,255,0.9)' : '#5A5A5A', fontWeight: 600 }}>{config.handle}</span> : <span />}
         </div>
