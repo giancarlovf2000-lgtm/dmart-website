@@ -6,6 +6,7 @@ import {
   QrCode, Flag, Trash2, Zap, TrendingUp, Users, GraduationCap, Download,
 } from 'lucide-react'
 import Button from '@/components/ui/Button'
+import { ALL_PROGRAMS, LEAD_STATUS_ORDER } from '@/lib/utils'
 import type { Activity, MonthlyReport } from '@/lib/types'
 
 const ACTIVITY_TYPES = [
@@ -35,6 +36,31 @@ function formatDate(d: string) {
 }
 
 const MONTH_NAMES_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
+
+const ACTION_LABELS_ES: Record<string, string> = {
+  status_change: 'Cambio estado', note_added: 'Nota', lead_created: 'Creado',
+  lead_assigned: 'Asignado', followup_scheduled: 'Follow-up', followup_done: 'Follow-up cerrado',
+}
+
+type HistEntry = { action_type: string; old_status: string | null; new_status: string | null; note: string | null; communication_type: string | null; created_at: string; employee_name: string | null }
+
+function fmtHistEntry(h: HistEntry): string {
+  const d = new Date(h.created_at).toLocaleDateString('es-PR', { day: '2-digit', month: '2-digit', year: '2-digit' })
+  const tipo = h.communication_type || ACTION_LABELS_ES[h.action_type] || h.action_type
+  const arrow = h.old_status && h.new_status ? ` (${h.old_status} → ${h.new_status})` : ''
+  return `${d} ${tipo}${arrow}${h.note ? ': ' + h.note : ''}`
+}
+
+function seguimientosText(history: HistEntry[]): string {
+  return history.length ? history.map(fmtHistEntry).join(' | ') : '—'
+}
+
+function rangeLabel(data: { from?: string | null; to?: string | null; month: string }): string {
+  const f = data.from || data.month
+  const t = data.to
+  const fmt = (s: string) => new Date(s + 'T00:00:00').toLocaleDateString('es-PR', { day: 'numeric', month: 'short', year: 'numeric' })
+  return t ? `${fmt(f)} – ${fmt(t)}` : new Date(f + 'T00:00:00').toLocaleDateString('es-PR', { month: 'long', year: 'numeric' })
+}
 
 function getNextMonthStart(): string {
   const now = new Date()
@@ -131,6 +157,8 @@ interface TeamReportActivity {
 
 interface TeamReportData {
   month: string
+  from?: string | null
+  to?: string | null
   supervisor_name: string
   team_members: { id: string; full_name: string; campus: string[] }[]
   leads: TeamReportLead[]
@@ -152,7 +180,13 @@ export default function ReportesPage() {
   const [notes, setNotes] = useState('')
   const [terminating, setTerminating] = useState<string | null>(null)
   const [origin, setOrigin] = useState('')
-  const [teamMonth, setTeamMonth] = useState(firstOfMonth(new Date()))
+  // Reporte de equipo: filtros + vista previa
+  const [teamFrom, setTeamFrom] = useState(firstOfMonth(new Date()))
+  const [teamTo, setTeamTo] = useState(new Date().toISOString().slice(0, 10))
+  const [teamProgram, setTeamProgram] = useState('')
+  const [teamStatus, setTeamStatus] = useState('')
+  const [teamHorario, setTeamHorario] = useState('')
+  const [teamReport, setTeamReport] = useState<TeamReportData | null>(null)
   const [loadingReport, setLoadingReport] = useState(false)
   const [planNotes, setPlanNotes] = useState<Record<string, string>>({})
   const [planSaving, setPlanSaving] = useState(false)
@@ -198,6 +232,8 @@ export default function ReportesPage() {
       setReports(d.reports ?? [])
       if (d.role) {
         setRole(d.role)
+        // El admin solo usa la pestaña de reporte de equipo.
+        if (d.role === 'admin') setActiveTab('equipo')
         // El calendario de planificación es para empleados y supervisores.
         if (d.role === 'empleado' || d.role === 'supervisor') {
           fetch(`/api/portal/supervisor-plan?month=${planMonth.slice(0, 7)}`)
@@ -267,11 +303,11 @@ export default function ReportesPage() {
   }
 
   function buildCsv(data: TeamReportData): string {
-    const monthLabel = new Date(data.month + 'T00:00:00').toLocaleDateString('es-PR', { month: 'long', year: 'numeric' })
-    const headers = ['Mes', 'Representante', 'Nombre', 'Apellido', 'Teléfono', 'Correo', 'Recinto', 'Programa de Interés', 'Horario', 'Estado Actual', 'Origen Web', 'Fuente Manual', 'Actividad', 'Tipo Ingreso', 'Fecha de Ingreso', 'Última Actividad']
+    const periodo = rangeLabel(data)
+    const headers = ['Periodo', 'Representante', 'Nombre', 'Apellido', 'Teléfono', 'Correo', 'Recinto', 'Programa de Interés', 'Horario', 'Estado Actual', 'Origen Web', 'Fuente Manual', 'Actividad', 'Tipo Ingreso', 'Fecha de Ingreso', 'Última Actividad', 'Seguimientos (con fechas)']
     const esc = (v: string | null | undefined) => `"${String(v ?? '').replace(/"/g, '""')}"`
     const rows = data.leads.map((l) => [
-      monthLabel, l.rep_name,
+      periodo, l.rep_name,
       l.nombre, l.apellido, l.telefono, l.email,
       l.campus ?? '', l.programa_interes ?? '', l.horario ?? '',
       l.status, l.source ?? '', l.lead_source_text ?? '',
@@ -279,12 +315,13 @@ export default function ReportesPage() {
       l.assignment_source === 'manual' ? 'Manual' : 'Formulario Web',
       new Date(l.created_at).toLocaleDateString('es-PR'),
       new Date(l.last_action_at).toLocaleDateString('es-PR'),
+      seguimientosText(l.history),
     ].map(esc).join(','))
     return [headers.map(esc).join(','), ...rows].join('\r\n')
   }
 
   function buildHtml(data: TeamReportData): string {
-    const ml = new Date(data.month + 'T00:00:00').toLocaleDateString('es-PR', { month: 'long', year: 'numeric' })
+    const ml = rangeLabel(data)
     const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
     const total = data.leads.length
     const matriculados = data.leads.filter((l) => l.status === 'Matriculado').length
@@ -329,8 +366,8 @@ export default function ReportesPage() {
 
     const leadRows = data.leads.map((l, i) => {
       const s = i % 2 === 0 ? tdStyle : tdAltStyle
-      const notes = l.history.filter((h) => h.note).map((h) => h.note).join(' | ')
-      return `<tr><td style="${s}">${l.rep_name}</td><td style="${s}">${l.nombre} ${l.apellido}</td><td style="${s}">${l.telefono}</td><td style="${s}">${l.campus ?? '—'}</td><td style="${s}">${l.programa_interes ?? '—'}</td><td style="${s}">${l.status}</td><td style="${s}">${l.source ?? l.lead_source_text ?? '—'}</td><td style="${s}">${new Date(l.created_at).toLocaleDateString('es-PR')}</td><td style="${s}">${notes || '—'}</td></tr>`
+      const segs = l.history.length ? l.history.map((h) => fmtHistEntry(h)).join('<br>') : '—'
+      return `<tr><td style="${s}">${l.rep_name}</td><td style="${s}">${l.nombre} ${l.apellido}</td><td style="${s}">${l.telefono}</td><td style="${s}">${l.campus ?? '—'}</td><td style="${s}">${l.programa_interes ?? '—'}</td><td style="${s}">${l.horario ?? '—'}</td><td style="${s}">${l.status}</td><td style="${s}">${l.source ?? l.lead_source_text ?? '—'}</td><td style="${s}">${new Date(l.created_at).toLocaleDateString('es-PR')}</td><td style="${s};font-size:11px;">${segs}</td></tr>`
     }).join('')
 
     return `<!DOCTYPE html>
@@ -359,24 +396,50 @@ export default function ReportesPage() {
 ${data.activities.length === 0 ? '<p style="color:#9ca3af">No hubo actividades este mes.</p>' : `<table><thead><tr>${[th('Representante'),th('Actividad'),th('Tipo'),th('Fecha'),th('Lugar'),th('Leads Esp.'),th('Leads Real'),th('Estado')].join('')}</tr></thead><tbody>${actRows}</tbody></table>`}
 
 <h2>Leads Detallados</h2>
-${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads este mes.</p>' : `<table><thead><tr>${[th('Representante'),th('Nombre'),th('Teléfono'),th('Recinto'),th('Programa'),th('Estado'),th('Origen'),th('Fecha Ingreso'),th('Notas / Seguimiento')].join('')}</tr></thead><tbody>${leadRows}</tbody></table>`}
+${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads en este periodo.</p>' : `<table><thead><tr>${[th('Representante'),th('Nombre'),th('Teléfono'),th('Recinto'),th('Programa'),th('Horario'),th('Estado'),th('Origen'),th('Fecha Ingreso'),th('Seguimientos (con fechas)')].join('')}</tr></thead><tbody>${leadRows}</tbody></table>`}
 
 <p style="color:#9ca3af;font-size:11px;margin-top:32px;">Generado el ${new Date().toLocaleDateString('es-PR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} — Data Nest · D'Mart Institute</p>
 </body></html>`
   }
 
-  async function downloadReport(format: 'csv' | 'html') {
+  function teamQueryString() {
+    const p = new URLSearchParams()
+    if (teamFrom) p.set('from', teamFrom)
+    if (teamTo) p.set('to', teamTo)
+    if (teamProgram) p.set('program', teamProgram)
+    if (teamStatus) p.set('status', teamStatus)
+    if (teamHorario) p.set('horario', teamHorario)
+    return p.toString()
+  }
+
+  async function generateReport() {
     setLoadingReport(true)
-    const res = await fetch(`/api/portal/reports/team-report?month=${teamMonth}`)
+    setTeamReport(null)
+    const res = await fetch(`/api/portal/reports/team-report?${teamQueryString()}`)
     if (!res.ok) { setLoadingReport(false); return }
     const data: TeamReportData = await res.json()
-    const label = teamMonth.slice(0, 7) // YYYY-MM
+    setTeamReport(data)
+    setLoadingReport(false)
+  }
+
+  async function downloadReport(format: 'csv' | 'html') {
+    // Usa el informe ya generado si existe; si no, lo genera con los filtros actuales.
+    let data = teamReport
+    if (!data) {
+      setLoadingReport(true)
+      const res = await fetch(`/api/portal/reports/team-report?${teamQueryString()}`)
+      if (!res.ok) { setLoadingReport(false); return }
+      data = await res.json()
+      setTeamReport(data)
+      setLoadingReport(false)
+    }
+    if (!data) return
+    const label = `${teamFrom}_a_${teamTo}`
     if (format === 'csv') {
       triggerDownload(buildCsv(data), `reporte-equipo-${label}.csv`, 'text/csv;charset=utf-8;')
     } else {
       triggerDownload(buildHtml(data), `reporte-equipo-${label}.html`, 'text/html;charset=utf-8;')
     }
-    setLoadingReport(false)
   }
 
   async function createActivity(e: React.FormEvent) {
@@ -467,11 +530,13 @@ ${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads este mes.</p
       <div className="max-w-4xl mx-auto px-4 md:px-6 py-6">
         {/* Tabs */}
         <div className="portal-tabs mb-6 w-fit">
-          {([
-            { key: 'plan',   label: 'Plan del Mes' },
-            { key: 'cierre', label: 'Informe de Cierre' },
-            ...((role === 'supervisor' || role === 'director') ? [{ key: 'equipo', label: 'Equipo' }] : []),
-          ] as { key: 'plan' | 'cierre' | 'equipo'; label: string }[]).map(({ key, label }) => (
+          {((role === 'admin'
+            ? [{ key: 'equipo', label: 'Equipo' }]
+            : [
+                { key: 'plan',   label: 'Plan del Mes' },
+                { key: 'cierre', label: 'Informe de Cierre' },
+                ...((role === 'supervisor' || role === 'director') ? [{ key: 'equipo', label: 'Equipo' }] : []),
+              ]) as { key: 'plan' | 'cierre' | 'equipo'; label: string }[]).map(({ key, label }) => (
             <button key={key} onClick={() => setActiveTab(key)}
               className={`portal-tab ${activeTab === key ? 'portal-tab--active' : ''}`}
             >
@@ -1072,58 +1137,145 @@ ${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads este mes.</p
           </div>
         )}
 
-        {/* ── EQUIPO TAB (supervisor / director) ───────────────────── */}
-        {activeTab === 'equipo' && (role === 'supervisor' || role === 'director') && (
+        {/* ── EQUIPO TAB (supervisor / director / admin) ───────────────────── */}
+        {activeTab === 'equipo' && (role === 'supervisor' || role === 'director' || role === 'admin') && (
           <div className="space-y-5">
             <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-6">
-              <div className="mb-5">
+              <div className="mb-4">
                 <h2 className="text-sm font-bold text-gray-900">Reporte del Equipo</h2>
-                <p className="text-xs text-gray-500 mt-0.5">Descarga el reporte completo de leads del mes seleccionado.</p>
+                <p className="text-xs text-gray-500 mt-0.5">Filtra, genera y revisa el informe antes de descargarlo.</p>
               </div>
 
-              <div className="flex flex-wrap items-end gap-4">
+              {/* Filtros */}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
                 <div>
-                  <label className="form-label">Mes</label>
-                  <select
-                    value={teamMonth}
-                    onChange={(e) => setTeamMonth(e.target.value)}
-                    className="form-input w-auto text-sm"
-                  >
-                    {Array.from({ length: 12 }, (_, i) => {
-                      const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - i)
-                      const v = new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10)
-                      return <option key={v} value={v}>{monthLabel(v)}</option>
-                    })}
+                  <label className="form-label">Desde</label>
+                  <input type="date" value={teamFrom} onChange={(e) => setTeamFrom(e.target.value)} className="form-input text-sm" />
+                </div>
+                <div>
+                  <label className="form-label">Hasta</label>
+                  <input type="date" value={teamTo} onChange={(e) => setTeamTo(e.target.value)} className="form-input text-sm" />
+                </div>
+                <div>
+                  <label className="form-label">Horario</label>
+                  <select value={teamHorario} onChange={(e) => setTeamHorario(e.target.value)} className="form-input text-sm">
+                    <option value="">Todos</option>
+                    <option value="Diurno">Diurno</option>
+                    <option value="Nocturno">Nocturno</option>
+                    <option value="Sabatino">Sabatino</option>
                   </select>
                 </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => downloadReport('csv')}
-                    disabled={loadingReport}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-40"
-                  >
-                    <Download className="h-4 w-4" />
-                    {loadingReport ? 'Generando…' : 'Descargar CSV'}
-                  </button>
-                  <button
-                    onClick={() => downloadReport('html')}
-                    disabled={loadingReport}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-ink text-white text-sm font-semibold hover:bg-black transition-colors disabled:opacity-40"
-                  >
-                    <Download className="h-4 w-4" />
-                    {loadingReport ? 'Generando…' : 'Descargar HTML'}
-                  </button>
+                <div>
+                  <label className="form-label">Estatus</label>
+                  <select value={teamStatus} onChange={(e) => setTeamStatus(e.target.value)} className="form-input text-sm">
+                    <option value="">Todos</option>
+                    {LEAD_STATUS_ORDER.map((s) => <option key={s} value={s}>{s}</option>)}
+                  </select>
                 </div>
+                <div className="col-span-2 md:col-span-1">
+                  <label className="form-label">Programa</label>
+                  <select value={teamProgram} onChange={(e) => setTeamProgram(e.target.value)} className="form-input text-sm">
+                    <option value="">Todos</option>
+                    {ALL_PROGRAMS.filter((p) => p !== 'No sé aún').map((p) => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={generateReport}
+                  disabled={loadingReport}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-accent text-white text-sm font-semibold hover:bg-accent-hover transition-colors disabled:opacity-40"
+                >
+                  <TrendingUp className="h-4 w-4" />
+                  {loadingReport ? 'Generando…' : 'Generar informe'}
+                </button>
+                <button
+                  onClick={() => downloadReport('csv')}
+                  disabled={loadingReport || !teamReport}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-40"
+                >
+                  <Download className="h-4 w-4" /> Descargar Excel (CSV)
+                </button>
+                <button
+                  onClick={() => downloadReport('html')}
+                  disabled={loadingReport || !teamReport}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-ink text-white text-sm font-semibold hover:bg-black transition-colors disabled:opacity-40"
+                >
+                  <Download className="h-4 w-4" /> Descargar HTML
+                </button>
               </div>
             </div>
 
+            {/* Vista previa */}
+            {teamReport && (() => {
+              const lds = teamReport.leads
+              const matriculados = lds.filter((l) => l.status === 'Matriculado').length
+              const manuales = lds.filter((l) => l.assignment_source === 'manual').length
+              const deAct = lds.filter((l) => l.activity_name).length
+              const stats = [
+                ['Leads', lds.length], ['Matriculados', matriculados], ['Manuales', manuales],
+                ['De actividades', deAct], ['Actividades', teamReport.activities.length], ['Representantes', teamReport.team_members.length],
+              ] as [string, number][]
+              return (
+                <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-6 space-y-4">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <h3 className="text-sm font-bold text-ink font-display">Vista previa · {rangeLabel(teamReport)}</h3>
+                    <span className="text-xs text-gray-400">{lds.length} lead{lds.length !== 1 ? 's' : ''}</span>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    {stats.map(([label, value]) => (
+                      <div key={label} className="px-3 py-2 rounded-xl bg-surface border border-black/[0.05] text-center min-w-[90px]">
+                        <p className="text-lg font-bold text-ink font-display leading-none">{value}</p>
+                        <p className="text-[11px] text-ink-muted mt-1">{label}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {lds.length === 0 ? (
+                    <p className="text-sm text-gray-400">No hay leads para los filtros seleccionados.</p>
+                  ) : (
+                    <div className="overflow-x-auto -mx-2">
+                      <table className="w-full text-xs">
+                        <thead>
+                          <tr className="border-b border-gray-100 bg-gray-50 text-left">
+                            {['Representante','Nombre','Teléfono','Recinto','Programa','Horario','Estatus','Ingreso','Seguimientos (con fechas)'].map((h) => (
+                              <th key={h} className="px-2.5 py-2 font-semibold text-gray-600 whitespace-nowrap">{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50 align-top">
+                          {lds.map((l) => (
+                            <tr key={l.id} className="hover:bg-gray-50">
+                              <td className="px-2.5 py-2 whitespace-nowrap text-gray-600">{l.rep_name}</td>
+                              <td className="px-2.5 py-2 whitespace-nowrap font-medium text-gray-900">{l.nombre} {l.apellido}</td>
+                              <td className="px-2.5 py-2 whitespace-nowrap font-mono text-gray-500">{l.telefono}</td>
+                              <td className="px-2.5 py-2 whitespace-nowrap text-gray-600">{l.campus ?? '—'}</td>
+                              <td className="px-2.5 py-2 text-gray-600 max-w-[150px] truncate" title={l.programa_interes ?? ''}>{l.programa_interes ?? '—'}</td>
+                              <td className="px-2.5 py-2 whitespace-nowrap text-gray-600">{l.horario ?? '—'}</td>
+                              <td className="px-2.5 py-2 whitespace-nowrap text-gray-700">{l.status}</td>
+                              <td className="px-2.5 py-2 whitespace-nowrap text-gray-400">{new Date(l.created_at).toLocaleDateString('es-PR', { day: '2-digit', month: '2-digit', year: '2-digit' })}</td>
+                              <td className="px-2.5 py-2 text-gray-600 min-w-[220px]">
+                                {l.history.length === 0 ? <span className="text-gray-300">—</span> : (
+                                  <ul className="space-y-0.5">
+                                    {l.history.map((h, idx) => <li key={idx} className="leading-snug">{fmtHistEntry(h)}</li>)}
+                                  </ul>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )
+            })()}
+
             <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 space-y-1">
-              <p className="text-xs text-amber-800">
-                <span className="font-semibold">CSV</span> — ideal para análisis en Excel o Google Sheets. Una fila por lead con todos los campos.
-              </p>
-              <p className="text-xs text-amber-700">
-                <span className="font-semibold">HTML</span> — reporte formateado listo para imprimir o compartir con el director. Incluye resumen ejecutivo, desglose por representante, actividades y lista completa de leads.
-              </p>
+              <p className="text-xs text-amber-800"><span className="font-semibold">Excel (CSV)</span> — una fila por lead con todos los campos y los seguimientos con fechas; se abre en Excel o Google Sheets.</p>
+              <p className="text-xs text-amber-700"><span className="font-semibold">HTML</span> — reporte formateado para imprimir o compartir; incluye resumen, desglose por representante, actividades y seguimientos con fechas.</p>
             </div>
           </div>
         )}

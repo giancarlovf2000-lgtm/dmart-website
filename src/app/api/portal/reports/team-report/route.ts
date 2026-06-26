@@ -33,9 +33,19 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url)
   const month = searchParams.get('month')
-  if (!month) return NextResponse.json({ error: 'El mes es requerido.' }, { status: 400 })
+  const fromParam = searchParams.get('from')
+  const toParam = searchParams.get('to')
+  const program = searchParams.get('program')
+  const statusFilter = searchParams.get('status')
+  const horario = searchParams.get('horario')
 
-  const monthEnd = nextMonthStart(month)
+  if (!month && !fromParam) return NextResponse.json({ error: 'Se requiere un rango de fechas o un mes.' }, { status: 400 })
+
+  // Rango por fecha de ingreso (created_at). from/to tienen prioridad sobre month.
+  const rangeFrom = fromParam || month!
+  const rangeToExclusive = toParam
+    ? (() => { const d = new Date(toParam + 'T00:00:00'); d.setDate(d.getDate() + 1); return d.toISOString().slice(0, 10) })()
+    : nextMonthStart(month!)
 
   // Get team members
   let teamQuery = admin.from('employees').select('id, full_name, campus').eq('active', true)
@@ -59,23 +69,28 @@ export async function GET(request: NextRequest) {
   const teamIds = teamMembers.map((m) => m.id)
 
   if (teamIds.length === 0)
-    return NextResponse.json({ month, supervisor_name: selfEmp.full_name, team_members: [], leads: [], activities: [] })
+    return NextResponse.json({ month, from: rangeFrom, to: toParam, supervisor_name: selfEmp.full_name, team_members: [], leads: [], activities: [] })
+
+  // Query de leads con filtros opcionales.
+  let leadsQuery = admin
+    .from('leads')
+    .select('id, nombre, apellido, telefono, email, campus, programa_interes, horario, source, lead_source_text, assignment_source, status, created_at, last_action_at, activity_id, assigned_to, employee:assigned_to(full_name), activity:activity_id(name)')
+    .in('assigned_to', teamIds)
+    .gte('created_at', rangeFrom)
+    .lt('created_at', rangeToExclusive)
+  if (program) leadsQuery = leadsQuery.eq('programa_interes', program)
+  if (statusFilter) leadsQuery = leadsQuery.eq('status', statusFilter)
+  if (horario) leadsQuery = leadsQuery.eq('horario', horario)
+  leadsQuery = leadsQuery.order('assigned_to').order('created_at')
 
   // Fetch leads + activities in parallel
   const [leadsRes, activitiesRes] = await Promise.all([
-    admin
-      .from('leads')
-      .select('id, nombre, apellido, telefono, email, campus, programa_interes, horario, source, lead_source_text, assignment_source, status, created_at, last_action_at, activity_id, assigned_to, employee:assigned_to(full_name), activity:activity_id(name)')
-      .in('assigned_to', teamIds)
-      .gte('created_at', month)
-      .lt('created_at', monthEnd)
-      .order('assigned_to')
-      .order('created_at'),
+    leadsQuery,
     admin
       .from('activities')
       .select('id, employee_id, name, type, activity_date, location, planned_leads, actual_leads, status, employee:employee_id(full_name)')
       .in('employee_id', teamIds)
-      .eq('month', month)
+      .eq('month', month ?? rangeFrom)
       .order('employee_id')
       .order('activity_date'),
   ])
@@ -83,14 +98,12 @@ export async function GET(request: NextRequest) {
   const rawLeads = leadsRes.data ?? []
   const leadIds = rawLeads.map((l) => l.id)
 
-  // Fetch history for those leads in the month range
+  // Historial COMPLETO de esos leads (todos los seguimientos con fechas).
   const historyRes = leadIds.length > 0
     ? await admin
         .from('lead_history')
         .select('lead_id, action_type, old_status, new_status, note, communication_type, created_at, employee:employee_id(full_name)')
         .in('lead_id', leadIds)
-        .gte('created_at', month)
-        .lt('created_at', monthEnd)
         .order('created_at')
     : { data: [] }
 
@@ -151,6 +164,8 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({
     month,
+    from: rangeFrom,
+    to: toParam,
     supervisor_name: selfEmp.full_name,
     team_members: teamMembers,
     leads,
