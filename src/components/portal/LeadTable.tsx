@@ -21,7 +21,7 @@ interface LeadTableProps {
   staleLeadIds: string[]
   followupLeadIds?: string[]
   employee: Pick<Employee, 'id' | 'full_name' | 'campus' | 'role'>
-  activities: Pick<Activity, 'id' | 'name'>[]
+  activities: Pick<Activity, 'id' | 'name' | 'type' | 'activity_date' | 'location'>[]
   sources?: string[]
   currentSource?: string
   teamMembers?: { id: string; full_name: string }[]

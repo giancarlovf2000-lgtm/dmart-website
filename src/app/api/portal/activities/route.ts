@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServerSupabase } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
+import { liveLeadCountsByActivity } from '@/lib/portal/activityCounts'
 
 function getAdminClient() {
   return createClient(
@@ -33,7 +34,12 @@ export async function GET(request: NextRequest) {
 
   const { data, error } = await query
   if (error) return NextResponse.json({ error: 'Error al obtener actividades.' }, { status: 500 })
-  return NextResponse.json({ activities: data ?? [] })
+
+  // Conteo en vivo de leads por actividad (sobrescribe el actual_leads congelado).
+  const acts = data ?? []
+  const counts = await liveLeadCountsByActivity(admin, acts.map((a) => a.id))
+  const result = acts.map((a) => ({ ...a, actual_leads: counts[a.id] ?? 0 }))
+  return NextResponse.json({ activities: result })
 }
 
 export async function POST(request: NextRequest) {

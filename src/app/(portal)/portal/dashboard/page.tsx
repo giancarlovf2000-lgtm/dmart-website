@@ -159,7 +159,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const monthStart = new Date()
   monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0)
   const { data: activities } = await adminClient
-    .from('activities').select('id, name')
+    .from('activities').select('id, name, type, activity_date, location')
     .eq('employee_id', user.id)
     .gte('month', monthStart.toISOString().slice(0, 10))
 

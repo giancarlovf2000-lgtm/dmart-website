@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServerSupabase } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
+import { liveLeadCountsByActivity } from '@/lib/portal/activityCounts'
 
 function getAdminClient() {
   return createClient(
@@ -145,6 +146,7 @@ export async function GET(request: NextRequest) {
     })),
   }))
 
+  const actCounts = await liveLeadCountsByActivity(admin, (activitiesRes.data ?? []).map((a) => a.id))
   const activities = (activitiesRes.data ?? []).map((a) => ({
     id: a.id,
     name: a.name,
@@ -152,7 +154,7 @@ export async function GET(request: NextRequest) {
     activity_date: a.activity_date,
     location: a.location,
     planned_leads: a.planned_leads,
-    actual_leads: a.actual_leads,
+    actual_leads: actCounts[a.id] ?? 0,
     status: a.status,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     rep_name: (a.employee as any)?.full_name ?? '—',

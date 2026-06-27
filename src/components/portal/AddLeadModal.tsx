@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { X, AlertCircle, User, Mail, Phone, MapPin, BookOpen, Clock, Users } from 'lucide-react'
+import { X, AlertCircle, User, Mail, Phone, MapPin, BookOpen, Clock, Users, Calendar } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import { ALL_PROGRAMS, cn } from '@/lib/utils'
 import type { Activity } from '@/lib/types'
@@ -10,10 +10,22 @@ import type { Activity } from '@/lib/types'
 const CAMPUSES = ['Barranquitas', 'Vega Alta', 'No tengo preferencia']
 const HORARIOS = ['Diurno', 'Nocturno', 'Sabatino']
 
+const ACTIVITY_TYPE_LABELS: Record<string, string> = {
+  feria: 'Feria de Empleo / Educación',
+  visita_escuela: 'Visita a Escuela',
+  evento_comunitario: 'Evento Comunitario',
+  otro: 'Otro',
+}
+function fmtActDate(d: string) {
+  return new Date(d + 'T00:00:00').toLocaleDateString('es-PR', { weekday: 'short', month: 'short', day: 'numeric' })
+}
+
+type ModalActivity = Pick<Activity, 'id' | 'name' | 'type' | 'activity_date' | 'location'>
+
 interface AddLeadModalProps {
   employeeId: string
   employeeName: string
-  activities: Pick<Activity, 'id' | 'name'>[]
+  activities: ModalActivity[]
   teamMembers?: { id: string; full_name: string }[]
   onClose: () => void
 }
@@ -179,14 +191,43 @@ export default function AddLeadModal({ employeeId, employeeName, activities, tea
           {/* Lead source */}
           <div className="mt-4 pt-4 border-t border-gray-100">
             <p className="text-sm font-semibold text-gray-700 mb-3">Origen del Lead <span className="text-red-500">*</span></p>
-            {activities.length > 0 && (
+            {activities.length > 0 ? (
               <div className="mb-3">
                 <label className={labelClass}>Actividad del Mes (si aplica)</label>
-                <select name="activity_id" value={form.activity_id} onChange={handleChange} className="form-input">
-                  <option value="">No proviene de una actividad</option>
-                  {activities.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-                </select>
+                <p className="text-xs text-gray-400 mb-2">Selecciona la actividad de la que proviene este lead.</p>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => setForm((p) => ({ ...p, activity_id: '' }))}
+                    className={`text-left border-2 rounded-xl p-3 transition-all ${form.activity_id === '' ? 'border-accent bg-accent-soft' : 'border-gray-200 hover:border-gray-300'}`}
+                  >
+                    <p className="text-sm font-semibold text-gray-900">No proviene de una actividad</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Origen manual (referido, redes, etc.)</p>
+                  </button>
+                  {activities.map((a) => {
+                    const sel = form.activity_id === a.id
+                    return (
+                      <button
+                        key={a.id}
+                        type="button"
+                        onClick={() => setForm((p) => ({ ...p, activity_id: a.id }))}
+                        className={`text-left border-2 rounded-xl p-3 transition-all ${sel ? 'border-accent bg-accent-soft' : 'border-gray-200 hover:border-gray-300'}`}
+                      >
+                        <p className="text-sm font-semibold text-gray-900">{a.name}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">{ACTIVITY_TYPE_LABELS[a.type] ?? a.type}</p>
+                        {a.activity_date && (
+                          <p className="text-xs text-gray-500 mt-1 flex items-center gap-1"><Calendar className="h-3 w-3" /> {fmtActDate(a.activity_date)}</p>
+                        )}
+                        {a.location && (
+                          <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-1"><MapPin className="h-3 w-3" /> {a.location}</p>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
+            ) : (
+              <p className="text-xs text-gray-400 mb-3">No tienes actividades este mes. Escribe el origen del lead abajo.</p>
             )}
             {!form.activity_id && (
               <div>

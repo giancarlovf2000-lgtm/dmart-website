@@ -95,6 +95,15 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // Si el lead manual se liga a una actividad, su origen (source) usa la misma
+  // etiqueta que los del QR ("Actividad: <nombre>"), para que aparezca al filtrar
+  // por esa actividad junto a los del QR. (assignment_source sigue siendo 'manual'.)
+  let resolvedSource = 'portal-manual'
+  if (activity_id) {
+    const { data: act } = await admin.from('activities').select('name').eq('id', activity_id).single()
+    if (act?.name) resolvedSource = `Actividad: ${act.name}`.slice(0, 200)
+  }
+
   const { data: lead, error } = await admin
     .from('leads')
     .insert({
@@ -105,7 +114,7 @@ export async function POST(request: NextRequest) {
       campus: campus?.trim() || null,
       programa_interes: programa_interes?.trim() || null,
       horario: horario?.trim() || null,
-      source: 'portal-manual',
+      source: resolvedSource,
       status: 'Nuevo Lead',
       assigned_to: finalAssignee,
       assignment_source: 'manual',
