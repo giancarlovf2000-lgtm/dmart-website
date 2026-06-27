@@ -62,6 +62,33 @@ function rangeLabel(data: { from?: string | null; to?: string | null; month: str
   return t ? `${fmt(f)} – ${fmt(t)}` : new Date(f + 'T00:00:00').toLocaleDateString('es-PR', { month: 'long', year: 'numeric' })
 }
 
+// Campos seleccionables del reporte (columnas por lead). 'seguimientos' activa el historial bajo cada lead.
+const REPORT_FIELDS: { key: string; label: string }[] = [
+  { key: 'nombre', label: 'Nombre' },
+  { key: 'telefono', label: 'Teléfono' },
+  { key: 'email', label: 'Correo' },
+  { key: 'programa', label: 'Programa' },
+  { key: 'horario', label: 'Horario' },
+  { key: 'recinto', label: 'Recinto' },
+  { key: 'estatus', label: 'Estatus' },
+  { key: 'origen', label: 'Origen' },
+  { key: 'fecha', label: 'Fecha de ingreso' },
+  { key: 'actividad', label: 'Actividad' },
+  { key: 'seguimientos', label: 'Seguimientos' },
+]
+
+interface ActivityLead {
+  id: string
+  nombre: string
+  apellido: string
+  telefono: string
+  programa_interes: string | null
+  campus: string | null
+  status: string
+  created_at: string
+  assignment_source: string | null
+}
+
 function getNextMonthStart(): string {
   const now = new Date()
   return new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString().slice(0, 10)
@@ -188,6 +215,11 @@ export default function ReportesPage() {
   const [teamHorario, setTeamHorario] = useState('')
   const [teamReport, setTeamReport] = useState<TeamReportData | null>(null)
   const [loadingReport, setLoadingReport] = useState(false)
+  const [reportFields, setReportFields] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(REPORT_FIELDS.map((f) => [f.key, true]))
+  )
+  // Modal: leads de una actividad
+  const [actLeadsModal, setActLeadsModal] = useState<{ name: string; loading: boolean; leads: ActivityLead[] } | null>(null)
   const [planNotes, setPlanNotes] = useState<Record<string, string>>({})
   const [planSaving, setPlanSaving] = useState(false)
   const [planSaved, setPlanSaved] = useState(false)
@@ -302,103 +334,133 @@ export default function ReportesPage() {
     URL.revokeObjectURL(url)
   }
 
+  // Valor de un campo seleccionable para un lead.
+  function fieldVal(l: TeamReportLead, key: string): string {
+    switch (key) {
+      case 'nombre': return `${l.nombre} ${l.apellido}`.trim()
+      case 'telefono': return l.telefono ?? '—'
+      case 'email': return l.email || '—'
+      case 'programa': return l.programa_interes ?? '—'
+      case 'horario': return l.horario ?? '—'
+      case 'recinto': return l.campus ?? '—'
+      case 'estatus': return l.status
+      case 'origen': return l.source ?? l.lead_source_text ?? '—'
+      case 'fecha': return new Date(l.created_at).toLocaleDateString('es-PR')
+      case 'actividad': return l.activity_name ?? '—'
+      default: return ''
+    }
+  }
+  const selectedCols = () => REPORT_FIELDS.filter((f) => f.key !== 'seguimientos' && reportFields[f.key])
+  const showSegs = () => !!reportFields['seguimientos']
+
   function buildCsv(data: TeamReportData): string {
     const periodo = rangeLabel(data)
-    const headers = ['Periodo', 'Representante', 'Nombre', 'Apellido', 'Teléfono', 'Correo', 'Recinto', 'Programa de Interés', 'Horario', 'Estado Actual', 'Origen Web', 'Fuente Manual', 'Actividad', 'Tipo Ingreso', 'Fecha de Ingreso', 'Última Actividad', 'Seguimientos (con fechas)']
+    const cols = selectedCols()
+    const headers = ['Periodo', 'Representante', ...cols.map((c) => c.label), ...(showSegs() ? ['Seguimientos (con fechas)'] : [])]
     const esc = (v: string | null | undefined) => `"${String(v ?? '').replace(/"/g, '""')}"`
     const rows = data.leads.map((l) => [
       periodo, l.rep_name,
-      l.nombre, l.apellido, l.telefono, l.email,
-      l.campus ?? '', l.programa_interes ?? '', l.horario ?? '',
-      l.status, l.source ?? '', l.lead_source_text ?? '',
-      l.activity_name ?? '',
-      l.assignment_source === 'manual' ? 'Manual' : 'Formulario Web',
-      new Date(l.created_at).toLocaleDateString('es-PR'),
-      new Date(l.last_action_at).toLocaleDateString('es-PR'),
-      seguimientosText(l.history),
+      ...cols.map((c) => fieldVal(l, c.key)),
+      ...(showSegs() ? [seguimientosText(l.history)] : []),
     ].map(esc).join(','))
     return [headers.map(esc).join(','), ...rows].join('\r\n')
   }
 
+  // Reporte segmentado por empleado (estilo imprimible para PDF).
   function buildHtml(data: TeamReportData): string {
     const ml = rangeLabel(data)
-    const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
-    const total = data.leads.length
-    const matriculados = data.leads.filter((l) => l.status === 'Matriculado').length
-    const manuales = data.leads.filter((l) => l.assignment_source === 'manual').length
-    const deActividades = data.leads.filter((l) => l.activity_name).length
+    const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    const cols = selectedCols()
+    const segs = showSegs()
+    const ncols = cols.length || 1
 
-    // Per-rep stats
-    const repMap = new Map<string, { leads: TeamReportLead[]; programs: Map<string, number> }>()
-    for (const tm of data.team_members) {
-      repMap.set(tm.full_name, { leads: [], programs: new Map() })
-    }
+    // Agrupar leads por representante.
+    const byRep = new Map<string, TeamReportLead[]>()
+    for (const tm of data.team_members) byRep.set(tm.full_name, [])
     for (const l of data.leads) {
-      if (!repMap.has(l.rep_name)) repMap.set(l.rep_name, { leads: [], programs: new Map() })
-      const r = repMap.get(l.rep_name)!
-      r.leads.push(l)
-      const prog = l.programa_interes ?? 'No especificado'
-      r.programs.set(prog, (r.programs.get(prog) ?? 0) + 1)
+      if (!byRep.has(l.rep_name)) byRep.set(l.rep_name, [])
+      byRep.get(l.rep_name)!.push(l)
     }
+    const actsByRep = (name: string) => data.activities.filter((a) => a.rep_name === name).length
+    const matByRep = (leads: TeamReportLead[]) => leads.filter((l) => l.status === 'Matriculado').length
 
-    const td = (v: string) => `<td>${v}</td>`
-    const th = (v: string) => `<th>${v}</th>`
+    const reps = Array.from(byRep.entries())
+    const totalLeads = data.leads.length
+    const totalMat = data.leads.filter((l) => l.status === 'Matriculado').length
+    const totalActs = data.activities.length
 
-    const tableStyle = 'border-collapse:collapse;width:100%;font-size:12px;margin-bottom:24px;'
-    const thStyle = 'background:#0a1628;color:#fff;padding:6px 8px;text-align:left;'
-    const tdStyle = 'padding:5px 8px;border-bottom:1px solid #e5e7eb;'
-    const tdAltStyle = 'padding:5px 8px;border-bottom:1px solid #e5e7eb;background:#f9fafb;'
+    // Resumen general (cabecera oscura).
+    const summaryRows = reps.map(([name, leads]) =>
+      `<tr><td>${esc(name)}</td><td style="text-align:center">${leads.length}</td><td style="text-align:center">${actsByRep(name)}</td><td style="text-align:center">${matByRep(leads)}</td></tr>`
+    ).join('')
 
-    const activityTypeLabels: Record<string, string> = { feria: 'Feria', visita_escuela: 'Visita a Escuela', evento_comunitario: 'Evento Comunitario', otro: 'Otro' }
-
-    const repRows = Array.from(repMap.entries()).map(([name, d]) => {
-      const topProgs = Array.from(d.programs.entries()).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([p, c]) => `${p} (${c})`).join(', ')
-      const mat = d.leads.filter((l) => l.status === 'Matriculado').length
-      const man = d.leads.filter((l) => l.assignment_source === 'manual').length
-      const act = d.leads.filter((l) => l.activity_name).length
-      return `<tr><td style="${tdStyle}">${name}</td><td style="${tdStyle}">${d.leads.length}</td><td style="${tdStyle}">${man}</td><td style="${tdStyle}">${act}</td><td style="${tdStyle}">${mat}</td><td style="${tdStyle}">${topProgs || '—'}</td></tr>`
-    }).join('')
-
-    const actRows = data.activities.map((a, i) => {
-      const s = i % 2 === 0 ? tdStyle : tdAltStyle
-      return `<tr><td style="${s}">${a.rep_name}</td><td style="${s}">${a.name}</td><td style="${s}">${activityTypeLabels[a.type] ?? a.type}</td><td style="${s}">${a.activity_date ?? '—'}</td><td style="${s}">${a.location ?? '—'}</td><td style="${s}">${a.planned_leads ?? '—'}</td><td style="${s}">${a.actual_leads ?? '—'}</td><td style="${s}">${a.status === 'terminada' ? 'Terminada' : 'Planificada'}</td></tr>`
-    }).join('')
-
-    const leadRows = data.leads.map((l, i) => {
-      const s = i % 2 === 0 ? tdStyle : tdAltStyle
-      const segs = l.history.length ? l.history.map((h) => fmtHistEntry(h)).join('<br>') : '—'
-      return `<tr><td style="${s}">${l.rep_name}</td><td style="${s}">${l.nombre} ${l.apellido}</td><td style="${s}">${l.telefono}</td><td style="${s}">${l.campus ?? '—'}</td><td style="${s}">${l.programa_interes ?? '—'}</td><td style="${s}">${l.horario ?? '—'}</td><td style="${s}">${l.status}</td><td style="${s}">${l.source ?? l.lead_source_text ?? '—'}</td><td style="${s}">${new Date(l.created_at).toLocaleDateString('es-PR')}</td><td style="${s};font-size:11px;">${segs}</td></tr>`
+    // Secciones por empleado (solo los que tienen leads).
+    const sections = reps.filter(([, leads]) => leads.length > 0).map(([name, leads], idx) => {
+      const head = cols.map((c) => `<th>${esc(c.label)}</th>`).join('')
+      const body = leads.map((l) => {
+        const cells = cols.map((c) => `<td>${esc(fieldVal(l, c.key))}</td>`).join('')
+        const segRow = segs
+          ? `<tr class="segrow"><td colspan="${ncols}"><div class="segbox">${l.history.length ? l.history.map((h) => `<div>${esc(fmtHistEntry(h))}</div>`).join('') : '<span style="color:#9ca3af">Sin seguimientos.</span>'}</div></td></tr>`
+          : ''
+        return `<tr class="leadrow">${cells}</tr>${segRow}`
+      }).join('')
+      return `<section class="emp">
+        <div class="emp-head">
+          <div class="emp-name"><span class="emp-idx">${String(idx + 1).padStart(2, '0')}</span> ${esc(name)}</div>
+          <div class="emp-chips"><span>${leads.length} leads</span><span>${matByRep(leads)} matriculados</span><span>${actsByRep(name)} actividades</span></div>
+        </div>
+        <table class="leads"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>
+      </section>`
     }).join('')
 
     return `<!DOCTYPE html>
-<html lang="es">
-<head><meta charset="UTF-8"><title>Reporte del Equipo — ${cap(ml)}</title>
-<style>body{font-family:Arial,sans-serif;color:#1f2937;margin:32px;} h1{color:#0a1628;} h2{color:#0a1628;border-bottom:2px solid #c9a227;padding-bottom:4px;margin-top:32px;} .summary-grid{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:24px;} .stat{background:#f3f4f6;border-radius:8px;padding:12px 20px;min-width:120px;text-align:center;} .stat-val{font-size:28px;font-weight:bold;color:#0a1628;} .stat-lbl{font-size:12px;color:#6b7280;} table{${tableStyle}} th{${thStyle}} @media print{body{margin:16px;}}</style>
-</head>
+<html lang="es"><head><meta charset="UTF-8"><title>Reporte de Leads — ${esc(ml)}</title>
+<style>
+  *{box-sizing:border-box}
+  body{font-family:-apple-system,"Segoe UI",Arial,sans-serif;color:#1f2937;margin:0;padding:28px;font-size:12px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .doc-head{border-bottom:3px solid #D40000;padding-bottom:12px;margin-bottom:18px}
+  .doc-head h1{margin:0;font-size:22px;color:#141414}
+  .doc-head p{margin:4px 0 0;color:#6b7280;font-size:12px}
+  .sumtitle{font-size:13px;font-weight:700;color:#141414;margin:18px 0 8px}
+  table{border-collapse:collapse;width:100%}
+  .summary{margin-bottom:8px}
+  .summary th{background:#141414;color:#fff;padding:8px 10px;text-align:left;font-size:11px}
+  .summary th:not(:first-child){text-align:center}
+  .summary td{padding:7px 10px;border-bottom:1px solid #e5e7eb}
+  .summary tr:last-child td{font-weight:700;background:#f6f5f3}
+  .emp{margin-top:18px;page-break-inside:avoid}
+  .emp-head{background:#141414;color:#fff;border-radius:10px 10px 0 0;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .emp-name{font-weight:800;font-size:14px;text-transform:uppercase;letter-spacing:.3px}
+  .emp-idx{display:inline-block;background:#D40000;border-radius:50%;width:24px;height:24px;line-height:24px;text-align:center;font-size:11px;margin-right:8px}
+  .emp-chips span{font-size:11px;color:#e9b9b9;margin-left:14px}
+  table.leads{border:1px solid #e5e7eb;border-top:0}
+  table.leads th{background:#f6f5f3;color:#374151;padding:6px 9px;text-align:left;font-size:10.5px;border-bottom:1px solid #e5e7eb}
+  table.leads td{padding:6px 9px;border-bottom:1px solid #eef0f2;vertical-align:top}
+  tr.leadrow td{font-size:11.5px}
+  .segbox{background:#fff8e6;border:1px solid #ffe2a8;border-radius:8px;padding:8px 10px;margin:2px 0 6px;font-size:10.5px;line-height:1.5;color:#5b4a1a}
+  .segbox div{margin:1px 0}
+  .foot{margin-top:24px;color:#9ca3af;font-size:10px;text-align:center;border-top:1px solid #eee;padding-top:10px}
+  @media print{ body{padding:14px} .emp{page-break-inside:avoid} .no-print{display:none} }
+</style></head>
 <body>
-<h1>Reporte del Equipo</h1>
-<p style="color:#6b7280;margin-top:-8px;">${cap(ml)} &nbsp;·&nbsp; Supervisor: ${data.supervisor_name}</p>
-
-<h2>Resumen Ejecutivo</h2>
-<div class="summary-grid">
-  <div class="stat"><div class="stat-val">${total}</div><div class="stat-lbl">Leads Totales</div></div>
-  <div class="stat"><div class="stat-val">${matriculados}</div><div class="stat-lbl">Matriculados</div></div>
-  <div class="stat"><div class="stat-val">${manuales}</div><div class="stat-lbl">Ingresados Manual</div></div>
-  <div class="stat"><div class="stat-val">${deActividades}</div><div class="stat-lbl">De Actividades</div></div>
-  <div class="stat"><div class="stat-val">${data.activities.length}</div><div class="stat-lbl">Actividades</div></div>
-  <div class="stat"><div class="stat-val">${data.team_members.length}</div><div class="stat-lbl">Representantes</div></div>
+<div class="doc-head">
+  <h1>Reporte de Leads — D'Mart Institute</h1>
+  <p>Periodo: ${esc(ml)} &nbsp;·&nbsp; Generado por: ${esc(data.supervisor_name)} &nbsp;·&nbsp; ${new Date().toLocaleDateString('es-PR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
 </div>
 
-<h2>Por Representante</h2>
-<table><thead><tr>${[th('Representante'),th('Leads Totales'),th('Manuales'),th('De Actividades'),th('Matriculados'),th('Top Programas')].join('')}</tr></thead><tbody>${repRows}</tbody></table>
+<div class="sumtitle">Resumen general por empleado</div>
+<table class="summary">
+  <thead><tr><th>Empleado</th><th>Leads</th><th>Actividades</th><th>Matriculados</th></tr></thead>
+  <tbody>
+    ${summaryRows || '<tr><td colspan="4" style="color:#9ca3af">Sin datos.</td></tr>'}
+    <tr><td>TOTAL</td><td style="text-align:center">${totalLeads}</td><td style="text-align:center">${totalActs}</td><td style="text-align:center">${totalMat}</td></tr>
+  </tbody>
+</table>
 
-<h2>Actividades del Mes</h2>
-${data.activities.length === 0 ? '<p style="color:#9ca3af">No hubo actividades este mes.</p>' : `<table><thead><tr>${[th('Representante'),th('Actividad'),th('Tipo'),th('Fecha'),th('Lugar'),th('Leads Esp.'),th('Leads Real'),th('Estado')].join('')}</tr></thead><tbody>${actRows}</tbody></table>`}
+${sections || '<p style="color:#9ca3af;margin-top:20px">No hay leads para los filtros seleccionados.</p>'}
 
-<h2>Leads Detallados</h2>
-${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads en este periodo.</p>' : `<table><thead><tr>${[th('Representante'),th('Nombre'),th('Teléfono'),th('Recinto'),th('Programa'),th('Horario'),th('Estado'),th('Origen'),th('Fecha Ingreso'),th('Seguimientos (con fechas)')].join('')}</tr></thead><tbody>${leadRows}</tbody></table>`}
-
-<p style="color:#9ca3af;font-size:11px;margin-top:32px;">Generado el ${new Date().toLocaleDateString('es-PR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} — Data Nest · D'Mart Institute</p>
+<div class="foot">Data Nest · D'Mart Institute</div>
+<script>window.onload=function(){setTimeout(function(){window.print()},400)}</script>
 </body></html>`
   }
 
@@ -422,7 +484,7 @@ ${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads en este peri
     setLoadingReport(false)
   }
 
-  async function downloadReport(format: 'csv' | 'html') {
+  async function downloadReport(format: 'csv' | 'pdf') {
     // Usa el informe ya generado si existe; si no, lo genera con los filtros actuales.
     let data = teamReport
     if (!data) {
@@ -434,11 +496,13 @@ ${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads en este peri
       setLoadingReport(false)
     }
     if (!data) return
-    const label = `${teamFrom}_a_${teamTo}`
     if (format === 'csv') {
+      const label = `${teamFrom}_a_${teamTo}`
       triggerDownload(buildCsv(data), `reporte-equipo-${label}.csv`, 'text/csv;charset=utf-8;')
     } else {
-      triggerDownload(buildHtml(data), `reporte-equipo-${label}.html`, 'text/html;charset=utf-8;')
+      // Abre el reporte estilizado en ventana nueva (auto-imprime → guardar como PDF).
+      const win = window.open('', '_blank')
+      if (win) { win.document.write(buildHtml(data)); win.document.close() }
     }
   }
 
@@ -477,6 +541,14 @@ ${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads en este peri
     if (!confirm('¿Eliminar esta actividad?')) return
     await fetch(`/api/portal/activities/${actId}`, { method: 'DELETE' })
     await loadData()
+  }
+
+  async function openActivityLeads(actId: string, actName: string) {
+    setActLeadsModal({ name: actName, loading: true, leads: [] })
+    const res = await fetch(`/api/portal/activities/${actId}/leads`)
+    if (!res.ok) { setActLeadsModal({ name: actName, loading: false, leads: [] }); return }
+    const d = await res.json()
+    setActLeadsModal({ name: actName, loading: false, leads: d.leads ?? [] })
   }
 
   async function loadAutoStats() {
@@ -794,7 +866,16 @@ ${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads en este peri
                       {/* Lead count */}
                       <div className="flex items-center justify-between text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2">
                         <span>Leads esperados: <strong className="text-gray-700">{act.planned_leads ?? '—'}</strong></span>
-                        <span>Generados: <strong className={act.actual_leads != null ? 'text-green-700' : 'text-gray-400'}>{act.actual_leads ?? '—'}</strong></span>
+                        <button
+                          type="button"
+                          onClick={() => openActivityLeads(act.id, act.name)}
+                          className="inline-flex items-center gap-1 text-accent hover:underline font-semibold disabled:no-underline disabled:text-gray-400"
+                          disabled={!act.actual_leads}
+                          title="Ver los leads generados"
+                        >
+                          Generados: <strong className={act.actual_leads ? 'text-green-700' : 'text-gray-400'}>{act.actual_leads ?? 0}</strong>
+                          {!!act.actual_leads && <span className="text-accent">· Ver →</span>}
+                        </button>
                       </div>
 
                       {/* QR Code */}
@@ -852,9 +933,15 @@ ${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads en este peri
                             {act.location ? ` · ${act.location}` : ''}
                           </p>
                         </div>
-                        <div className="text-xs text-gray-500 whitespace-nowrap flex-shrink-0">
-                          {act.actual_leads ?? '—'} / {act.planned_leads ?? '—'} leads
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() => openActivityLeads(act.id, act.name)}
+                          disabled={!act.actual_leads}
+                          className="text-xs whitespace-nowrap flex-shrink-0 text-accent font-semibold hover:underline disabled:text-gray-500 disabled:no-underline"
+                          title="Ver los leads generados"
+                        >
+                          {act.actual_leads ?? 0} / {act.planned_leads ?? '—'} leads{!!act.actual_leads && ' · Ver'}
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -1181,6 +1268,24 @@ ${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads en este peri
                 </div>
               </div>
 
+              {/* Campos del reporte */}
+              <div className="mb-4">
+                <label className="form-label">Campos del reporte</label>
+                <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-1">
+                  {REPORT_FIELDS.map((f) => (
+                    <label key={f.key} className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={!!reportFields[f.key]}
+                        onChange={(e) => setReportFields((prev) => ({ ...prev, [f.key]: e.target.checked }))}
+                        className="rounded border-gray-300 text-ink"
+                      />
+                      {f.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={generateReport}
@@ -1191,18 +1296,18 @@ ${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads en este peri
                   {loadingReport ? 'Generando…' : 'Generar informe'}
                 </button>
                 <button
+                  onClick={() => downloadReport('pdf')}
+                  disabled={loadingReport || !teamReport}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-ink text-white text-sm font-semibold hover:bg-black transition-colors disabled:opacity-40"
+                >
+                  <Download className="h-4 w-4" /> Imprimir / Guardar PDF
+                </button>
+                <button
                   onClick={() => downloadReport('csv')}
                   disabled={loadingReport || !teamReport}
                   className="flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-40"
                 >
                   <Download className="h-4 w-4" /> Descargar Excel (CSV)
-                </button>
-                <button
-                  onClick={() => downloadReport('html')}
-                  disabled={loadingReport || !teamReport}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-ink text-white text-sm font-semibold hover:bg-black transition-colors disabled:opacity-40"
-                >
-                  <Download className="h-4 w-4" /> Descargar HTML
                 </button>
               </div>
             </div>
@@ -1274,12 +1379,51 @@ ${data.leads.length === 0 ? '<p style="color:#9ca3af">No hubo leads en este peri
             })()}
 
             <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 space-y-1">
-              <p className="text-xs text-amber-800"><span className="font-semibold">Excel (CSV)</span> — una fila por lead con todos los campos y los seguimientos con fechas; se abre en Excel o Google Sheets.</p>
-              <p className="text-xs text-amber-700"><span className="font-semibold">HTML</span> — reporte formateado para imprimir o compartir; incluye resumen, desglose por representante, actividades y seguimientos con fechas.</p>
+              <p className="text-xs text-amber-800"><span className="font-semibold">Imprimir / Guardar PDF</span> — abre un reporte formateado (resumen general + segmentado por empleado, con el historial de cada lead) y el diálogo de impresión; elige "Guardar como PDF".</p>
+              <p className="text-xs text-amber-700"><span className="font-semibold">Excel (CSV)</span> — los datos crudos (según los campos seleccionados) para abrir en Excel o Google Sheets.</p>
             </div>
           </div>
         )}
       </div>
+
+      {/* Modal: leads de una actividad */}
+      {actLeadsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setActLeadsModal(null)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <div className="min-w-0">
+                <h3 className="text-sm font-bold text-ink font-display truncate">Leads de la actividad</h3>
+                <p className="text-xs text-gray-500 truncate">{actLeadsModal.name}</p>
+              </div>
+              <button onClick={() => setActLeadsModal(null)} className="p-1.5 rounded-lg hover:bg-gray-100">
+                <span className="text-gray-500 text-lg leading-none">×</span>
+              </button>
+            </div>
+            <div className="overflow-y-auto p-4">
+              {actLeadsModal.loading ? (
+                <div className="py-10 flex justify-center"><div className="animate-spin h-6 w-6 rounded-full border-4 border-ink border-t-transparent" /></div>
+              ) : actLeadsModal.leads.length === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-8">No hay leads ligados a esta actividad.</p>
+              ) : (
+                <div className="divide-y divide-gray-50">
+                  {actLeadsModal.leads.map((l) => (
+                    <a key={l.id} href={`/portal/leads/${l.id}`} className="flex items-center justify-between gap-3 py-2.5 hover:bg-gray-50 rounded-lg px-2 -mx-2">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{l.nombre} {l.apellido}</p>
+                        <p className="text-xs text-gray-500">{l.telefono}{l.programa_interes ? ` · ${l.programa_interes}` : ''}</p>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-xs text-gray-700">{l.status}</p>
+                        <p className="text-[11px] text-gray-400">{new Date(l.created_at).toLocaleDateString('es-PR', { day: '2-digit', month: 'short' })}</p>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <style>{`
         @media print {
