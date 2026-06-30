@@ -7,7 +7,7 @@ import {
   GraduationCap, TrendingUp, Zap, Briefcase, Phone, Mail, Pencil, Download, Megaphone,
 } from 'lucide-react'
 import PortalHeader from '@/components/portal/PortalHeader'
-import PostStudio from '@/components/portal/PostStudio'
+import PostsHub from '@/components/portal/posts/PostsHub'
 import Button from '@/components/ui/Button'
 import type { Employee } from '@/lib/types'
 
@@ -1946,7 +1946,7 @@ export default function AdminPage() {
         {/* Job requests tab */}
         {activeTab === 'solicitudes' && <SolicitudesPanel />}
 
-        {activeTab === 'posts' && <PostStudio />}
+        {activeTab === 'posts' && <PostsHub />}
       </div>
 
       {showModal && (

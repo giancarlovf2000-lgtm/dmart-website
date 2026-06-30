@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from 'react'
 import * as htmlToImage from 'html-to-image'
-import { Download, Image as ImageIcon, Upload, X } from 'lucide-react'
+import { Download, Image as ImageIcon, Save, Trash2, Upload, X } from 'lucide-react'
 import { STATIC_PROGRAMS, PRIVADOS_SABATINOS, STATIC_CATEGORIES, STATIC_CAMPUSES } from '@/lib/utils'
 
 // ── Constantes de marca ──────────────────────────────────────────────────────
@@ -26,7 +26,7 @@ const LOGO_SRC: Record<Exclude<LogoKind, 'none'>, string> = {
   icono: '/logo-dmart-icono.png',
 }
 
-interface PostConfig {
+export interface PostConfig {
   type: PostType
   bg: BgStyle
   photo: string | null
@@ -69,14 +69,26 @@ function defaultsFor(type: PostType): Partial<PostConfig> {
   return { kicker: 'D\'Mart Institute', title: 'Tu carrera empieza aquí', body: 'Matrículas abiertas en nuestros recintos de Barranquitas y Vega Alta.', chips: [], cta: 'Inscríbete hoy' }
 }
 
-export default function PostStudio() {
-  const [config, setConfig] = useState<PostConfig>(() => ({
+function initialConfig(): PostConfig {
+  return {
     type: 'programa', bg: 'degradado', photo: null,
     kicker: '', title: '', body: '', chips: [], reqs: [], cta: '',
     campusPhone: STATIC_CAMPUSES[0].phone, handle: '@dmartinstitute', website: 'dmartpr.net', logo: 'blanco',
     ...defaultsFor('programa'),
-  } as PostConfig))
+  } as PostConfig
+}
+
+interface PostStudioProps {
+  // Cuando se proveen, se muestran los botones "Guardar contenido" y "Borrar contenido".
+  onSave?: (config: PostConfig, pngDataUrl: string) => void
+  onClear?: () => void
+  saving?: boolean
+}
+
+export default function PostStudio({ onSave, onClear, saving = false }: PostStudioProps = {}) {
+  const [config, setConfig] = useState<PostConfig>(initialConfig)
   const [downloading, setDownloading] = useState(false)
+  const [preparing, setPreparing] = useState(false)
   // Si el usuario no ha elegido logo manualmente, se autoajusta según el fondo.
   const [logoAuto, setLogoAuto] = useState(true)
   const exportRef = useRef<HTMLDivElement>(null)
@@ -120,11 +132,16 @@ export default function PostStudio() {
     reader.readAsDataURL(file)
   }
 
+  async function getPng(): Promise<string | null> {
+    if (!exportRef.current) return null
+    return htmlToImage.toPng(exportRef.current, { pixelRatio: 1, cacheBust: true, width: 1080, height: 1350 })
+  }
+
   async function download() {
-    if (!exportRef.current) return
     setDownloading(true)
     try {
-      const dataUrl = await htmlToImage.toPng(exportRef.current, { pixelRatio: 1, cacheBust: true, width: 1080, height: 1350 })
+      const dataUrl = await getPng()
+      if (!dataUrl) return
       const a = document.createElement('a')
       a.href = dataUrl
       a.download = `dmart-post-${config.type}.png`
@@ -134,6 +151,27 @@ export default function PostStudio() {
       alert('No se pudo generar la imagen. Intenta de nuevo.')
     }
     setDownloading(false)
+  }
+
+  async function handleSave() {
+    if (!onSave) return
+    setPreparing(true)
+    try {
+      const dataUrl = await getPng()
+      if (!dataUrl) return
+      onSave(config, dataUrl)
+    } catch (err) {
+      console.error('[PostStudio] save export error', err)
+      alert('No se pudo preparar la imagen para guardar. Intenta de nuevo.')
+    }
+    setPreparing(false)
+  }
+
+  function handleClear() {
+    if (!confirm('¿Borrar el contenido actual del editor? Esto no afecta los posts ya guardados.')) return
+    setConfig(initialConfig())
+    setLogoAuto(true)
+    onClear?.()
   }
 
   const inputCls = 'w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-accent-ring'
@@ -267,6 +305,25 @@ export default function PostStudio() {
           <Download className="h-4 w-4" />
           {downloading ? 'Generando…' : 'Descargar imagen (1080×1350)'}
         </button>
+
+        {(onSave || onClear) && (
+          <div className="grid grid-cols-2 gap-2">
+            {onSave && (
+              <button onClick={handleSave} disabled={preparing || saving}
+                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-full bg-ink text-white text-sm font-semibold hover:bg-black transition-colors disabled:opacity-50">
+                <Save className="h-4 w-4" />
+                {preparing || saving ? 'Guardando…' : 'Guardar contenido'}
+              </button>
+            )}
+            {onClear && (
+              <button onClick={handleClear} disabled={preparing || saving}
+                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-full border border-gray-200 text-gray-600 text-sm font-semibold hover:bg-gray-50 transition-colors disabled:opacity-50">
+                <Trash2 className="h-4 w-4" />
+                Borrar contenido
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* ── Vista previa ──────────────────────────────────────────── */}
