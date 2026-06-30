@@ -844,6 +844,7 @@ function ActivitiesPanel() {
               <div key={empName}>
                 <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">{empName}</h3>
                 <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft overflow-hidden">
+                  <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-gray-100 bg-gray-50">
@@ -893,6 +894,7 @@ function ActivitiesPanel() {
                       ))}
                     </tbody>
                   </table>
+                  </div>
                 </div>
               </div>
             ))}
@@ -1794,7 +1796,7 @@ export default function AdminPage() {
 
       <div className="max-w-5xl mx-auto px-4 md:px-6 py-6">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between gap-3 flex-wrap mb-6">
           <div>
             <h1 className="text-2xl font-bold text-ink font-display">Administración</h1>
             <p className="text-sm text-gray-500 mt-0.5">{employees.length} empleado{employees.length !== 1 ? 's' : ''} registrado{employees.length !== 1 ? 's' : ''}</p>
@@ -1825,7 +1827,7 @@ export default function AdminPage() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-xl w-fit">
+        <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-xl overflow-x-auto no-scrollbar">
           {([
             { key: 'empleados',       label: 'Empleados',          icon: Users },
             { key: 'actividades',     label: 'Actividades',         icon: CalendarDays },
@@ -1837,7 +1839,7 @@ export default function AdminPage() {
             <button
               key={key}
               onClick={() => setActiveTab(key)}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${activeTab === key ? 'bg-white text-ink shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-colors flex-shrink-0 whitespace-nowrap ${activeTab === key ? 'bg-white text-ink shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
             >
               <Icon className="h-4 w-4" />
               {label}
@@ -1853,6 +1855,7 @@ export default function AdminPage() {
             </div>
           ) : (
             <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft overflow-hidden">
+              <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-100 bg-gray-50">
@@ -1930,6 +1933,7 @@ export default function AdminPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
           )
         )}

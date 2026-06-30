@@ -601,7 +601,8 @@ ${sections || '<p style="color:#9ca3af;margin-top:20px">No hay leads para los fi
 
       <div className="max-w-4xl mx-auto px-4 md:px-6 py-6">
         {/* Tabs */}
-        <div className="portal-tabs mb-6 w-fit">
+        <div className="overflow-x-auto no-scrollbar mb-6">
+        <div className="portal-tabs">
           {((role === 'admin'
             ? [{ key: 'equipo', label: 'Equipo' }]
             : [
@@ -615,6 +616,7 @@ ${sections || '<p style="color:#9ca3af;margin-top:20px">No hay leads para los fi
               {label}
             </button>
           ))}
+        </div>
         </div>
 
         {error && (

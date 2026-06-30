@@ -186,6 +186,16 @@
   }
 }
 
+/* Evitar el auto-zoom de iOS Safari al enfocar un campo: requiere font-size >= 16px.
+   Solo aplica en móvil (<640px); mantiene el pinch-zoom accesible. */
+@media (max-width: 640px) {
+  input:not([type='checkbox']):not([type='radio']),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
 /* Hamburger menu animation */
 .hamburger-line {
   @apply block w-6 h-0.5 bg-current transition-all duration-300;

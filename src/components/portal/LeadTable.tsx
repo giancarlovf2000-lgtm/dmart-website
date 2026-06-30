@@ -246,7 +246,7 @@ export default function LeadTable({ leads, staleLeadIds, followupLeadIds = [], e
                           />
                         </td>
                       )}
-                      <td className="px-4 py-3 font-medium text-gray-900 whitespace-nowrap cursor-pointer" onClick={() => router.push(`/portal/leads/${lead.id}`)}>
+                      <td className="px-4 py-3 font-medium text-gray-900 cursor-pointer" onClick={() => router.push(`/portal/leads/${lead.id}`)}>
                         <div className="flex items-center gap-2">
                           {isStale && (
                             <span title="Seguimiento pendiente (7+ días sin actividad)">
@@ -258,7 +258,7 @@ export default function LeadTable({ leads, staleLeadIds, followupLeadIds = [], e
                               <CalendarClock className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
                             </span>
                           )}
-                          {lead.nombre} {lead.apellido}
+                          <span className="max-w-[180px] truncate" title={`${lead.nombre} ${lead.apellido}`}>{lead.nombre} {lead.apellido}</span>
                         </div>
                       </td>
                       <td className="px-4 py-3 text-gray-600 font-mono text-xs whitespace-nowrap cursor-pointer" onClick={() => router.push(`/portal/leads/${lead.id}`)}>
