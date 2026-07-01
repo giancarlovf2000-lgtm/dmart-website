@@ -9,6 +9,30 @@ import Button from '@/components/ui/Button'
 import { ALL_PROGRAMS, LEAD_STATUS_ORDER, STATIC_PROGRAMS, PRIVADOS_SABATINOS } from '@/lib/utils'
 import type { Activity, MonthlyReport } from '@/lib/types'
 
+// Apoyo en redes: cada programa marcado por el supervisor lleva sección y fecha.
+type SocialShift = 'diurno' | 'nocturno' | 'sabatino'
+type SocialEntry = { program: string; shift: SocialShift; start_date: string | null }
+
+const SABATINO_TITLES = new Set(PRIVADOS_SABATINOS.map((s) => s.title))
+
+// Normaliza lo que viene del servidor (arreglo de strings antiguo o de objetos nuevo).
+function normalizeSocial(raw: unknown): SocialEntry[] {
+  if (!Array.isArray(raw)) return []
+  const out: SocialEntry[] = []
+  for (const e of raw) {
+    if (typeof e === 'string') {
+      out.push({ program: e, shift: SABATINO_TITLES.has(e) ? 'sabatino' : 'diurno', start_date: null })
+    } else if (e && typeof e === 'object') {
+      const o = e as Record<string, unknown>
+      if (typeof o.program !== 'string') continue
+      const shift: SocialShift = o.shift === 'nocturno' ? 'nocturno' : o.shift === 'sabatino' ? 'sabatino' : 'diurno'
+      const start_date = typeof o.start_date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(o.start_date) ? o.start_date : null
+      out.push({ program: o.program, shift, start_date })
+    }
+  }
+  return out
+}
+
 const ACTIVITY_TYPES = [
   { value: 'feria',             label: 'Feria de Empleo / Educación' },
   { value: 'visita_escuela',    label: 'Visita a Escuela' },
@@ -225,7 +249,7 @@ export default function ReportesPage() {
   const [planSaved, setPlanSaved] = useState(false)
   const planSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Programas que el supervisor solicita para apoyo en redes (por mes).
-  const [socialPrograms, setSocialPrograms] = useState<string[]>([])
+  const [socialPrograms, setSocialPrograms] = useState<SocialEntry[]>([])
   const [socialSaving, setSocialSaving] = useState(false)
   const [socialSaved, setSocialSaved] = useState(false)
   const socialSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -276,7 +300,7 @@ export default function ReportesPage() {
         if (d.role === 'empleado' || d.role === 'supervisor') {
           fetch(`/api/portal/supervisor-plan?month=${planMonth.slice(0, 7)}`)
             .then((r) => r.json())
-            .then((pd) => { if (pd.notes) setPlanNotes(pd.notes); setSocialPrograms(pd.social_programs ?? []) })
+            .then((pd) => { if (pd.notes) setPlanNotes(pd.notes); setSocialPrograms(normalizeSocial(pd.social_programs)) })
             .catch(() => {})
         }
         // El gate de planificación solo aplica a supervisores.
@@ -298,7 +322,7 @@ export default function ReportesPage() {
     setSocialPrograms([])
     fetch(`/api/portal/supervisor-plan?month=${planMonth.slice(0, 7)}`)
       .then((r) => r.json())
-      .then((pd) => { if (pd.notes) setPlanNotes(pd.notes); setSocialPrograms(pd.social_programs ?? []) })
+      .then((pd) => { if (pd.notes) setPlanNotes(pd.notes); setSocialPrograms(normalizeSocial(pd.social_programs)) })
       .catch(() => {})
   }, [role, planMonth])
 
@@ -317,10 +341,7 @@ export default function ReportesPage() {
   // Mantener una referencia fresca de las notas para el guardado de programas de redes.
   useEffect(() => { planNotesRef.current = planNotes }, [planNotes])
 
-  function toggleSocialProgram(name: string) {
-    const next = socialPrograms.includes(name)
-      ? socialPrograms.filter((p) => p !== name)
-      : [...socialPrograms, name]
+  function saveSocial(next: SocialEntry[]) {
     setSocialPrograms(next)
     setSocialSaved(false)
     if (socialSaveTimer.current) clearTimeout(socialSaveTimer.current)
@@ -334,6 +355,27 @@ export default function ReportesPage() {
       setSocialSaving(false)
       setSocialSaved(true)
     }, 600)
+  }
+
+  function getEntry(program: string, shift: SocialShift): SocialEntry | undefined {
+    return socialPrograms.find((e) => e.program === program && e.shift === shift)
+  }
+
+  function toggleSection(program: string, shift: SocialShift) {
+    const exists = getEntry(program, shift)
+    const next = exists
+      ? socialPrograms.filter((e) => !(e.program === program && e.shift === shift))
+      : [...socialPrograms, { program, shift, start_date: null }]
+    saveSocial(next)
+  }
+
+  function setSectionDate(program: string, shift: SocialShift, date: string) {
+    const start_date = date || null
+    const exists = getEntry(program, shift)
+    const next = exists
+      ? socialPrograms.map((e) => (e.program === program && e.shift === shift ? { ...e, start_date } : e))
+      : [...socialPrograms, { program, shift, start_date }]
+    saveSocial(next)
   }
 
   function updatePlanNote(day: number, value: string) {
@@ -814,31 +856,53 @@ ${sections || '<p style="color:#9ca3af;margin-top:20px">No hay leads para los fi
                   </div>
                 </div>
                 <p className="text-xs text-gray-500 mb-4">
-                  Marca los programas para los que necesitas exposición en redes. Esto le llega al administrador para priorizar el contenido de tu recinto.
+                  Marca la sección (Diurno / Nocturno) y la fecha de comienzo de cada programa. Si aún no hay fecha, déjala vacía (saldrá como &quot;Pendiente&quot;). Esto le llega al administrador para priorizar el contenido de tu recinto.
                 </p>
 
+                {/* Programas regulares: Diurno / Nocturno con su fecha */}
                 <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Programas Regulares</p>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {STATIC_PROGRAMS.map((p) => {
-                    const active = socialPrograms.includes(p.name)
-                    return (
-                      <button key={p.slug} type="button" onClick={() => toggleSocialProgram(p.name)}
-                        className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${active ? 'bg-accent text-white border-accent' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
-                        {p.name}
-                      </button>
-                    )
-                  })}
+                <div className="space-y-1.5 mb-5">
+                  {STATIC_PROGRAMS.map((p) => (
+                    <div key={p.slug} className="flex items-center gap-2 flex-wrap py-1.5 border-b border-gray-50 last:border-0">
+                      <span className="text-sm text-gray-800 font-medium flex-1 min-w-[140px]">{p.name}</span>
+                      {(['diurno', 'nocturno'] as const).map((shift) => {
+                        const entry = getEntry(p.name, shift)
+                        const active = !!entry
+                        return (
+                          <div key={shift} className="flex items-center gap-1">
+                            <button type="button" onClick={() => toggleSection(p.name, shift)}
+                              className={`px-2.5 py-1 rounded-full text-xs font-semibold border transition-colors ${active ? 'bg-accent text-white border-accent' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'}`}>
+                              {shift === 'diurno' ? 'Diurno' : 'Nocturno'}
+                            </button>
+                            {active && (
+                              <input type="date" value={entry?.start_date ?? ''} onChange={(e) => setSectionDate(p.name, shift, e.target.value)}
+                                className="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-accent-ring" />
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ))}
                 </div>
 
+                {/* Cursos sabatinos: seleccionar + fecha (sin D/N) */}
                 <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Cursos Sabatinos</p>
-                <div className="flex flex-wrap gap-2">
+                <div className="space-y-1.5">
                   {PRIVADOS_SABATINOS.map((s) => {
-                    const active = socialPrograms.includes(s.title)
+                    const entry = getEntry(s.title, 'sabatino')
+                    const active = !!entry
                     return (
-                      <button key={s.id} type="button" onClick={() => toggleSocialProgram(s.title)}
-                        className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${active ? 'bg-accent text-white border-accent' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
-                        {s.title}
-                      </button>
+                      <div key={s.id} className="flex items-center gap-2 flex-wrap py-1.5 border-b border-gray-50 last:border-0">
+                        <span className="text-sm text-gray-800 font-medium flex-1 min-w-[140px]">{s.title}</span>
+                        <button type="button" onClick={() => toggleSection(s.title, 'sabatino')}
+                          className={`px-2.5 py-1 rounded-full text-xs font-semibold border transition-colors ${active ? 'bg-accent text-white border-accent' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'}`}>
+                          {active ? 'Seleccionado' : 'Seleccionar'}
+                        </button>
+                        {active && (
+                          <input type="date" value={entry?.start_date ?? ''} onChange={(e) => setSectionDate(s.title, 'sabatino', e.target.value)}
+                            className="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-accent-ring" />
+                        )}
+                      </div>
                     )
                   })}
                 </div>

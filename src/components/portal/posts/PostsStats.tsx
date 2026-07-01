@@ -274,7 +274,20 @@ function Empty() {
 // ── Posts por hacer este mes — pedidos de los supervisores por recinto ────────
 interface SocialCampus {
   campus: string
-  programs: { program: string; kind: 'regular' | 'privado' | 'otro'; supervisors: string[] }[]
+  programs: {
+    program: string; kind: 'regular' | 'privado' | 'otro'
+    shift: 'diurno' | 'nocturno' | 'sabatino'; start_date: string | null; supervisors: string[]
+  }[]
+}
+
+const SHIFT_LABEL: Record<'diurno' | 'nocturno' | 'sabatino', string> = {
+  diurno: 'D', nocturno: 'N', sabatino: 'Sab',
+}
+
+function fmtStart(d: string | null): string {
+  if (!d) return 'Pendiente'
+  const date = new Date(d + 'T00:00:00')
+  return date.toLocaleDateString('es-PR', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
 function SocialRequests() {
@@ -318,21 +331,35 @@ function SocialRequests() {
               {c.programs.length === 0 ? (
                 <p className="text-xs text-gray-400 py-2">Ningún supervisor ha pedido apoyo para este recinto este mes.</p>
               ) : (
-                <div className="space-y-2">
-                  {c.programs.map((p) => (
-                    <div key={p.program} className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-sm font-medium text-ink">{p.program}</span>
-                          <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${p.kind === 'privado' ? 'bg-purple-100 text-purple-700' : p.kind === 'regular' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'}`}>
-                            {p.kind === 'privado' ? 'Sabatino' : p.kind === 'regular' ? 'Regular' : 'Otro'}
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="text-gray-400 text-left border-b border-gray-100">
+                      <th className="py-1.5 font-semibold">Programa</th>
+                      <th className="py-1.5 font-semibold text-center w-12">Secc.</th>
+                      <th className="py-1.5 font-semibold text-right">Comienzo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {c.programs.map((p, i) => (
+                      <tr key={`${p.program}-${p.shift}-${p.start_date}-${i}`} className="border-b border-gray-50 last:border-0">
+                        <td className="py-2 pr-2">
+                          <span className="font-medium text-ink">{p.program}</span>
+                          {p.supervisors.length > 0 && (
+                            <span className="block text-[10px] text-gray-400 truncate">{p.supervisors.join(', ')}</span>
+                          )}
+                        </td>
+                        <td className="py-2 text-center">
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${p.shift === 'nocturno' ? 'bg-indigo-100 text-indigo-700' : p.shift === 'sabatino' ? 'bg-purple-100 text-purple-700' : 'bg-amber-100 text-amber-700'}`}>
+                            {SHIFT_LABEL[p.shift]}
                           </span>
-                        </div>
-                        <p className="text-[11px] text-gray-400 truncate">{p.supervisors.join(', ')}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                        </td>
+                        <td className={`py-2 text-right whitespace-nowrap ${p.start_date ? 'text-ink font-medium' : 'text-gray-400 italic'}`}>
+                          {fmtStart(p.start_date)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               )}
             </div>
           ))}

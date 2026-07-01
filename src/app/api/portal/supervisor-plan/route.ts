@@ -56,9 +56,22 @@ export async function POST(request: NextRequest) {
   if (!notes || typeof notes !== 'object')
     return NextResponse.json({ error: 'Notas inválidas.' }, { status: 400 })
 
-  // Programas solicitados para apoyo en redes (opcional): solo strings, máx. 50.
+  // Programas solicitados para apoyo en redes (opcional). Cada entrada:
+  // { program, shift: 'diurno'|'nocturno'|'sabatino', start_date: 'YYYY-MM-DD'|null }.
+  const SHIFTS = new Set(['diurno', 'nocturno', 'sabatino'])
   const socialPrograms = Array.isArray(social_programs)
-    ? social_programs.filter((p: unknown): p is string => typeof p === 'string').slice(0, 50)
+    ? social_programs
+        .map((e: unknown) => {
+          if (!e || typeof e !== 'object') return null
+          const o = e as Record<string, unknown>
+          const program = typeof o.program === 'string' ? o.program.trim().slice(0, 120) : ''
+          const shift = typeof o.shift === 'string' && SHIFTS.has(o.shift) ? o.shift : 'diurno'
+          const start_date = typeof o.start_date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(o.start_date) ? o.start_date : null
+          if (!program) return null
+          return { program, shift, start_date }
+        })
+        .filter(Boolean)
+        .slice(0, 100)
     : undefined
 
   const admin = getAdminClient()
