@@ -37,12 +37,12 @@ export async function GET(request: NextRequest) {
   const admin = getAdminClient()
   const { data } = await admin
     .from('supervisor_monthly_plans')
-    .select('notes')
+    .select('notes, social_programs')
     .eq('supervisor_id', user.id)
     .eq('plan_month', month)
     .single()
 
-  return NextResponse.json({ notes: data?.notes ?? {} })
+  return NextResponse.json({ notes: data?.notes ?? {}, social_programs: data?.social_programs ?? [] })
 }
 
 export async function POST(request: NextRequest) {
@@ -50,11 +50,16 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
 
   const body = await request.json()
-  const { month, notes } = body
+  const { month, notes, social_programs } = body
   if (!month || !/^\d{4}-\d{2}$/.test(month))
     return NextResponse.json({ error: 'Mes inválido.' }, { status: 400 })
   if (!notes || typeof notes !== 'object')
     return NextResponse.json({ error: 'Notas inválidas.' }, { status: 400 })
+
+  // Programas solicitados para apoyo en redes (opcional): solo strings, máx. 50.
+  const socialPrograms = Array.isArray(social_programs)
+    ? social_programs.filter((p: unknown): p is string => typeof p === 'string').slice(0, 50)
+    : undefined
 
   const admin = getAdminClient()
 
@@ -70,7 +75,10 @@ export async function POST(request: NextRequest) {
   const { error } = await admin
     .from('supervisor_monthly_plans')
     .upsert(
-      { supervisor_id: user.id, plan_month: month, notes, updated_at: new Date().toISOString() },
+      {
+        supervisor_id: user.id, plan_month: month, notes, updated_at: new Date().toISOString(),
+        ...(socialPrograms !== undefined ? { social_programs: socialPrograms } : {}),
+      },
       { onConflict: 'supervisor_id,plan_month' }
     )
 

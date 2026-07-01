@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import {
   Loader2, TrendingUp, Users, Megaphone, Target, Lightbulb, Globe, Filter,
-  ArrowDownRight, AlertTriangle, CheckCircle2,
+  ArrowDownRight, AlertTriangle, CheckCircle2, Building2,
 } from 'lucide-react'
 
 interface Stats {
@@ -58,6 +58,9 @@ export default function PostsStats() {
 
   return (
     <div className="space-y-6">
+      {/* Posts por hacer este mes (pedidos de los supervisores por recinto) */}
+      <SocialRequests />
+
       {/* Rango */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
@@ -266,4 +269,75 @@ function MiniStat({ label, value }: { label: string; value: number }) {
 
 function Empty() {
   return <p className="text-xs text-gray-400 py-4 text-center">Sin datos en este período.</p>
+}
+
+// ── Posts por hacer este mes — pedidos de los supervisores por recinto ────────
+interface SocialCampus {
+  campus: string
+  programs: { program: string; kind: 'regular' | 'privado' | 'otro'; supervisors: string[] }[]
+}
+
+function SocialRequests() {
+  const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7))
+  const [campuses, setCampuses] = useState<SocialCampus[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    setLoading(true)
+    fetch(`/api/portal/posts/social-requests?month=${month}`)
+      .then((r) => r.json())
+      .then((d) => setCampuses(d.campuses ?? []))
+      .finally(() => setLoading(false))
+  }, [month])
+
+  return (
+    <div className="bg-gradient-to-br from-accent/[0.06] to-transparent rounded-2xl border border-accent/20 p-5">
+      <div className="flex items-center justify-between flex-wrap gap-3 mb-1">
+        <div className="flex items-center gap-2">
+          <Megaphone className="h-4 w-4 text-accent" />
+          <h3 className="text-sm font-bold text-ink">Posts por hacer este mes — por recinto</h3>
+        </div>
+        <input type="month" value={month} onChange={(e) => setMonth(e.target.value)}
+          className="text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-accent-ring" />
+      </div>
+      <p className="text-xs text-gray-500 mb-4">Programas que los supervisores de cada recinto pidieron para redes.</p>
+
+      {loading ? (
+        <div className="flex items-center gap-2 text-sm text-gray-400 py-6 justify-center">
+          <Loader2 className="h-4 w-4 animate-spin" /> Cargando…
+        </div>
+      ) : (
+        <div className="grid sm:grid-cols-2 gap-3">
+          {campuses.map((c) => (
+            <div key={c.campus} className="bg-white rounded-xl border border-black/[0.06] p-4">
+              <div className="flex items-center gap-1.5 mb-3">
+                <Building2 className="h-3.5 w-3.5 text-accent" />
+                <p className="text-sm font-bold text-ink">{c.campus}</p>
+                <span className="ml-auto text-xs text-gray-400">{c.programs.length} programa{c.programs.length === 1 ? '' : 's'}</span>
+              </div>
+              {c.programs.length === 0 ? (
+                <p className="text-xs text-gray-400 py-2">Ningún supervisor ha pedido apoyo para este recinto este mes.</p>
+              ) : (
+                <div className="space-y-2">
+                  {c.programs.map((p) => (
+                    <div key={p.program} className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-sm font-medium text-ink">{p.program}</span>
+                          <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${p.kind === 'privado' ? 'bg-purple-100 text-purple-700' : p.kind === 'regular' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'}`}>
+                            {p.kind === 'privado' ? 'Sabatino' : p.kind === 'regular' ? 'Regular' : 'Otro'}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-gray-400 truncate">{p.supervisors.join(', ')}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }

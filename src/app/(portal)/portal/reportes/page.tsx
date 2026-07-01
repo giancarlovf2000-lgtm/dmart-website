@@ -3,10 +3,10 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import {
   Plus, CheckCircle, AlertCircle, MapPin, Calendar,
-  QrCode, Flag, Trash2, Zap, TrendingUp, Users, GraduationCap, Download,
+  QrCode, Flag, Trash2, Zap, TrendingUp, Users, GraduationCap, Download, Megaphone,
 } from 'lucide-react'
 import Button from '@/components/ui/Button'
-import { ALL_PROGRAMS, LEAD_STATUS_ORDER } from '@/lib/utils'
+import { ALL_PROGRAMS, LEAD_STATUS_ORDER, STATIC_PROGRAMS, PRIVADOS_SABATINOS } from '@/lib/utils'
 import type { Activity, MonthlyReport } from '@/lib/types'
 
 const ACTIVITY_TYPES = [
@@ -224,6 +224,12 @@ export default function ReportesPage() {
   const [planSaving, setPlanSaving] = useState(false)
   const [planSaved, setPlanSaved] = useState(false)
   const planSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Programas que el supervisor solicita para apoyo en redes (por mes).
+  const [socialPrograms, setSocialPrograms] = useState<string[]>([])
+  const [socialSaving, setSocialSaving] = useState(false)
+  const [socialSaved, setSocialSaved] = useState(false)
+  const socialSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const planNotesRef = useRef<Record<string, string>>({})
   const [gateStatus, setGateStatus] = useState<{ required: boolean; complete: boolean; calendarDays: number; activitiesCount: number } | null>(null)
   const [planMonth, setPlanMonth] = useState(() =>
     getNextMonthInfo().daysLeft <= 5 ? getNextMonthStart() : firstOfMonth(new Date())
@@ -270,7 +276,7 @@ export default function ReportesPage() {
         if (d.role === 'empleado' || d.role === 'supervisor') {
           fetch(`/api/portal/supervisor-plan?month=${planMonth.slice(0, 7)}`)
             .then((r) => r.json())
-            .then((pd) => { if (pd.notes) setPlanNotes(pd.notes) })
+            .then((pd) => { if (pd.notes) setPlanNotes(pd.notes); setSocialPrograms(pd.social_programs ?? []) })
             .catch(() => {})
         }
         // El gate de planificación solo aplica a supervisores.
@@ -289,9 +295,10 @@ export default function ReportesPage() {
   useEffect(() => {
     if (role !== 'empleado' && role !== 'supervisor') return
     setPlanNotes({})
+    setSocialPrograms([])
     fetch(`/api/portal/supervisor-plan?month=${planMonth.slice(0, 7)}`)
       .then((r) => r.json())
-      .then((pd) => { if (pd.notes) setPlanNotes(pd.notes) })
+      .then((pd) => { if (pd.notes) setPlanNotes(pd.notes); setSocialPrograms(pd.social_programs ?? []) })
       .catch(() => {})
   }, [role, planMonth])
 
@@ -306,6 +313,28 @@ export default function ReportesPage() {
       setCampusCalendars(calData.plans ?? [])
     }).catch(() => {})
   }, [role, planMonth])
+
+  // Mantener una referencia fresca de las notas para el guardado de programas de redes.
+  useEffect(() => { planNotesRef.current = planNotes }, [planNotes])
+
+  function toggleSocialProgram(name: string) {
+    const next = socialPrograms.includes(name)
+      ? socialPrograms.filter((p) => p !== name)
+      : [...socialPrograms, name]
+    setSocialPrograms(next)
+    setSocialSaved(false)
+    if (socialSaveTimer.current) clearTimeout(socialSaveTimer.current)
+    socialSaveTimer.current = setTimeout(async () => {
+      setSocialSaving(true)
+      await fetch('/api/portal/supervisor-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ month: planMonth.slice(0, 7), notes: planNotesRef.current, social_programs: next }),
+      })
+      setSocialSaving(false)
+      setSocialSaved(true)
+    }, 600)
+  }
 
   function updatePlanNote(day: number, value: string) {
     const next = { ...planNotes, [String(day)]: value }
@@ -772,6 +801,49 @@ ${sections || '<p style="color:#9ca3af;margin-top:20px">No hay leads para los fi
                 </div>
               )
             })()}
+
+            {/* ── Programas que necesitan apoyo en redes (solo supervisores) ── */}
+            {role === 'supervisor' && (
+              <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-5">
+                <div className="flex items-center gap-2 mb-1">
+                  <Megaphone className="h-4 w-4 text-accent" />
+                  <h3 className="text-sm font-bold text-gray-900">¿Qué programas necesitan apoyo en redes este mes?</h3>
+                  <div className="ml-auto text-xs">
+                    {socialSaving && <span className="text-amber-500">Guardando…</span>}
+                    {socialSaved && !socialSaving && <span className="text-green-600">Guardado ✓</span>}
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 mb-4">
+                  Marca los programas para los que necesitas exposición en redes. Esto le llega al administrador para priorizar el contenido de tu recinto.
+                </p>
+
+                <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Programas Regulares</p>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {STATIC_PROGRAMS.map((p) => {
+                    const active = socialPrograms.includes(p.name)
+                    return (
+                      <button key={p.slug} type="button" onClick={() => toggleSocialProgram(p.name)}
+                        className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${active ? 'bg-accent text-white border-accent' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
+                        {p.name}
+                      </button>
+                    )
+                  })}
+                </div>
+
+                <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Cursos Sabatinos</p>
+                <div className="flex flex-wrap gap-2">
+                  {PRIVADOS_SABATINOS.map((s) => {
+                    const active = socialPrograms.includes(s.title)
+                    return (
+                      <button key={s.id} type="button" onClick={() => toggleSocialProgram(s.title)}
+                        className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${active ? 'bg-accent text-white border-accent' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
+                        {s.title}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
 
             {showNewActivity && (
               <form onSubmit={createActivity} className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-5 space-y-3">
