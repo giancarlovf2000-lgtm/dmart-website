@@ -83,10 +83,12 @@ interface PostStudioProps {
   onSave?: (config: PostConfig, pngDataUrl: string) => void
   onClear?: () => void
   saving?: boolean
+  // Config inicial (para precargar una variación generada). El remonte se fuerza con `key`.
+  initial?: PostConfig
 }
 
-export default function PostStudio({ onSave, onClear, saving = false }: PostStudioProps = {}) {
-  const [config, setConfig] = useState<PostConfig>(initialConfig)
+export default function PostStudio({ onSave, onClear, saving = false, initial }: PostStudioProps = {}) {
+  const [config, setConfig] = useState<PostConfig>(() => initial ?? initialConfig())
   const [downloading, setDownloading] = useState(false)
   const [preparing, setPreparing] = useState(false)
   // Si el usuario no ha elegido logo manualmente, se autoajusta según el fondo.
@@ -346,7 +348,7 @@ export default function PostStudio({ onSave, onClear, saving = false }: PostStud
 }
 
 // ── La tarjeta (diseño 1080×1350) ────────────────────────────────────────────
-function PostCard({ config }: { config: PostConfig }) {
+export function PostCard({ config }: { config: PostConfig }) {
   const dark = config.bg !== 'claro'
   const fg = dark ? '#ffffff' : INK
   const sub = dark ? 'rgba(255,255,255,0.82)' : '#5A5A5A'
