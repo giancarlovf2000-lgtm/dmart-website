@@ -19,6 +19,7 @@ const ADMISSION_REQS = [
 type PostType = 'programa' | 'sabatino' | 'requisitos' | 'evento'
 type BgStyle = 'rojo' | 'negro' | 'claro' | 'degradado' | 'foto'
 type LogoKind = 'blanco' | 'color' | 'icono' | 'none'
+export type PostTemplate = 'clasico' | 'centrado' | 'banda' | 'editorial' | 'minimal' | 'marco' | 'lateral'
 
 const LOGO_SRC: Record<Exclude<LogoKind, 'none'>, string> = {
   blanco: '/logo-dmart-blanco.png',
@@ -28,6 +29,7 @@ const LOGO_SRC: Record<Exclude<LogoKind, 'none'>, string> = {
 
 export interface PostConfig {
   type: PostType
+  template: PostTemplate
   bg: BgStyle
   photo: string | null
   kicker: string
@@ -71,7 +73,7 @@ function defaultsFor(type: PostType): Partial<PostConfig> {
 
 function initialConfig(): PostConfig {
   return {
-    type: 'programa', bg: 'degradado', photo: null,
+    type: 'programa', template: 'clasico', bg: 'degradado', photo: null,
     kicker: '', title: '', body: '', chips: [], reqs: [], cta: '',
     campusPhone: STATIC_CAMPUSES[0].phone, handle: '@dmartinstitute', website: 'dmartpr.net', logo: 'blanco',
     ...defaultsFor('programa'),
@@ -253,6 +255,22 @@ export default function PostStudio({ onSave, onClear, saving = false, initial }:
           <input className={inputCls} value={config.cta} onChange={(e) => set({ cta: e.target.value })} />
         </div>
 
+        {/* Diseño (plantilla) */}
+        <div>
+          <label className={labelCls}>Diseño</label>
+          <div className="flex flex-wrap gap-2">
+            {([
+              ['clasico', 'Clásico'], ['centrado', 'Centrado'], ['banda', 'Banda'], ['editorial', 'Editorial'],
+              ['minimal', 'Minimal'], ['marco', 'Marco'], ['lateral', 'Lateral'],
+            ] as [PostTemplate, string][]).map(([k, l]) => (
+              <button key={k} onClick={() => set({ template: k })}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${(config.template ?? 'clasico') === k ? 'bg-accent text-white border-accent' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
+                {l}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Fondo */}
         <div>
           <label className={labelCls}>Fondo</label>
@@ -348,10 +366,242 @@ export default function PostStudio({ onSave, onClear, saving = false, initial }:
 }
 
 // ── La tarjeta (diseño 1080×1350) ────────────────────────────────────────────
+const DISPLAY_FONT = 'var(--font-display), system-ui, sans-serif'
+
+interface Colors {
+  dark: boolean; fg: string; sub: string
+  pillBg: string; pillFg: string; borderCol: string; chipBorder: string; chipBg: string
+}
+
+function LogoImg({ config, size }: { config: PostConfig; size: number }) {
+  if (config.logo === 'none') return <span />
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={LOGO_SRC[config.logo]} alt="D'Mart Institute" style={{ height: config.logo === 'icono' ? size * 1.4 : size, width: 'auto', display: 'block' }} />
+}
+
+function Handle({ config, c }: { config: PostConfig; c: Colors }) {
+  if (!config.handle) return <span />
+  return <span style={{ fontSize: 30, color: c.dark ? 'rgba(255,255,255,0.9)' : '#5A5A5A', fontWeight: 600 }}>{config.handle}</span>
+}
+
+function KickerPill({ text, c, align = 'left' }: { text: string; c: Colors; align?: 'left' | 'center' }) {
+  if (!text) return null
+  return (
+    <div style={{ textAlign: align }}>
+      <span style={{ display: 'inline-block', background: c.pillBg, color: c.pillFg, fontWeight: 800, fontSize: 30, letterSpacing: 2, textTransform: 'uppercase', padding: '12px 26px', borderRadius: 999 }}>{text}</span>
+    </div>
+  )
+}
+
+function BodyOrReqs({ config, c, align = 'left', maxWidth = 820 }: { config: PostConfig; c: Colors; align?: 'left' | 'center'; maxWidth?: number }) {
+  if (config.type === 'requisitos') {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 26 }}>
+        {config.reqs.map((r, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 22 }}>
+            <div style={{ flexShrink: 0, width: 52, height: 52, borderRadius: 999, background: c.pillBg, color: c.pillFg, fontSize: 32, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✓</div>
+            <span style={{ fontSize: 38, lineHeight: 1.3, color: c.fg, fontWeight: 500 }}>{r}</span>
+          </div>
+        ))}
+      </div>
+    )
+  }
+  if (!config.body) return null
+  return <p style={{ fontSize: 40, lineHeight: 1.4, color: c.sub, maxWidth, ...(align === 'center' ? { marginLeft: 'auto', marginRight: 'auto' } : {}) }}>{config.body}</p>
+}
+
+function Chips({ config, c, align = 'left' }: { config: PostConfig; c: Colors; align?: 'left' | 'center' }) {
+  if (config.chips.length === 0) return null
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, justifyContent: align === 'center' ? 'center' : 'flex-start' }}>
+      {config.chips.map((chip, i) => (
+        <span key={i} style={{ fontSize: 30, fontWeight: 700, padding: '14px 28px', borderRadius: 999, color: c.fg, border: `2px solid ${c.chipBorder}`, background: c.chipBg }}>{chip}</span>
+      ))}
+    </div>
+  )
+}
+
+function CtaPill({ config, c, align = 'left', plain = false }: { config: PostConfig; c: Colors; align?: 'left' | 'center'; plain?: boolean }) {
+  if (!config.cta) return null
+  if (plain) {
+    return (
+      <div style={{ textAlign: align }}>
+        <span style={{ fontFamily: DISPLAY_FONT, fontWeight: 700, fontSize: 42, color: c.fg, borderBottom: `4px solid ${c.pillBg}`, paddingBottom: 8 }}>{config.cta} →</span>
+      </div>
+    )
+  }
+  return (
+    <div style={{ textAlign: align }}>
+      <span style={{ display: 'inline-block', background: c.pillBg, color: c.pillFg, fontFamily: DISPLAY_FONT, fontWeight: 700, fontSize: 44, padding: '26px 56px', borderRadius: 999 }}>{config.cta} →</span>
+    </div>
+  )
+}
+
+function Footer({ config, c }: { config: PostConfig; c: Colors }) {
+  return (
+    <div style={{ marginTop: 56, paddingTop: 30, borderTop: `2px solid ${c.borderCol}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <span style={{ fontSize: 32, fontWeight: 700, color: c.fg }}>{config.website}</span>
+      {config.campusPhone ? <span style={{ fontSize: 32, fontWeight: 700, color: c.dark ? '#fff' : RED }}>{config.campusPhone}</span> : <span />}
+    </div>
+  )
+}
+
+function Title({ config, c, size, align = 'left' }: { config: PostConfig; c: Colors; size: number; align?: 'left' | 'center' }) {
+  return (
+    <h1 style={{ fontFamily: DISPLAY_FONT, fontWeight: 700, fontSize: size, lineHeight: 1.03, margin: 0, color: c.fg, textAlign: align }}>{config.title}</h1>
+  )
+}
+
+// ── Plantillas de layout (todas reciben config + colores) ─────────────────────
+function TplClasico({ config, c }: { config: PostConfig; c: Colors }) {
+  return (
+    <>
+      <div style={{ position: 'absolute', top: 0, left: 0, width: 360, height: 14, background: c.pillBg }} />
+      <div style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', padding: '88px 84px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: 96 }}>
+          <LogoImg config={config} size={72} /><Handle config={config} c={c} />
+        </div>
+        <div style={{ marginTop: 64 }}><KickerPill text={config.kicker} c={c} /></div>
+        <div style={{ marginTop: 34 }}><Title config={config} c={c} size={92} /></div>
+        <div style={{ marginTop: config.type === 'requisitos' ? 44 : 32 }}><BodyOrReqs config={config} c={c} /></div>
+        <div style={{ marginTop: 40 }}><Chips config={config} c={c} /></div>
+        <div style={{ flex: 1 }} />
+        <CtaPill config={config} c={c} />
+        <Footer config={config} c={c} />
+      </div>
+    </>
+  )
+}
+
+function TplCentrado({ config, c }: { config: PostConfig; c: Colors }) {
+  return (
+    <div style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '96px 84px' }}>
+      <LogoImg config={config} size={80} />
+      <div style={{ marginTop: 56 }}><KickerPill text={config.kicker} c={c} align="center" /></div>
+      <div style={{ marginTop: 40 }}><Title config={config} c={c} size={100} align="center" /></div>
+      <div style={{ marginTop: 34, width: '100%' }}><BodyOrReqs config={config} c={c} align="center" maxWidth={820} /></div>
+      <div style={{ marginTop: 40, width: '100%' }}><Chips config={config} c={c} align="center" /></div>
+      <div style={{ flex: 1 }} />
+      <CtaPill config={config} c={c} align="center" />
+      <div style={{ width: '100%' }}><Footer config={config} c={c} /></div>
+    </div>
+  )
+}
+
+function TplBanda({ config, c }: { config: PostConfig; c: Colors }) {
+  // Banda superior sólida (acento) con logo + kicker + título; abajo el resto sobre el fondo base.
+  return (
+    <div style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ background: RED, color: '#fff', padding: '84px 84px 72px', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: 96 }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          {config.logo !== 'none' && <img src={LOGO_SRC.blanco} alt="D'Mart Institute" style={{ height: 72, width: 'auto', display: 'block' }} />}
+          {config.handle && <span style={{ fontSize: 30, color: 'rgba(255,255,255,0.9)', fontWeight: 600 }}>{config.handle}</span>}
+        </div>
+        {config.kicker && (
+          <div style={{ marginTop: 40 }}>
+            <span style={{ display: 'inline-block', background: '#fff', color: RED, fontWeight: 800, fontSize: 30, letterSpacing: 2, textTransform: 'uppercase', padding: '12px 26px', borderRadius: 999 }}>{config.kicker}</span>
+          </div>
+        )}
+        <h1 style={{ fontFamily: DISPLAY_FONT, fontWeight: 700, fontSize: 96, lineHeight: 1.02, margin: '34px 0 0', color: '#fff' }}>{config.title}</h1>
+      </div>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '64px 84px 84px' }}>
+        <BodyOrReqs config={config} c={c} />
+        <div style={{ marginTop: 40 }}><Chips config={config} c={c} /></div>
+        <div style={{ flex: 1 }} />
+        <CtaPill config={config} c={c} />
+        <Footer config={config} c={c} />
+      </div>
+    </div>
+  )
+}
+
+function TplEditorial({ config, c }: { config: PostConfig; c: Colors }) {
+  return (
+    <div style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', padding: '80px 80px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: 80 }}>
+        <LogoImg config={config} size={60} /><Handle config={config} c={c} />
+      </div>
+      <div style={{ marginTop: 44 }}><KickerPill text={config.kicker} c={c} /></div>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+        <h1 style={{ fontFamily: DISPLAY_FONT, fontWeight: 700, fontSize: 150, lineHeight: 0.98, margin: 0, color: c.fg, letterSpacing: -2 }}>{config.title}</h1>
+      </div>
+      {config.body && <p style={{ fontSize: 36, lineHeight: 1.35, color: c.sub, maxWidth: 820, marginBottom: 28 }}>{config.body}</p>}
+      <div style={{ marginBottom: 28 }}><Chips config={config} c={c} /></div>
+      <CtaPill config={config} c={c} />
+      <Footer config={config} c={c} />
+    </div>
+  )
+}
+
+function TplMinimal({ config, c }: { config: PostConfig; c: Colors }) {
+  return (
+    <div style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '110px 100px' }}>
+      <LogoImg config={config} size={64} />
+      <div style={{ flex: 1 }} />
+      {config.kicker && <span style={{ fontSize: 28, fontWeight: 800, letterSpacing: 4, textTransform: 'uppercase', color: c.pillBg }}>{config.kicker}</span>}
+      <div style={{ width: 90, height: 4, background: c.pillBg, margin: '32px 0' }} />
+      <Title config={config} c={c} size={86} align="center" />
+      {config.body && <p style={{ fontSize: 36, lineHeight: 1.4, color: c.sub, maxWidth: 720, marginTop: 32 }}>{config.body}</p>}
+      <div style={{ marginTop: 36, width: '100%' }}><Chips config={config} c={c} align="center" /></div>
+      <div style={{ flex: 1 }} />
+      <CtaPill config={config} c={c} align="center" plain />
+      <div style={{ width: '100%', marginTop: 40 }}><Footer config={config} c={c} /></div>
+    </div>
+  )
+}
+
+function TplMarco({ config, c }: { config: PostConfig; c: Colors }) {
+  const line = c.dark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.35)'
+  return (
+    <div style={{ position: 'relative', flex: 1, display: 'flex' }}>
+      <div style={{ position: 'absolute', inset: 48, border: `3px solid ${line}`, borderRadius: 8 }} />
+      <div style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '120px 110px' }}>
+        <LogoImg config={config} size={70} />
+        <div style={{ marginTop: 44 }}><KickerPill text={config.kicker} c={c} align="center" /></div>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <Title config={config} c={c} size={94} align="center" />
+          {config.body && <p style={{ fontSize: 36, lineHeight: 1.4, color: c.sub, maxWidth: 760, margin: '32px auto 0' }}>{config.body}</p>}
+          <div style={{ marginTop: 36 }}><Chips config={config} c={c} align="center" /></div>
+        </div>
+        <CtaPill config={config} c={c} align="center" />
+      </div>
+    </div>
+  )
+}
+
+function TplLateral({ config, c }: { config: PostConfig; c: Colors }) {
+  return (
+    <div style={{ position: 'relative', flex: 1, display: 'flex' }}>
+      <div style={{ width: 24, background: c.pillBg, flexShrink: 0 }} />
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '88px 84px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: 96 }}>
+          <LogoImg config={config} size={72} /><Handle config={config} c={c} />
+        </div>
+        <div style={{ marginTop: 56 }}><KickerPill text={config.kicker} c={c} /></div>
+        <div style={{ marginTop: 30 }}><Title config={config} c={c} size={104} /></div>
+        <div style={{ marginTop: 32 }}><BodyOrReqs config={config} c={c} /></div>
+        <div style={{ marginTop: 40 }}><Chips config={config} c={c} /></div>
+        <div style={{ flex: 1 }} />
+        <CtaPill config={config} c={c} />
+        <Footer config={config} c={c} />
+      </div>
+    </div>
+  )
+}
+
 export function PostCard({ config }: { config: PostConfig }) {
   const dark = config.bg !== 'claro'
-  const fg = dark ? '#ffffff' : INK
-  const sub = dark ? 'rgba(255,255,255,0.82)' : '#5A5A5A'
+  const c: Colors = {
+    dark,
+    fg: dark ? '#ffffff' : INK,
+    sub: dark ? 'rgba(255,255,255,0.82)' : '#5A5A5A',
+    pillBg: dark ? '#ffffff' : RED,
+    pillFg: dark ? RED : '#ffffff',
+    borderCol: dark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.12)',
+    chipBorder: dark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.18)',
+    chipBg: dark ? 'rgba(255,255,255,0.10)' : '#fff',
+  }
 
   const bgStyle: React.CSSProperties = useMemo(() => {
     switch (config.bg) {
@@ -363,13 +613,14 @@ export function PostCard({ config }: { config: PostConfig }) {
     }
   }, [config.bg])
 
+  const template = config.template ?? 'clasico'
+
   return (
     <div style={{
       width: 1080, height: 1350, position: 'relative', overflow: 'hidden',
-      fontFamily: 'var(--font-body), system-ui, sans-serif', color: fg, ...bgStyle,
+      fontFamily: 'var(--font-body), system-ui, sans-serif', color: c.fg, ...bgStyle,
       display: 'flex', flexDirection: 'column',
     }}>
-      {/* Foto de fondo + overlay */}
       {config.bg === 'foto' && config.photo && (
         <>
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -377,79 +628,14 @@ export function PostCard({ config }: { config: PostConfig }) {
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,.35) 0%, rgba(0,0,0,.25) 40%, rgba(0,0,0,.82) 100%)' }} />
         </>
       )}
-      {/* Acento esquina */}
-      <div style={{ position: 'absolute', top: 0, left: 0, width: 360, height: 14, background: config.bg === 'claro' ? RED : '#ffffff' }} />
 
-      {/* Contenido */}
-      <div style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', padding: '88px 84px' }}>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: 96 }}>
-          {config.logo !== 'none' ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={LOGO_SRC[config.logo]} alt="D'Mart Institute"
-              style={{ height: config.logo === 'icono' ? 100 : 72, width: 'auto', display: 'block' }} />
-          ) : <span />}
-          {config.handle ? <span style={{ fontSize: 30, color: dark ? 'rgba(255,255,255,0.9)' : '#5A5A5A', fontWeight: 600 }}>{config.handle}</span> : <span />}
-        </div>
-
-        {/* Kicker */}
-        {config.kicker ? (
-          <div style={{ marginTop: 64 }}>
-            <span style={{
-              display: 'inline-block', background: config.bg === 'claro' ? RED : '#ffffff',
-              color: config.bg === 'claro' ? '#fff' : RED, fontWeight: 800, fontSize: 30,
-              letterSpacing: 2, textTransform: 'uppercase', padding: '12px 26px', borderRadius: 999,
-            }}>{config.kicker}</span>
-          </div>
-        ) : null}
-
-        {/* Título */}
-        <h1 style={{ fontFamily: 'var(--font-display), system-ui, sans-serif', fontWeight: 700, fontSize: 92, lineHeight: 1.04, margin: '34px 0 0', color: fg }}>
-          {config.title}
-        </h1>
-
-        {/* Cuerpo o requisitos */}
-        {config.type === 'requisitos' ? (
-          <div style={{ marginTop: 44, display: 'flex', flexDirection: 'column', gap: 26 }}>
-            {config.reqs.map((r, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 22 }}>
-                <div style={{ flexShrink: 0, width: 52, height: 52, borderRadius: 999, background: config.bg === 'claro' ? RED : '#ffffff', color: config.bg === 'claro' ? '#fff' : RED, fontSize: 32, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✓</div>
-                <span style={{ fontSize: 38, lineHeight: 1.3, color: fg, fontWeight: 500 }}>{r}</span>
-              </div>
-            ))}
-          </div>
-        ) : config.body ? (
-          <p style={{ marginTop: 32, fontSize: 40, lineHeight: 1.4, color: sub, maxWidth: 820 }}>{config.body}</p>
-        ) : null}
-
-        {/* Chips */}
-        {config.chips.length > 0 && (
-          <div style={{ marginTop: 40, display: 'flex', flexWrap: 'wrap', gap: 16 }}>
-            {config.chips.map((c, i) => (
-              <span key={i} style={{ fontSize: 30, fontWeight: 700, padding: '14px 28px', borderRadius: 999, color: fg, border: `2px solid ${dark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.18)'}`, background: dark ? 'rgba(255,255,255,0.10)' : '#fff' }}>{c}</span>
-            ))}
-          </div>
-        )}
-
-        <div style={{ flex: 1 }} />
-
-        {/* CTA */}
-        {config.cta ? (
-          <div>
-            <span style={{
-              display: 'inline-block', background: config.bg === 'claro' ? RED : '#ffffff',
-              color: config.bg === 'claro' ? '#fff' : RED, fontFamily: 'var(--font-display), sans-serif',
-              fontWeight: 700, fontSize: 44, padding: '26px 56px', borderRadius: 999,
-            }}>{config.cta} →</span>
-          </div>
-        ) : null}
-
-        {/* Footer */}
-        <div style={{ marginTop: 56, paddingTop: 30, borderTop: `2px solid ${dark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.12)'}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: 32, fontWeight: 700, color: fg }}>{config.website}</span>
-          {config.campusPhone ? <span style={{ fontSize: 32, fontWeight: 700, color: dark ? '#fff' : RED }}>{config.campusPhone}</span> : <span />}
-        </div>
-      </div>
+      {template === 'centrado' ? <TplCentrado config={config} c={c} />
+        : template === 'banda' ? <TplBanda config={config} c={c} />
+        : template === 'editorial' ? <TplEditorial config={config} c={c} />
+        : template === 'minimal' ? <TplMinimal config={config} c={c} />
+        : template === 'marco' ? <TplMarco config={config} c={c} />
+        : template === 'lateral' ? <TplLateral config={config} c={c} />
+        : <TplClasico config={config} c={c} />}
     </div>
   )
 }

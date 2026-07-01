@@ -1,5 +1,5 @@
 import { STATIC_PROGRAMS, PRIVADOS_SABATINOS, STATIC_CAMPUSES } from '@/lib/utils'
-import type { PostConfig } from '@/components/portal/PostStudio'
+import type { PostConfig, PostTemplate } from '@/components/portal/PostStudio'
 
 // Un pedido de apoyo en redes hecho por un supervisor.
 export interface SocialItem {
@@ -14,6 +14,9 @@ export interface PostVariation {
   label: string
   config: PostConfig
 }
+
+type BgStyle = PostConfig['bg']
+type CopyKey = 'matriculas' | 'carrera' | 'cupos' | 'grupo' | 'fecha' | 'info'
 
 function fmtStart(d: string | null): string {
   if (!d) return 'Cupos abiertos'
@@ -33,7 +36,7 @@ function shortDesc(text: string | undefined, max = 150): string {
   return text.slice(0, max).replace(/\s+\S*$/, '') + '…'
 }
 
-// Genera varias opciones de post (mismas datos, distinto estilo/enfoque de copy).
+// Genera muchas opciones de post: plantilla × color × enfoque de copy.
 export function generateVariations(item: SocialItem, campusName: string): PostVariation[] {
   const isSabatino = item.kind === 'privado' || item.shift === 'sabatino'
   const reg = STATIC_PROGRAMS.find((p) => p.name === item.program)
@@ -50,83 +53,61 @@ export function generateVariations(item: SocialItem, campusName: string): PostVa
   const campus = STATIC_CAMPUSES.find((c) => c.name === campusName)
   const campusPhone = campus?.phone ?? STATIC_CAMPUSES[0].phone
 
-  const base: PostConfig = {
-    type: isSabatino ? 'sabatino' : 'programa',
-    bg: 'degradado',
+  const sectionChips = isSabatino ? (tag ? [tag] : []) : [section]
+  const infoChips = (isSabatino ? [] : [months, credits]).filter(Boolean) as string[]
+
+  const base: Omit<PostConfig, 'template' | 'bg' | 'logo' | 'kicker' | 'body' | 'chips' | 'cta' | 'type'> = {
     photo: null,
-    kicker: '',
     title: item.program,
-    body: desc,
-    chips: [],
     reqs: [],
-    cta: 'Matricúlate ya',
     campusPhone,
     handle: '@dmartinstitute',
     website: 'dmartpr.net',
-    logo: 'blanco',
   }
 
-  // Chips comunes (sección + comienzo) y extras según tipo.
-  const sectionChips = isSabatino ? (tag ? [tag] : []) : [section]
-  const infoChips = isSabatino ? [] : [months, credits].filter(Boolean) as string[]
+  // Presets de copy (kicker/cuerpo/chips/CTA/tipo).
+  function copy(key: CopyKey): Pick<PostConfig, 'type' | 'kicker' | 'body' | 'chips' | 'cta'> {
+    switch (key) {
+      case 'matriculas':
+        return { type: isSabatino ? 'sabatino' : 'programa', kicker: 'Matrículas Abiertas', body: desc, chips: [...sectionChips, startChip, ...infoChips.slice(0, 1)], cta: 'Matricúlate ya' }
+      case 'carrera':
+        return { type: isSabatino ? 'sabatino' : 'programa', kicker: section, body: isSabatino ? 'Aprende una destreza nueva.' : 'Tu nueva carrera empieza aquí.', chips: [startChip, ...infoChips.slice(0, 1)].filter(Boolean), cta: 'Inscríbete hoy' }
+      case 'cupos':
+        return { type: isSabatino ? 'sabatino' : 'programa', kicker: 'Cupos Limitados', body: desc, chips: [...sectionChips, startChip], cta: 'Reserva tu cupo' }
+      case 'grupo':
+        return { type: isSabatino ? 'sabatino' : 'programa', kicker: 'Nuevo Grupo', body: desc, chips: [...sectionChips, startChip], cta: 'Solicita información' }
+      case 'info':
+        return { type: isSabatino ? 'sabatino' : 'programa', kicker: 'Orientación', body: desc, chips: [...sectionChips, startChip], cta: 'Más información' }
+      case 'fecha':
+        return { type: 'evento', kicker: '¡Nuevo Comienzo!', body: `${section} · ${startChip}`, chips: [startChip], cta: 'Aparta tu cupo' }
+    }
+  }
 
-  const variations: PostVariation[] = [
-    {
-      id: 'v1',
-      label: 'Matrículas Abiertas',
-      config: {
-        ...base, bg: 'degradado', logo: 'blanco',
-        kicker: 'Matrículas Abiertas',
-        chips: [...sectionChips, startChip, ...infoChips.slice(0, 1)],
-        cta: 'Matricúlate ya',
-      },
-    },
-    {
-      id: 'v2',
-      label: 'Nueva Carrera',
-      config: {
-        ...base, bg: 'rojo', logo: 'blanco',
-        kicker: section,
-        body: 'Tu nueva carrera empieza aquí.',
-        chips: [startChip, ...infoChips.slice(0, 1)].filter(Boolean),
-        cta: 'Inscríbete hoy',
-      },
-    },
-    {
-      id: 'v3',
-      label: 'Cupos Limitados',
-      config: {
-        ...base, bg: 'negro', logo: 'blanco',
-        kicker: 'Cupos Limitados',
-        body: desc,
-        chips: [...sectionChips, startChip],
-        cta: 'Reserva tu cupo',
-      },
-    },
-    {
-      id: 'v4',
-      label: 'Estilo Claro',
-      config: {
-        ...base, bg: 'claro', logo: 'color',
-        kicker: 'Nuevo Grupo',
-        body: desc,
-        chips: [...sectionChips, startChip],
-        cta: 'Solicita información',
-      },
-    },
-    {
-      id: 'v5',
-      label: 'Enfoque en la Fecha',
-      config: {
-        ...base, type: 'evento', bg: 'degradado', logo: 'blanco',
-        kicker: '¡Nuevo Comienzo!',
-        title: item.program,
-        body: `${section} · ${startChip}`,
-        chips: [startChip],
-        cta: 'Aparta tu cupo',
-      },
-    },
+  const logoFor = (bg: BgStyle) => (bg === 'claro' ? 'color' : 'blanco') as PostConfig['logo']
+
+  // Recetas curadas: cada plantilla aparece con distintos colores/copys.
+  const recipes: { template: PostTemplate; bg: BgStyle; copy: CopyKey; label: string }[] = [
+    { template: 'clasico',   bg: 'degradado', copy: 'matriculas', label: 'Clásico · Degradado' },
+    { template: 'clasico',   bg: 'rojo',      copy: 'carrera',    label: 'Clásico · Rojo' },
+    { template: 'clasico',   bg: 'negro',     copy: 'fecha',      label: 'Clásico · Fecha' },
+    { template: 'centrado',  bg: 'negro',     copy: 'cupos',      label: 'Centrado · Negro' },
+    { template: 'centrado',  bg: 'claro',     copy: 'grupo',      label: 'Centrado · Claro' },
+    { template: 'centrado',  bg: 'rojo',      copy: 'fecha',      label: 'Centrado · Fecha' },
+    { template: 'banda',     bg: 'degradado', copy: 'matriculas', label: 'Banda · Degradado' },
+    { template: 'banda',     bg: 'negro',     copy: 'cupos',      label: 'Banda · Negro' },
+    { template: 'editorial', bg: 'negro',     copy: 'fecha',      label: 'Editorial · Fecha' },
+    { template: 'editorial', bg: 'rojo',      copy: 'carrera',    label: 'Editorial · Rojo' },
+    { template: 'minimal',   bg: 'claro',     copy: 'grupo',      label: 'Minimal · Claro' },
+    { template: 'minimal',   bg: 'degradado', copy: 'info',       label: 'Minimal · Oscuro' },
+    { template: 'marco',     bg: 'degradado', copy: 'matriculas', label: 'Marco · Degradado' },
+    { template: 'marco',     bg: 'rojo',      copy: 'cupos',      label: 'Marco · Rojo' },
+    { template: 'lateral',   bg: 'negro',     copy: 'carrera',    label: 'Lateral · Negro' },
+    { template: 'lateral',   bg: 'claro',     copy: 'info',       label: 'Lateral · Claro' },
   ]
 
-  return variations
+  return recipes.map((r, i) => ({
+    id: `v${i + 1}`,
+    label: r.label,
+    config: { ...base, template: r.template, bg: r.bg, logo: logoFor(r.bg), ...copy(r.copy) } as PostConfig,
+  }))
 }
