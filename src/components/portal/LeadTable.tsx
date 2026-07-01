@@ -25,6 +25,8 @@ interface LeadTableProps {
   sources?: string[]
   currentSource?: string
   teamMembers?: { id: string; full_name: string }[]
+  reps?: { id: string; full_name: string }[]
+  currentRep?: string
 }
 
 function formatDate(dateStr: string) {
@@ -52,7 +54,7 @@ function leadOrigin(lead: Lead): string {
   return lead.source ?? '—'
 }
 
-export default function LeadTable({ leads, staleLeadIds, followupLeadIds = [], employee, activities, sources = [], currentSource = '', teamMembers = [] }: LeadTableProps) {
+export default function LeadTable({ leads, staleLeadIds, followupLeadIds = [], employee, activities, sources = [], currentSource = '', teamMembers = [], reps = [], currentRep = '' }: LeadTableProps) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -168,6 +170,18 @@ export default function LeadTable({ leads, staleLeadIds, followupLeadIds = [], e
           >
             <option value="">Todos los orígenes</option>
             {sources.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+        )}
+
+        {reps.length > 0 && (
+          <select
+            value={currentRep}
+            onChange={(e) => updateFilter('rep', e.target.value)}
+            className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-accent-ring"
+          >
+            <option value="">Todos los representantes</option>
+            {reps.map((r) => <option key={r.id} value={r.id}>{r.full_name}</option>)}
+            <option value="none">Sin asignar</option>
           </select>
         )}
 

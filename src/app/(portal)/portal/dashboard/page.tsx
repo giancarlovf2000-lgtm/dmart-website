@@ -24,7 +24,7 @@ function getAdminClient() {
 }
 
 interface DashboardPageProps {
-  searchParams: { status?: string; campus?: string; source?: string; stale?: string; duplicates?: string; followup?: string }
+  searchParams: { status?: string; campus?: string; source?: string; rep?: string; stale?: string; duplicates?: string; followup?: string }
 }
 
 export default async function DashboardPage({ searchParams }: DashboardPageProps) {
@@ -63,6 +63,21 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     supervisedEmployees = (campusEmps ?? []) as { id: string; full_name: string }[]
   }
 
+  // Representantes disponibles para el filtro "por representante", acotados por recinto.
+  // Admin: todos los empleados asignables (ambos recintos). Resto: los de su(s) recinto(s),
+  // incluyéndose a sí mismo.
+  const ASSIGNABLE_ROLES = ['empleado', 'supervisor', 'director']
+  let repsQuery = adminClient
+    .from('employees')
+    .select('id, full_name')
+    .eq('active', true)
+    .in('role', ASSIGNABLE_ROLES)
+    .order('full_name', { ascending: true })
+  if (!isAdmin) repsQuery = repsQuery.overlaps('campus', employee.campus as string[])
+  const { data: campusRepsRaw } = await repsQuery
+  const campusReps = (campusRepsRaw ?? []) as { id: string; full_name: string }[]
+  const campusRepIds = new Set(campusReps.map((r) => r.id))
+
   // Filtro de recinto para las alertas: admin = todos; el resto = su(s) recinto(s).
   const campusFilter = isAdmin ? undefined : (employee.campus as string[])
 
@@ -76,6 +91,10 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const status        = searchParams.status
   const campus        = searchParams.campus
   const source        = searchParams.source
+  // Filtro por representante: 'none' = sin asignar; un uuid = ese empleado.
+  // Para no-admin, un uuid fuera de su recinto se ignora (coherencia del filtro).
+  const repParam      = searchParams.rep
+  const rep = repParam === 'none' || (repParam && (isAdmin || campusRepIds.has(repParam))) ? repParam : undefined
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function applyRoleFilter(query: any) {
@@ -93,6 +112,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   if (status)   leadsQuery = leadsQuery.eq('status', status)
   if (campus)   leadsQuery = leadsQuery.eq('campus', campus)
   if (source)   leadsQuery = leadsQuery.eq('source', source)
+  if (rep === 'none') leadsQuery = leadsQuery.is('assigned_to', null)
+  else if (rep)       leadsQuery = leadsQuery.eq('assigned_to', rep)
   if (showStale && staleLeadIds.length > 0) leadsQuery = leadsQuery.in('id', staleLeadIds)
   if (showStale && staleLeadIds.length === 0) leadsQuery = leadsQuery.eq('id', 'no-match')
   if (showFollowup && followupLeadIds.length > 0) leadsQuery = leadsQuery.in('id', followupLeadIds)
@@ -345,6 +366,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
               sources={sources}
               currentSource={source ?? ''}
               teamMembers={supervisedEmployees}
+              reps={campusReps}
+              currentRep={rep ?? ''}
             />
           </>
         )}
