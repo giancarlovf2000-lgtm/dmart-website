@@ -87,13 +87,14 @@ const emptyStudent = (): StudentInfo => ({
 
 function buildContractHtml(params: {
   program: ProgramKey
-  progPlan: 'complete' | 'deferred'
-  eqPlan: 'complete' | 'deferred' | 'student' | 'none'
+  progPlan: 'complete' | 'deferred' | null
+  eqPlan: 'complete' | 'deferred' | 'student' | 'none' | null
   student: StudentInfo
   prices: ReturnType<typeof calcPrices>
   employeeName: string
+  blank?: boolean
 }) {
-  const { program, progPlan, eqPlan, student, prices, employeeName } = params
+  const { program, progPlan, eqPlan, student, prices, employeeName, blank: isBlank = false } = params
   const progLabel = PROGRAMS[program].label
   const eq = PROGRAMS[program].equipCost
 
@@ -167,6 +168,7 @@ function buildContractHtml(params: {
 <h1>CONTRATO DE MATRÍCULA</h1>
 <p class="subtitle">Programas Privados Cortos — Sección de Educación Continua</p>
 <p class="subtitle">Fecha de generación: ${new Date().toLocaleDateString('es-PR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+${isBlank ? '<p class="subtitle" style="color:#b45309;font-weight:bold;">FORMULARIO EN BLANCO — Marque o circule las opciones deseadas y complete a mano</p>' : ''}
 
 <h2>INFORMACIÓN DEL ESTUDIANTE</h2>
 <table>
@@ -215,18 +217,18 @@ function buildContractHtml(params: {
 <h2>TABLA 6 — RESUMEN FINANCIERO FINAL</h2>
 <div class="no-break">
 <table>
-  <tr><td class="label">Programa seleccionado</td><td colspan="3">${progLabel} (Escenario #${prices.scenario})</td></tr>
+  <tr><td class="label">Programa seleccionado</td><td colspan="3">${isBlank ? progLabel : `${progLabel} (Escenario #${prices.scenario})`}</td></tr>
   <tr><td class="label">Cargo de admisión (no reembolsable, separado)</td><td colspan="3">$25.00</td></tr>
-  <tr><td class="label">Plan de pago del programa</td><td colspan="3">${progPlan === 'complete' ? 'Pago completo — $445.50' : 'Plan diferido — 11 cuotas de ≈$47.27/sem'}</td></tr>
-  <tr><td class="label">Tratamiento de equipo</td><td colspan="3">${eqPlan === 'complete' ? `Pago completo — ${eqCompleteLabel}` : eqPlan === 'deferred' ? `Plan diferido — depósito ${eqDepositLabel} (50% del kit + $20) + ${eqDeferredLabel}` : 'Estudiante aporta su propio equipo'}</td></tr>
-  <tr style="background:#fef9c3;"><td class="label"><strong>Pago inicial mínimo a cobrar HOY</strong></td><td colspan="3"><strong>${fmt(prices.initial)}</strong> (incluye cargo admisión de $25.00)</td></tr>
-  <tr><td class="label">Cuota semanal — Programa</td><td colspan="3">${prices.weeklyProg > 0 ? fmt(prices.weeklyProg) : '$0.00'}</td></tr>
-  <tr><td class="label">Cuota semanal — Equipo/materiales</td><td colspan="3">${prices.weeklyEq > 0 ? fmt(prices.weeklyEq) : '$0.00'}</td></tr>
-  <tr style="background:#f0fdf4;"><td class="label"><strong>Total cuota semanal</strong></td><td colspan="3"><strong>${prices.weeklyTotal > 0 ? fmt(prices.weeklyTotal) : '$0.00'}</strong></td></tr>
+  <tr><td class="label">Plan de pago del programa</td><td colspan="3">${isBlank ? blank('') : (progPlan === 'complete' ? 'Pago completo — $445.50' : 'Plan diferido — 11 cuotas de ≈$47.27/sem')}</td></tr>
+  <tr><td class="label">Tratamiento de equipo</td><td colspan="3">${isBlank ? blank('') : (eqPlan === 'complete' ? `Pago completo — ${eqCompleteLabel}` : eqPlan === 'deferred' ? `Plan diferido — depósito ${eqDepositLabel} (50% del kit + $20) + ${eqDeferredLabel}` : 'Estudiante aporta su propio equipo')}</td></tr>
+  <tr style="background:#fef9c3;"><td class="label"><strong>Pago inicial mínimo a cobrar HOY</strong></td><td colspan="3">${isBlank ? blank('') : `<strong>${fmt(prices.initial)}</strong> (incluye cargo admisión de $25.00)`}</td></tr>
+  <tr><td class="label">Cuota semanal — Programa</td><td colspan="3">${isBlank ? blank('') : (prices.weeklyProg > 0 ? fmt(prices.weeklyProg) : '$0.00')}</td></tr>
+  <tr><td class="label">Cuota semanal — Equipo/materiales</td><td colspan="3">${isBlank ? blank('') : (prices.weeklyEq > 0 ? fmt(prices.weeklyEq) : '$0.00')}</td></tr>
+  <tr style="background:#f0fdf4;"><td class="label"><strong>Total cuota semanal</strong></td><td colspan="3">${isBlank ? blank('') : `<strong>${prices.weeklyTotal > 0 ? fmt(prices.weeklyTotal) : '$0.00'}</strong>`}</td></tr>
   <tr><td class="label">Fecha del primer pago semanal</td><td colspan="3">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td></tr>
   <tr><td class="label">Fecha del último pago semanal</td><td colspan="3">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td></tr>
   <tr><td class="label">Nota de ajuste — último pago</td><td colspan="3">El último pago podrá ajustarse por redondeo, validado por la Oficina de Tesorería.</td></tr>
-  <tr style="background:#eff6ff;"><td class="label"><strong>Total estimado del contrato</strong></td><td colspan="3"><strong>${fmt(prices.totalContract)}</strong></td></tr>
+  <tr style="background:#eff6ff;"><td class="label"><strong>Total estimado del contrato</strong></td><td colspan="3">${isBlank ? blank('') : `<strong>${fmt(prices.totalContract)}</strong>`}</td></tr>
 </table>
 <p style="font-size:10px;color:#6b7280;margin:4px 0 12px;">Validado por Oficial de Tesorería: ${blank('')} &nbsp; Fecha: ${blank('')}</p>
 </div>
@@ -301,6 +303,7 @@ function ContratosPrivadosContent() {
   const [saveError, setSaveError] = useState('')
   const [contracts, setContracts] = useState<ContractRow[]>([])
   const [loadingContracts, setLoadingContracts] = useState(true)
+  const [blankProgram, setBlankProgram] = useState<ProgramKey>('caballeros')
 
   useEffect(() => {
     // Pre-fill from lead profile URL params
@@ -389,6 +392,21 @@ function ContratosPrivadosContent() {
     }
   }
 
+  // Imprimir un contrato EN BLANCO de un programa (copia física, sin guardar).
+  function printBlankContract(prog: ProgramKey) {
+    const refPrices = calcPrices(prog, 'deferred', PROGRAMS[prog].noEquipment ? 'none' : 'deferred')
+    const html = buildContractHtml({
+      program: prog, progPlan: null, eqPlan: null,
+      student: emptyStudent(), prices: refPrices, employeeName: '', blank: true,
+    })
+    const win = window.open('', '_blank')
+    if (win) {
+      win.document.write(html)
+      win.document.close()
+      setTimeout(() => win.print(), 600)
+    }
+  }
+
   // Reabrir un contrato del historial (HTML guardado).
   async function handleViewContract(id: string) {
     const res = await fetch(`/api/portal/private-contracts/${id}`)
@@ -431,6 +449,30 @@ function ContratosPrivadosContent() {
         </div>
 
         <div className="max-w-3xl mx-auto px-4 md:px-6 py-6 space-y-6">
+
+          {/* Contratos en blanco para imprimir (copias físicas, por si se cae el internet) */}
+          <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-5">
+            <div className="flex items-center gap-2 mb-1">
+              <Printer className="h-4 w-4 text-accent" />
+              <h2 className="text-sm font-bold text-gray-900">Contratos en blanco para imprimir</h2>
+            </div>
+            <p className="text-xs text-gray-500 mb-4">
+              Descarga un contrato en blanco por programa para tener copias físicas (por si se va el internet).
+              El estudiante marca o circula las opciones de pago y de materiales a mano.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <select value={blankProgram} onChange={(e) => setBlankProgram(e.target.value as ProgramKey)}
+                className="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-accent-ring">
+                {(Object.entries(PROGRAMS) as [ProgramKey, { label: string }][]).map(([key, prog]) => (
+                  <option key={key} value={key}>{prog.label}</option>
+                ))}
+              </select>
+              <button onClick={() => printBlankContract(blankProgram)}
+                className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-accent text-white text-sm font-semibold hover:bg-accent-hover transition-colors">
+                <Printer className="h-4 w-4" /> Descargar / Imprimir contrato en blanco
+              </button>
+            </div>
+          </div>
 
           {/* Step indicator */}
           <div className="flex items-center gap-0">
@@ -538,7 +580,7 @@ function ContratosPrivadosContent() {
                   <input className={inputCls} type="tel" value={student.emergencia_tel} onChange={(e) => setSI('emergencia_tel', e.target.value)} placeholder="(787) 000-0000" />
                 </div>
                 <div>
-                  <label className={labelCls}>Fecha de inicio <span className="text-red-500">*</span></label>
+                  <label className={labelCls}>Fecha de inicio <span className="text-gray-400 font-normal">(opcional)</span></label>
                   <input className={inputCls} type="date" value={student.fecha_inicio} onChange={(e) => setSI('fecha_inicio', e.target.value)} />
                 </div>
                 <div>
@@ -586,7 +628,7 @@ function ContratosPrivadosContent() {
                 </button>
                 <button
                   onClick={() => setStep(3)}
-                  disabled={!student.nombre.trim() || !student.telefono.trim() || !student.fecha_inicio}
+                  disabled={!student.nombre.trim() || !student.telefono.trim()}
                   className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-ink text-white text-sm font-semibold hover:bg-black disabled:opacity-40 transition-colors"
                 >
                   Continuar <ChevronRight className="h-4 w-4" />
