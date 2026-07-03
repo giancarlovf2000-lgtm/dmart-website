@@ -6,7 +6,9 @@ import { AlertTriangle, Plus, ChevronRight, Filter, Trash2, Search, CalendarCloc
 import LeadStatusBadge from './LeadStatusBadge'
 import AddLeadModal from './AddLeadModal'
 import type { Lead, Activity, LeadStatus, Employee } from '@/lib/types'
-import { formatPhone } from '@/lib/utils'
+import { formatPhone, ALL_PROGRAMS } from '@/lib/utils'
+
+const HORARIOS = ['Diurno', 'Nocturno', 'Sabatino']
 
 const ALL_STATUSES: LeadStatus[] = [
   'Nuevo Lead', 'Crítico', 'Contacto Inicial (Pendiente de Respuesta)',
@@ -76,6 +78,10 @@ export default function LeadTable({ leads, staleLeadIds, followupLeadIds = [], e
 
   const currentStatus = searchParams.get('status') ?? ''
   const currentCampus = searchParams.get('campus') ?? ''
+  const currentProgram = searchParams.get('programa') ?? ''
+  const currentHorario = searchParams.get('horario') ?? ''
+  const currentDateFrom = searchParams.get('date_from') ?? ''
+  const currentDateTo = searchParams.get('date_to') ?? ''
 
   const filteredLeads = searchName.trim()
     ? leads.filter((l) =>
@@ -184,6 +190,45 @@ export default function LeadTable({ leads, staleLeadIds, followupLeadIds = [], e
             <option value="none">Sin asignar</option>
           </select>
         )}
+
+        <select
+          value={currentProgram}
+          onChange={(e) => updateFilter('programa', e.target.value)}
+          className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-accent-ring max-w-[200px]"
+        >
+          <option value="">Todos los programas</option>
+          {ALL_PROGRAMS.map((p) => <option key={p} value={p}>{p}</option>)}
+        </select>
+
+        <select
+          value={currentHorario}
+          onChange={(e) => updateFilter('horario', e.target.value)}
+          className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-accent-ring"
+        >
+          <option value="">Todos los horarios</option>
+          {HORARIOS.map((h) => <option key={h} value={h}>{h}</option>)}
+        </select>
+
+        <div className="flex items-center gap-1.5 text-sm text-gray-600">
+          <span className="text-xs text-gray-400">Fecha:</span>
+          <input
+            type="date"
+            value={currentDateFrom}
+            max={currentDateTo || undefined}
+            onChange={(e) => updateFilter('date_from', e.target.value)}
+            title="Desde"
+            className="text-sm border border-gray-200 rounded-lg px-2 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-accent-ring"
+          />
+          <span className="text-gray-400">–</span>
+          <input
+            type="date"
+            value={currentDateTo}
+            min={currentDateFrom || undefined}
+            onChange={(e) => updateFilter('date_to', e.target.value)}
+            title="Hasta"
+            className="text-sm border border-gray-200 rounded-lg px-2 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-accent-ring"
+          />
+        </div>
 
         <div className="flex-1" />
 

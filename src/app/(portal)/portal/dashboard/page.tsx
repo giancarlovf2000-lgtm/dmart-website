@@ -24,7 +24,7 @@ function getAdminClient() {
 }
 
 interface DashboardPageProps {
-  searchParams: { status?: string; campus?: string; source?: string; rep?: string; stale?: string; duplicates?: string; followup?: string }
+  searchParams: { status?: string; campus?: string; source?: string; rep?: string; programa?: string; horario?: string; date_from?: string; date_to?: string; stale?: string; duplicates?: string; followup?: string }
 }
 
 export default async function DashboardPage({ searchParams }: DashboardPageProps) {
@@ -95,6 +95,11 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   // Para no-admin, un uuid fuera de su recinto se ignora (coherencia del filtro).
   const repParam      = searchParams.rep
   const rep = repParam === 'none' || (repParam && (isAdmin || campusRepIds.has(repParam))) ? repParam : undefined
+  const programa      = searchParams.programa
+  const horario       = searchParams.horario
+  const dateRe        = /^\d{4}-\d{2}-\d{2}$/
+  const dateFrom      = searchParams.date_from && dateRe.test(searchParams.date_from) ? searchParams.date_from : undefined
+  const dateTo        = searchParams.date_to && dateRe.test(searchParams.date_to) ? searchParams.date_to : undefined
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function applyRoleFilter(query: any) {
@@ -114,6 +119,10 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   if (source)   leadsQuery = leadsQuery.eq('source', source)
   if (rep === 'none') leadsQuery = leadsQuery.is('assigned_to', null)
   else if (rep)       leadsQuery = leadsQuery.eq('assigned_to', rep)
+  if (programa) leadsQuery = leadsQuery.eq('programa_interes', programa)
+  if (horario)  leadsQuery = leadsQuery.eq('horario', horario)
+  if (dateFrom) leadsQuery = leadsQuery.gte('created_at', `${dateFrom}T00:00:00`)
+  if (dateTo)   leadsQuery = leadsQuery.lte('created_at', `${dateTo}T23:59:59`)
   if (showStale && staleLeadIds.length > 0) leadsQuery = leadsQuery.in('id', staleLeadIds)
   if (showStale && staleLeadIds.length === 0) leadsQuery = leadsQuery.eq('id', 'no-match')
   if (showFollowup && followupLeadIds.length > 0) leadsQuery = leadsQuery.in('id', followupLeadIds)
