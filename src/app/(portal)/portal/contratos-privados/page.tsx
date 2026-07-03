@@ -130,7 +130,7 @@ function buildContractHtml(params: {
   <li style="margin-bottom:6px;"><strong>Autorización para Recopilación de Datos.</strong> El estudiante autoriza a la institución a recopilar, mantener y procesar información personal y académica necesaria para administrar la matrícula, cumplir con obligaciones contractuales y cumplir con los requisitos regulatorios aplicables en Puerto Rico.</li>
   <li style="margin-bottom:6px;"><strong>Ley Aplicable.</strong> Este Contrato se rige e interpreta conforme a las leyes de Puerto Rico. Cualquier controversia se ventilará en los tribunales competentes de Puerto Rico, sin perjuicio de los derechos del estudiante reconocidos por la legislación aplicable.</li>
   <li style="margin-bottom:6px;"><strong>Separabilidad.</strong> Si alguna disposición de este Contrato fuera declarada nula, ilegal o inaplicable por un foro competente, las demás disposiciones permanecerán en plena vigencia y efecto.</li>
-  <li style="margin-bottom:6px;"><strong>Validación de Calculadora/Dashboard.</strong> Los cálculos finales en las Tablas 1 al 6 deben coincidir con la calculadora/dashboard de admisiones institucional y ser validados por la Oficina de Tesorería antes de la firma del estudiante. En caso de discrepancia, prevalecen los montos validados por Tesorería.</li>
+  <li style="margin-bottom:6px;"><strong>Validación de Calculadora/Dashboard.</strong> Los cálculos finales en las Tablas 1 al 4 deben coincidir con la calculadora/dashboard de admisiones institucional y ser validados por la Oficina de Tesorería antes de la firma del estudiante. En caso de discrepancia, prevalecen los montos validados por Tesorería.</li>
   <li style="margin-bottom:6px;"><strong>Acuerdo Completo.</strong> Este Contrato con sus apéndices, políticas institucionales incorporadas o reglamentos firmados por las partes constituye el acuerdo completo. Cualquier enmienda deberá constar por escrito y ser firmada por ambas partes.</li>
 </ol>`
 
@@ -194,7 +194,7 @@ ${isBlank ? '<p class="subtitle" style="color:#b45309;font-weight:bold;">FORMULA
   </tbody>
 </table>
 
-<h2>TABLA 3 — PLAN DE PAGO DEL PROGRAMA</h2>
+<h2>TABLA 2 — PLAN DE PAGO DEL PROGRAMA</h2>
 <table>
   <thead><tr><th>Sel.</th><th>Plan</th><th>Total</th><th>Cuota Semanal</th></tr></thead>
   <tbody>
@@ -203,7 +203,7 @@ ${isBlank ? '<p class="subtitle" style="color:#b45309;font-weight:bold;">FORMULA
   </tbody>
 </table>
 
-<h2>TABLA 4 — TRATAMIENTO DE EQUIPO / MATERIALES / KIT</h2>
+<h2>TABLA 3 — TRATAMIENTO DE EQUIPO / MATERIALES / KIT</h2>
 <table>
   <thead><tr><th>Sel.</th><th>Opción</th><th>Monto</th><th>Cuota Semanal</th></tr></thead>
   <tbody>
@@ -214,7 +214,7 @@ ${isBlank ? '<p class="subtitle" style="color:#b45309;font-weight:bold;">FORMULA
   </tbody>
 </table>
 
-<h2>TABLA 6 — RESUMEN FINANCIERO FINAL</h2>
+<h2>TABLA 4 — RESUMEN FINANCIERO FINAL</h2>
 <div class="no-break">
 <table>
   <tr><td class="label">Programa seleccionado</td><td colspan="3">${isBlank ? progLabel : `${progLabel} (Escenario #${prices.scenario})`}</td></tr>
