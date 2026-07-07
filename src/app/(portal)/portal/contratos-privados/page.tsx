@@ -8,13 +8,35 @@ import type { Employee } from '@/lib/types'
 
 // ─── Business constants ──────────────────────────────────────────────────────
 
-const PROGRAMS = {
+type ProgramKey = 'caballeros' | 'damas' | 'unas' | 'facturacion' | 'pestanas'
+interface ProgramDef {
+  label: string
+  equipCost: number
+  noEquipment: boolean
+  materials?: { name: string; price: number }[]  // desglose itemizado (precios ya con +20%)
+}
+
+// Materiales de Aplicación de Pestañas — precios de mercado + 20%.
+const PESTANAS_MATERIALS: { name: string; price: number }[] = [
+  { name: 'Cinta hipoalergénica',                 price: 9.60 },
+  { name: 'Pinza curvada y pinza recta',          price: 12.00 },
+  { name: 'Removedor de proteínas de pestañas',   price: 12.00 },
+  { name: 'Limpiador de pestañas',                price: 15.59 },
+  { name: 'Piedra de jade (para pestañas)',       price: 7.20 },
+  { name: 'Pegamento para pestañas',              price: 9.60 },
+  { name: 'Pestañas (cajita)',                    price: 24.00 },
+  { name: 'Removedor de pestañas',                price: 16.79 },
+  { name: 'Cepillo tipo máscara',                 price: 12.00 },
+]
+const PESTANAS_TOTAL = PESTANAS_MATERIALS.reduce((s, m) => s + m.price, 0)  // 118.78
+
+const PROGRAMS: Record<ProgramKey, ProgramDef> = {
   caballeros:  { label: 'Corte y Estilo Caballeros',   equipCost: 110, noEquipment: false },
   damas:       { label: 'Corte y Estilo Damas',         equipCost: 80,  noEquipment: false },
   unas:        { label: 'Técnica de Uñas',              equipCost: 40,  noEquipment: false },
   facturacion: { label: 'Facturación a Planes Médicos', equipCost: 0,   noEquipment: true  },
-} as const
-type ProgramKey = keyof typeof PROGRAMS
+  pestanas:    { label: 'Aplicación de Pestañas',       equipCost: PESTANAS_TOTAL, noEquipment: false, materials: PESTANAS_MATERIALS },
+}
 
 const PROGRAM_COST        = 495
 const ADMISSION           = 25
@@ -97,6 +119,7 @@ function buildContractHtml(params: {
   const { program, progPlan, eqPlan, student, prices, employeeName, blank: isBlank = false } = params
   const progLabel = PROGRAMS[program].label
   const eq = PROGRAMS[program].equipCost
+  const materials = PROGRAMS[program].materials
 
   const check = (cond: boolean) => cond ? '☑' : '☐'
   const blank = (label: string) => `<span style="border-bottom:1px solid #000;display:inline-block;min-width:180px;">&nbsp;${label}&nbsp;</span>`
@@ -114,8 +137,8 @@ function buildContractHtml(params: {
   <li style="margin-bottom:6px;"><strong>Descuento por Pago Completo del Programa.</strong> El estudiante que pague el costo completo del programa antes del inicio oficial o en el primer día de clases podrá recibir un descuento promocional del 10%. Total con descuento: $445.50. El cargo de admisión de $25.00 se cobra por separado al inicio y no se acredita a este total.</li>
   <li style="margin-bottom:6px;"><strong>Cargo de Admisión.</strong> El cargo de admisión de $25.00 es no reembolsable, se cobra por separado al inicio en todos los escenarios, NO se acredita al costo del programa, no reduce el monto a financiar y no se distribuye dentro de los 11 pagos semanales.</li>
   <li style="margin-bottom:6px;"><strong>Independencia de Planes de Pago del Programa y Equipo.</strong> La selección del plan de pago del programa es independiente de la selección del equipo/materiales/kit. El pago completo del programa no obliga el pago completo del equipo, y viceversa. El descuento del 10% aplica solo al componente pagado en su totalidad antes del inicio.</li>
-  <li style="margin-bottom:6px;"><strong>Costos Base y Descuento por Pago Completo de Equipo/Materiales/Kit.</strong> Costos base: Corte y Estilo Caballeros $110.00, Corte y Estilo Damas $80.00, Técnica de Uñas $40.00. El pago completo antes del inicio oficial recibe descuento del 10%: Caballeros $99.00, Damas $72.00, Uñas $36.00.</li>
-  <li style="margin-bottom:6px;"><strong>Plan de Pago Diferido de Equipo.</strong> El estudiante que utilice el plan diferido de equipo paga al inicio un depósito equivalente al 50% del costo del kit más $20.00 de cargo administrativo, y financia el 50% restante del kit en 11 pagos semanales sin descuento. Valores referenciales — Caballeros: depósito $75.00 y ≈$5.00/sem; Damas: depósito $60.00 y ≈$3.64/sem; Uñas: depósito $40.00 y ≈$1.82/sem.</li>
+  <li style="margin-bottom:6px;"><strong>Costos Base y Descuento por Pago Completo de Equipo/Materiales/Kit.</strong> Costos base: Corte y Estilo Caballeros $110.00, Corte y Estilo Damas $80.00, Técnica de Uñas $40.00, Aplicación de Pestañas $118.78. El pago completo antes del inicio oficial recibe descuento del 10%: Caballeros $99.00, Damas $72.00, Uñas $36.00, Pestañas $106.90.</li>
+  <li style="margin-bottom:6px;"><strong>Plan de Pago Diferido de Equipo.</strong> El estudiante que utilice el plan diferido de equipo paga al inicio un depósito equivalente al 50% del costo del kit más $20.00 de cargo administrativo, y financia el 50% restante del kit en 11 pagos semanales sin descuento. Valores referenciales — Caballeros: depósito $75.00 y ≈$5.00/sem; Damas: depósito $60.00 y ≈$3.64/sem; Uñas: depósito $40.00 y ≈$1.82/sem; Pestañas: depósito $79.39 y ≈$5.40/sem.</li>
   <li style="margin-bottom:6px;"><strong>Cargo Administrativo del Plan Diferido de Equipo.</strong> El cargo de $20.00 aplica solo cuando el estudiante selecciona el plan diferido de equipo y se cobra dentro del depósito inicial. Si paga el equipo completamente antes del inicio: aplica el 10% de descuento y NO aplica el cargo administrativo ni el depósito. El equipo diferido no recibe descuento.</li>
   <li style="margin-bottom:6px;"><strong>Opción de Equipo Aportado por el Estudiante.</strong> El estudiante puede aportar o adquirir el equipo, materiales o kit fuera de la institución. En tal caso no aplican cargos por el componente de equipo. La equivalencia técnica debe ser validada por el Academic Officer de la institución antes del inicio del programa.</li>
   <li style="margin-bottom:6px;"><strong>No Reembolsabilidad del Equipo Adquirido.</strong> El equipo, materiales o kits educativos adquiridos a través de la institución no son reembolsables una vez entregados.</li>
@@ -204,6 +227,16 @@ ${isBlank ? '<p class="subtitle" style="color:#b45309;font-weight:bold;">FORMULA
 </table>
 
 <h2>TABLA 3 — TRATAMIENTO DE EQUIPO / MATERIALES / KIT</h2>
+${materials ? `
+<table>
+  <thead><tr><th>Material incluido</th><th>Precio</th></tr></thead>
+  <tbody>
+    ${materials.map((m) => `<tr><td>${m.name}</td><td>${fmt(m.price)}</td></tr>`).join('')}
+    <tr><td class="label"><strong>Subtotal de materiales (kit)</strong></td><td><strong>${fmt(eq)}</strong></td></tr>
+  </tbody>
+</table>
+<p style="font-size:10px;color:#6b7280;margin:2px 0 12px;">Los precios de los materiales están sujetos a cambios según el mercado.</p>
+` : ''}
 <table>
   <thead><tr><th>Sel.</th><th>Opción</th><th>Monto</th><th>Cuota Semanal</th></tr></thead>
   <tbody>
@@ -286,6 +319,7 @@ const PROGRAM_LABELS: Record<string, string> = {
   damas:       'Corte y Estilo Damas',
   unas:        'Técnica de Uñas',
   facturacion: 'Facturación a Planes Médicos',
+  pestanas:    'Aplicación de Pestañas',
 }
 
 // ─── Main component ──────────────────────────────────────────────────────────
@@ -515,7 +549,7 @@ function ContratosPrivadosContent() {
                           <span>Programa: <span className="font-medium">$495.00</span></span>
                           {prog.noEquipment
                             ? <span className="text-gray-400 italic">Sin equipo institucional</span>
-                            : <span>Equipo: <span className="font-medium">${prog.equipCost}.00</span></span>
+                            : <span>Equipo: <span className="font-medium">{fmt(prog.equipCost)}</span></span>
                           }
                         </div>
                       </div>
@@ -670,7 +704,20 @@ function ContratosPrivadosContent() {
               {!PROGRAMS[program].noEquipment ? (
                 <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-6">
                   <h2 className="text-sm font-bold text-gray-900 mb-1">Sección B — Equipo / Materiales / Kit</h2>
-                  <p className="text-xs text-gray-400 mb-4">Costo base del equipo para {PROGRAMS[program].label}: ${PROGRAMS[program].equipCost}.00</p>
+                  <p className="text-xs text-gray-400 mb-4">Costo base del equipo para {PROGRAMS[program].label}: {fmt(PROGRAMS[program].equipCost)}</p>
+                  {PROGRAMS[program].materials && (
+                    <div className="mb-4 rounded-xl border border-gray-100 bg-gray-50 p-3">
+                      <p className="text-xs font-semibold text-gray-600 mb-2">Materiales incluidos</p>
+                      <div className="space-y-1">
+                        {PROGRAMS[program].materials!.map((m) => (
+                          <div key={m.name} className="flex justify-between text-xs text-gray-600">
+                            <span>{m.name}</span><span className="font-medium">{fmt(m.price)}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-[11px] text-gray-400 mt-2">Precios sujetos a cambios según el mercado.</p>
+                    </div>
+                  )}
                   <div className="space-y-3">
                     {([
                       { key: 'complete' as const, title: 'Pago Completo de Equipo', desc: `${fmt(PROGRAMS[program].equipCost * (1 - DISCOUNT))} (10% desc.) · Un solo pago antes o al inicio del programa` },
