@@ -2,9 +2,15 @@
 
 import { useMemo, useRef, useState } from 'react'
 import * as htmlToImage from 'html-to-image'
-import { ChevronLeft, ChevronRight, Copy, Download, Image as ImageIcon, Layers, Plus, Save, Trash2, Upload, X } from 'lucide-react'
+import {
+  ChevronLeft, ChevronRight, Copy, Download, Image as ImageIcon, Layers, Plus, Save, Trash2, Upload, X,
+  // Iconos decorativos que se renderizan DENTRO de la tarjeta (exportan bien a PNG).
+  Sparkles, Heart, HeartPulse, Briefcase, Wrench, Scissors, Hand, Crown, Award, Zap, Car, Snowflake, Thermometer,
+  FileText, Coffee, MessageCircle, Flower2, Wine, GraduationCap, Monitor, Clock, Hourglass, Sun, Moon,
+  CalendarDays, Check, ArrowUpRight, type LucideIcon,
+} from 'lucide-react'
 import { STATIC_PROGRAMS, PRIVADOS_SABATINOS, STATIC_CATEGORIES, STATIC_CAMPUSES } from '@/lib/utils'
-import { buildCarousel } from '@/lib/posts/templates'
+import { buildCarousel, accentIconFor } from '@/lib/posts/templates'
 
 // ── Constantes de marca ──────────────────────────────────────────────────────
 const RED = '#D40000'
@@ -20,7 +26,15 @@ const ADMISSION_REQS = [
 type PostType = 'programa' | 'sabatino' | 'requisitos' | 'evento'
 type BgStyle = 'rojo' | 'negro' | 'claro' | 'degradado' | 'foto'
 type LogoKind = 'blanco' | 'color' | 'icono' | 'none'
-export type PostTemplate = 'clasico' | 'centrado' | 'banda' | 'editorial' | 'minimal' | 'marco' | 'lateral'
+// Set premium (nuevo) + plantillas legacy (se conservan solo para render de posts guardados).
+export type PostTemplate =
+  | 'titular' | 'enfoque' | 'pregunta' | 'destacado' | 'lista'
+  | 'clasico' | 'centrado' | 'banda' | 'editorial' | 'minimal' | 'marco' | 'lateral'
+
+// Plantillas que se ofrecen en el selector del editor (las nuevas premium).
+const TEMPLATE_OPTIONS: [PostTemplate, string][] = [
+  ['titular', 'Titular'], ['enfoque', 'Enfoque'], ['pregunta', 'Pregunta'], ['destacado', 'Destacado'], ['lista', 'Lista'],
+]
 
 const LOGO_SRC: Record<Exclude<LogoKind, 'none'>, string> = {
   blanco: '/logo-dmart-blanco.png',
@@ -44,7 +58,13 @@ export interface PostConfig {
   website: string
   logo: LogoKind
   logoScale?: number
+  // Diseño premium: color de acento (por área), icono temático (lucide) y micro-etiquetas superiores.
+  accent?: string
+  icon?: string
+  topLabels?: string[]
 }
+
+const DEFAULT_TOP_LABELS = ['Educa', 'Crece', 'Transfórmate']
 
 // Reduce el tamaño de letra del cuerpo según cuánto texto haya, para que quepa
 // en la tarjeta de altura fija sin cortarse.
@@ -67,29 +87,33 @@ const CAMPUS_OPTIONS = [
 function defaultsFor(type: PostType): Partial<PostConfig> {
   if (type === 'programa') {
     const p = STATIC_PROGRAMS[0]
+    const { accent, icon } = accentIconFor(p.name)
     return {
-      kicker: 'Programa',
+      kicker: 'Matrículas Abiertas',
       title: p.name,
       body: p.description,
       chips: [`${p.duration_months} meses`, `${p.credits} créditos`, p.schedule_options.join(' · ')],
       cta: 'Matricúlate ya',
+      accent, icon,
     }
   }
   if (type === 'sabatino') {
     const s = PRIVADOS_SABATINOS[0]
-    return { kicker: 'Curso Sabatino Corto', title: s.title, body: s.description, chips: [s.tag], cta: 'Cupos limitados' }
+    const { accent, icon } = accentIconFor(s.title)
+    return { kicker: 'Curso Sabatino Corto', title: s.title, body: s.description, chips: [s.tag], cta: 'Cupos limitados', accent, icon }
   }
   if (type === 'requisitos') {
-    return { kicker: 'Admisiones', title: 'Requisitos de Admisión', body: '', chips: [], reqs: ADMISSION_REQS, cta: 'Solicita información' }
+    return { kicker: 'Requisitos de Admisión', title: 'Requisitos', body: '', chips: [], reqs: ADMISSION_REQS, cta: 'Solicita información', accent: RED, icon: 'GraduationCap' }
   }
-  return { kicker: 'D\'Mart Institute', title: 'Tu carrera empieza aquí', body: 'Matrículas abiertas en nuestros recintos de Barranquitas y Vega Alta.', chips: [], cta: 'Inscríbete hoy' }
+  return { kicker: 'D\'Mart Institute', title: 'Tu carrera **empieza** aquí', body: 'Matrículas abiertas en nuestros recintos de Barranquitas y Vega Alta.', chips: [], cta: 'Inscríbete hoy', accent: RED, icon: 'GraduationCap' }
 }
 
 export function initialConfig(): PostConfig {
   return {
-    type: 'programa', template: 'clasico', bg: 'degradado', photo: null,
+    type: 'programa', template: 'enfoque', bg: 'degradado', photo: null,
     kicker: '', title: '', body: '', chips: [], reqs: [], cta: '',
     campusPhone: STATIC_CAMPUSES[0].phone, handle: '@dmartinstitute', website: 'dmartpr.net', logo: 'blanco', logoScale: 1,
+    topLabels: DEFAULT_TOP_LABELS,
     ...defaultsFor('programa'),
   } as PostConfig
 }
@@ -141,17 +165,20 @@ export default function PostStudio({ onSave, onClear, saving = false, initial, v
   function selectProgram(slug: string) {
     const p = STATIC_PROGRAMS.find((x) => x.slug === slug)
     if (!p) return
+    const { accent, icon } = accentIconFor(p.name)
     set({
       title: p.name,
       body: p.description,
       chips: [`${p.duration_months} meses`, `${p.credits} créditos`, p.schedule_options.join(' · ')],
+      accent, icon,
     })
   }
 
   function selectSabatino(id: string) {
     const s = PRIVADOS_SABATINOS.find((x) => String(x.id) === id)
     if (!s) return
-    set({ title: s.title, body: s.description, chips: [s.tag] })
+    const { accent, icon } = accentIconFor(s.title)
+    set({ title: s.title, body: s.description, chips: [s.tag], accent, icon })
   }
 
   function onPhoto(e: React.ChangeEvent<HTMLInputElement>) {
@@ -257,6 +284,7 @@ export default function PostStudio({ onSave, onClear, saving = false, initial, v
         <div>
           <label className={labelCls}>Título</label>
           <input className={inputCls} value={config.title} onChange={(e) => set({ title: e.target.value })} />
+          <p className="text-[11px] text-gray-400 mt-1">Envuelve una palabra en **asteriscos** para resaltarla en el color de acento.</p>
         </div>
         {config.type !== 'requisitos' && (
           <div>
@@ -285,16 +313,21 @@ export default function PostStudio({ onSave, onClear, saving = false, initial, v
         <div>
           <label className={labelCls}>Diseño</label>
           <div className="flex flex-wrap gap-2">
-            {([
-              ['clasico', 'Clásico'], ['centrado', 'Centrado'], ['banda', 'Banda'], ['editorial', 'Editorial'],
-              ['minimal', 'Minimal'], ['marco', 'Marco'], ['lateral', 'Lateral'],
-            ] as [PostTemplate, string][]).map(([k, l]) => (
+            {TEMPLATE_OPTIONS.map(([k, l]) => (
               <button key={k} onClick={() => set({ template: k })}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${(config.template ?? 'clasico') === k ? 'bg-accent text-white border-accent' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${(config.template ?? 'enfoque') === k ? 'bg-accent text-white border-accent' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
                 {l}
               </button>
             ))}
           </div>
+        </div>
+
+        {/* Etiquetas superiores */}
+        <div>
+          <label className={labelCls}>Etiquetas superiores (3, separadas por coma)</label>
+          <input className={inputCls}
+            value={(config.topLabels ?? DEFAULT_TOP_LABELS).join(', ')}
+            onChange={(e) => set({ topLabels: e.target.value.split(',').map((s) => s.trim()).filter(Boolean).slice(0, 3) })} />
         </div>
 
         {/* Fondo */}
@@ -414,6 +447,132 @@ const DISPLAY_FONT = 'var(--font-display), system-ui, sans-serif'
 interface Colors {
   dark: boolean; fg: string; sub: string
   pillBg: string; pillFg: string; borderCol: string; chipBorder: string; chipBg: string
+  accent: string
+}
+
+// ── Sistema de diseño premium (iconos, watermark, énfasis, badges) ────────────
+const ICON_MAP: Record<string, LucideIcon> = {
+  Sparkles, Heart, HeartPulse, Briefcase, Wrench, Scissors, Hand, Crown, Award, Zap, Car, Snowflake,
+  Thermometer, FileText, Coffee, MessageCircle, Flower2, Wine, GraduationCap, Monitor,
+}
+function iconCmp(name?: string): LucideIcon {
+  return (name && ICON_MAP[name]) || GraduationCap
+}
+
+// ¿El color es tan oscuro que se pierde sobre fondo oscuro? (p. ej. #111111 de Comercial)
+function isDarkColor(hex: string): boolean {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex)
+  if (!m) return false
+  const n = parseInt(m[1], 16)
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255
+  return 0.299 * r + 0.587 * g + 0.114 * b < 70
+}
+
+// Icono para un chip según su contenido (11 meses → Clock, 39 créditos → Award, …).
+function chipIcon(text: string): LucideIcon {
+  const t = text.toLowerCase()
+  if (t.includes('mes')) return Clock
+  if (t.includes('crédito') || t.includes('credito')) return Award
+  if (t.includes('hora')) return Hourglass
+  if (t.includes('diurn')) return Sun
+  if (t.includes('nocturn')) return Moon
+  if (t.includes('sabatin') || t.includes('comienza') || t.includes('inicia') || t.includes('cupos')) return CalendarDays
+  return Check
+}
+
+// Divide un chip "11 meses" → { value: '11', label: 'meses' } para las stat cards.
+function parseStat(chip: string): { Icon: LucideIcon; value: string; label: string } {
+  const Icon = chipIcon(chip)
+  const m = chip.match(/^\s*([\d.,]+)\s*(.+)$/)
+  if (m) return { Icon, value: m[1], label: m[2] }
+  return { Icon, value: chip, label: '' }
+}
+
+// Resalta segmentos marcados con **doble asterisco** en color de acento.
+function EmphText({ text, accent }: { text: string; accent: string }) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g)
+  return (
+    <>
+      {parts.map((p, i) =>
+        p.startsWith('**') && p.endsWith('**')
+          ? <span key={i} style={{ color: accent }}>{p.slice(2, -2)}</span>
+          : <span key={i}>{p}</span>,
+      )}
+    </>
+  )
+}
+
+function Headline({ config, c, size, align = 'left' }: { config: PostConfig; c: Colors; size: number; align?: 'left' | 'center' }) {
+  return (
+    <h1 style={{ fontFamily: DISPLAY_FONT, fontWeight: 700, fontSize: size, lineHeight: 1.0, margin: 0, color: c.fg, textAlign: align, letterSpacing: -1 }}>
+      <EmphText text={config.title} accent={c.accent} />
+    </h1>
+  )
+}
+
+// Texto de marca gigante y tenue detrás del contenido.
+function BrandWatermark({ text, c, top = 120 }: { text: string; c: Colors; top?: number }) {
+  if (!text) return null
+  return (
+    <div aria-hidden style={{ position: 'absolute', top, left: -30, right: -30, pointerEvents: 'none', overflow: 'hidden' }}>
+      <div style={{ fontFamily: DISPLAY_FONT, fontWeight: 700, fontSize: 300, lineHeight: 0.9, letterSpacing: -6, whiteSpace: 'nowrap', textTransform: 'uppercase', color: c.dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)' }}>{text}</div>
+    </div>
+  )
+}
+
+// Fila de 3 micro-etiquetas (SMART · SECURE · SIMPLE → EDUCA · CRECE · TRANSFÓRMATE).
+function TopLabels({ config, c }: { config: PostConfig; c: Colors }) {
+  const ls = (config.topLabels && config.topLabels.length ? config.topLabels : DEFAULT_TOP_LABELS).slice(0, 3)
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+      {ls.map((l, i) => (
+        <span key={i} style={{ fontSize: 24, fontWeight: 700, letterSpacing: 4, textTransform: 'uppercase', color: c.dark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.42)' }}>{l}</span>
+      ))}
+    </div>
+  )
+}
+
+// Panel translúcido con icono + label + valor grande.
+function StatCard({ Icon, value, label, c }: { Icon: LucideIcon; value: string; label: string; c: Colors }) {
+  return (
+    <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 22, background: c.dark ? 'rgba(255,255,255,0.06)' : '#ffffff', border: `2px solid ${c.dark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)'}`, borderRadius: 26, padding: '26px 30px' }}>
+      <div style={{ width: 82, height: 82, borderRadius: 20, background: c.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <Icon size={44} color="#ffffff" strokeWidth={2.4} />
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+        <span style={{ fontFamily: DISPLAY_FONT, fontSize: value.length > 10 ? 34 : 50, fontWeight: 700, color: c.fg, lineHeight: 1 }}>{value}</span>
+        {label && <span style={{ fontSize: 25, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase', color: c.sub }}>{label}</span>}
+      </div>
+    </div>
+  )
+}
+
+// CTA con botón circular de flecha.
+function IconCtaPill({ config, c, align = 'left' }: { config: PostConfig; c: Colors; align?: 'left' | 'center' }) {
+  if (!config.cta) return null
+  return (
+    <div style={{ textAlign: align }}>
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 22, background: c.accent, color: '#ffffff', fontFamily: DISPLAY_FONT, fontWeight: 700, fontSize: 38, textTransform: 'uppercase', letterSpacing: 0.5, padding: '20px 20px 20px 42px', borderRadius: 999 }}>
+        {config.cta}
+        <span style={{ width: 62, height: 62, borderRadius: 999, background: 'rgba(255,255,255,0.22)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+          <ArrowUpRight size={36} color="#ffffff" strokeWidth={2.6} />
+        </span>
+      </span>
+    </div>
+  )
+}
+
+// Badge circular con glow y el icono temático del programa.
+function ProgramIconBadge({ config, c, size = 300 }: { config: PostConfig; c: Colors; size?: number }) {
+  const Icon = iconCmp(config.icon)
+  return (
+    <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
+      <div style={{ position: 'absolute', inset: 0, borderRadius: 999, background: `radial-gradient(circle at 50% 50%, ${c.accent}55 0%, ${c.accent}00 70%)` }} />
+      <div style={{ position: 'absolute', inset: size * 0.16, borderRadius: 999, background: c.dark ? 'rgba(255,255,255,0.07)' : '#ffffff', border: `3px solid ${c.accent}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Icon size={size * 0.4} color={c.accent} strokeWidth={1.9} />
+      </div>
+    </div>
+  )
 }
 
 function LogoImg({ config, size }: { config: PostConfig; size: number }) {
@@ -430,9 +589,12 @@ function Handle({ config, c }: { config: PostConfig; c: Colors }) {
 
 function KickerPill({ text, c, align = 'left' }: { text: string; c: Colors; align?: 'left' | 'center' }) {
   if (!text) return null
+  // En fondo oscuro: píldora blanca con texto de acento. En claro: píldora de acento con texto blanco.
+  const bg = c.dark ? '#ffffff' : c.accent
+  const fg = c.dark ? c.accent : '#ffffff'
   return (
     <div style={{ textAlign: align }}>
-      <span style={{ display: 'inline-block', background: c.pillBg, color: c.pillFg, fontWeight: 800, fontSize: 30, letterSpacing: 2, textTransform: 'uppercase', padding: '12px 26px', borderRadius: 999 }}>{text}</span>
+      <span style={{ display: 'inline-block', background: bg, color: fg, fontWeight: 800, fontSize: 28, letterSpacing: 2, textTransform: 'uppercase', padding: '12px 26px', borderRadius: 999 }}>{text}</span>
     </div>
   )
 }
@@ -458,9 +620,14 @@ function Chips({ config, c, align = 'left' }: { config: PostConfig; c: Colors; a
   if (config.chips.length === 0) return null
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, justifyContent: align === 'center' ? 'center' : 'flex-start' }}>
-      {config.chips.map((chip, i) => (
-        <span key={i} style={{ fontSize: 30, fontWeight: 700, padding: '14px 28px', borderRadius: 999, color: c.fg, border: `2px solid ${c.chipBorder}`, background: c.chipBg }}>{chip}</span>
-      ))}
+      {config.chips.map((chip, i) => {
+        const Ic = chipIcon(chip)
+        return (
+          <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 12, fontSize: 30, fontWeight: 700, padding: '13px 26px', borderRadius: 999, color: c.fg, border: `2px solid ${c.chipBorder}`, background: c.chipBg }}>
+            <Ic size={30} color={c.accent} strokeWidth={2.5} />{chip}
+          </span>
+        )
+      })}
     </div>
   )
 }
@@ -634,17 +801,145 @@ function TplLateral({ config, c }: { config: PostConfig; c: Colors }) {
   )
 }
 
+// ── Plantillas premium (set nuevo) ───────────────────────────────────────────
+function TplTitular({ config, c }: { config: PostConfig; c: Colors }) {
+  const wm = config.title.split(' ')[0] || 'DMART'
+  return (
+    <div style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', padding: '80px 80px' }}>
+      <BrandWatermark text={wm} c={c} top={440} />
+      <div style={{ position: 'absolute', right: -90, bottom: 150 }}>
+        <ProgramIconBadge config={config} c={c} size={520} />
+      </div>
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: 90 }}>
+        <LogoImg config={config} size={60} /><Handle config={config} c={c} />
+      </div>
+      <div style={{ position: 'relative', marginTop: 40 }}><TopLabels config={config} c={c} /></div>
+      <div style={{ position: 'relative', marginTop: 80, maxWidth: 780 }}>
+        <KickerPill text={config.kicker} c={c} />
+        <div style={{ marginTop: 30 }}><Headline config={config} c={c} size={config.title.length > 22 ? 92 : 118} /></div>
+        {config.body && <p style={{ marginTop: 28, fontSize: fitBodySize(config.body, 38), lineHeight: 1.4, color: c.sub, maxWidth: 620 }}><EmphText text={config.body} accent={c.accent} /></p>}
+      </div>
+      <div style={{ flex: 1 }} />
+      <div style={{ position: 'relative', maxWidth: 660 }}>
+        {config.chips.length > 0 && <div style={{ marginBottom: 30 }}><Chips config={config} c={c} /></div>}
+        {config.cta && <IconCtaPill config={config} c={c} />}
+      </div>
+      <div style={{ position: 'relative', marginTop: 34 }}><Footer config={config} c={c} /></div>
+    </div>
+  )
+}
+
+function TplEnfoque({ config, c }: { config: PostConfig; c: Colors }) {
+  const numeric = config.chips.filter((ch) => /^\s*[\d.,]/.test(ch))
+  const nonNumeric = config.chips.filter((ch) => !/^\s*[\d.,]/.test(ch))
+  const stats = numeric.slice(0, 3).map(parseStat)
+  return (
+    <div style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', padding: '80px 80px' }}>
+      <div style={{ position: 'absolute', top: 0, left: 0, width: 1080, height: 12, background: c.accent }} />
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: 90 }}>
+        <LogoImg config={config} size={62} /><Handle config={config} c={c} />
+      </div>
+      <div style={{ marginTop: 46 }}><KickerPill text={config.kicker} c={c} /></div>
+      <div style={{ marginTop: 26 }}><Headline config={config} c={c} size={config.title.length > 24 ? 68 : 86} /></div>
+      {config.body && <p style={{ marginTop: 28, fontSize: fitBodySize(config.body, 40), lineHeight: 1.42, color: c.sub, maxWidth: 900 }}><EmphText text={config.body} accent={c.accent} /></p>}
+      {stats.length > 0 && (
+        <div style={{ marginTop: 38, display: 'flex', gap: 20, flexWrap: 'wrap' }}>
+          {stats.map((s, i) => <StatCard key={i} Icon={s.Icon} value={s.value} label={s.label} c={c} />)}
+        </div>
+      )}
+      {nonNumeric.length > 0 && <div style={{ marginTop: 24 }}><Chips config={{ ...config, chips: nonNumeric }} c={c} /></div>}
+      <div style={{ flex: 1 }} />
+      {config.cta && <div style={{ marginBottom: 30 }}><IconCtaPill config={config} c={c} /></div>}
+      <Footer config={config} c={c} />
+    </div>
+  )
+}
+
+function TplPregunta({ config, c }: { config: PostConfig; c: Colors }) {
+  const wm = config.title.split(' ')[0] || 'DMART'
+  return (
+    <div style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '96px 90px' }}>
+      <BrandWatermark text={wm} c={c} top={540} />
+      <div style={{ position: 'relative', display: 'flex', justifyContent: 'center', width: '100%' }}>
+        <LogoImg config={config} size={60} />
+      </div>
+      <div style={{ flex: 1 }} />
+      <div style={{ position: 'relative', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <ProgramIconBadge config={config} c={c} size={240} />
+        <div style={{ marginTop: 40 }}><KickerPill text={config.kicker} c={c} align="center" /></div>
+        <div style={{ marginTop: 30 }}><Headline config={config} c={c} size={config.title.length > 18 ? 92 : 118} align="center" /></div>
+        {config.body && <p style={{ marginTop: 28, fontSize: fitBodySize(config.body, 38), lineHeight: 1.4, color: c.sub, maxWidth: 820 }}><EmphText text={config.body} accent={c.accent} /></p>}
+      </div>
+      <div style={{ flex: 1 }} />
+      {config.cta && <IconCtaPill config={config} c={c} align="center" />}
+      <div style={{ position: 'relative', width: '100%', marginTop: 36 }}><Footer config={config} c={c} /></div>
+    </div>
+  )
+}
+
+function TplDestacado({ config, c }: { config: PostConfig; c: Colors }) {
+  return (
+    <div style={{ position: 'relative', flex: 1, display: 'flex', alignItems: 'stretch' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '80px 0 80px 80px', maxWidth: 660 }}>
+        <div style={{ display: 'flex', alignItems: 'center', minHeight: 90 }}><LogoImg config={config} size={60} /></div>
+        <div style={{ flex: 1 }} />
+        <KickerPill text={config.kicker} c={c} />
+        <div style={{ marginTop: 28 }}><Headline config={config} c={c} size={config.title.length > 20 ? 82 : 100} /></div>
+        {config.body && <p style={{ marginTop: 26, fontSize: fitBodySize(config.body, 38), lineHeight: 1.42, color: c.sub, maxWidth: 560 }}><EmphText text={config.body} accent={c.accent} /></p>}
+        {config.cta && <div style={{ marginTop: 42 }}><IconCtaPill config={config} c={c} /></div>}
+        <div style={{ flex: 1 }} />
+        <Footer config={config} c={c} />
+      </div>
+      <div style={{ width: 420, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+        <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(circle at 58% 50%, ${c.accent}33 0%, ${c.accent}00 65%)` }} />
+        <ProgramIconBadge config={config} c={c} size={400} />
+      </div>
+    </div>
+  )
+}
+
+function TplLista({ config, c }: { config: PostConfig; c: Colors }) {
+  const items = config.reqs.length ? config.reqs : []
+  return (
+    <div style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', padding: '80px 80px' }}>
+      <BrandWatermark text={config.title.split(' ')[0] || 'DMART'} c={c} top={470} />
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: 90 }}>
+        <LogoImg config={config} size={62} /><Handle config={config} c={c} />
+      </div>
+      <div style={{ position: 'relative', marginTop: 46 }}><KickerPill text={config.kicker} c={c} /></div>
+      <div style={{ position: 'relative', marginTop: 26 }}><Headline config={config} c={c} size={96} /></div>
+      <div style={{ position: 'relative', marginTop: 52, display: 'flex', flexDirection: 'column', gap: 28 }}>
+        {items.map((r, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 26 }}>
+            <div style={{ flexShrink: 0, width: 70, height: 70, borderRadius: 20, background: `${c.accent}22`, border: `2px solid ${c.accent}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Check size={40} color={c.accent} strokeWidth={3} />
+            </div>
+            <span style={{ fontSize: 36, lineHeight: 1.25, color: c.fg, fontWeight: 500 }}>{r}</span>
+          </div>
+        ))}
+      </div>
+      <div style={{ flex: 1 }} />
+      {config.cta && <div style={{ position: 'relative', marginBottom: 30 }}><IconCtaPill config={config} c={c} /></div>}
+      <div style={{ position: 'relative' }}><Footer config={config} c={c} /></div>
+    </div>
+  )
+}
+
 export function PostCard({ config }: { config: PostConfig }) {
   const dark = config.bg !== 'claro'
+  const rawAccent = config.accent || RED
+  // Sobre fondo oscuro, un acento muy oscuro (Comercial #111) se pierde → usar rojo de marca.
+  const accent = dark && isDarkColor(rawAccent) ? RED : rawAccent
   const c: Colors = {
     dark,
     fg: dark ? '#ffffff' : INK,
     sub: dark ? 'rgba(255,255,255,0.82)' : '#5A5A5A',
     pillBg: dark ? '#ffffff' : RED,
     pillFg: dark ? RED : '#ffffff',
-    borderCol: dark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.12)',
-    chipBorder: dark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.18)',
-    chipBg: dark ? 'rgba(255,255,255,0.10)' : '#fff',
+    borderCol: dark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.12)',
+    chipBorder: dark ? 'rgba(255,255,255,0.30)' : 'rgba(0,0,0,0.14)',
+    chipBg: dark ? 'rgba(255,255,255,0.08)' : '#fff',
+    accent,
   }
 
   const bgStyle: React.CSSProperties = useMemo(() => {
@@ -653,11 +948,12 @@ export function PostCard({ config }: { config: PostConfig }) {
       case 'negro': return { background: INK }
       case 'claro': return { background: '#F4F3F1' }
       case 'foto': return { background: INK }
-      default: return { background: 'linear-gradient(150deg, #1a1a1a 0%, #3a0a0a 55%, #7a0f0f 100%)' }
+      // Degradado neutral oscuro: el glow de acento (abajo) es el que aporta el color.
+      default: return { background: 'linear-gradient(158deg, #1b191d 0%, #121013 55%, #0a0a0b 100%)' }
     }
   }, [config.bg])
 
-  const template = config.template ?? 'clasico'
+  const template = config.template ?? 'enfoque'
 
   return (
     <div style={{
@@ -665,6 +961,11 @@ export function PostCard({ config }: { config: PostConfig }) {
       fontFamily: 'var(--font-body), system-ui, sans-serif', color: c.fg, ...bgStyle,
       display: 'flex', flexDirection: 'column',
     }}>
+      {/* Glow de acento (define el color del fondo degradado por área) */}
+      {config.bg === 'degradado' && (
+        <div aria-hidden style={{ position: 'absolute', inset: 0, background: `radial-gradient(1100px 850px at 82% 10%, ${accent}30 0%, transparent 60%)` }} />
+      )}
+
       {config.bg === 'foto' && config.photo && (
         <>
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -673,7 +974,12 @@ export function PostCard({ config }: { config: PostConfig }) {
         </>
       )}
 
-      {template === 'centrado' ? <TplCentrado config={config} c={c} />
+      {template === 'titular' ? <TplTitular config={config} c={c} />
+        : template === 'enfoque' ? <TplEnfoque config={config} c={c} />
+        : template === 'pregunta' ? <TplPregunta config={config} c={c} />
+        : template === 'destacado' ? <TplDestacado config={config} c={c} />
+        : template === 'lista' ? <TplLista config={config} c={c} />
+        : template === 'centrado' ? <TplCentrado config={config} c={c} />
         : template === 'banda' ? <TplBanda config={config} c={c} />
         : template === 'editorial' ? <TplEditorial config={config} c={c} />
         : template === 'minimal' ? <TplMinimal config={config} c={c} />
