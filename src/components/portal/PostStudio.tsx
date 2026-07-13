@@ -54,7 +54,8 @@ function fitBodySize(text: string | undefined, base: number): number {
   if (len <= 200) return Math.round(base * 0.88)
   if (len <= 280) return Math.round(base * 0.78)
   if (len <= 360) return Math.round(base * 0.70)
-  return Math.round(base * 0.62)
+  if (len <= 440) return Math.round(base * 0.62)
+  return Math.round(base * 0.55)
 }
 
 const CAMPUS_OPTIONS = [

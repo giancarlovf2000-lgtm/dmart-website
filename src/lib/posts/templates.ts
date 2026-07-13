@@ -30,19 +30,13 @@ function sectionLabel(shift: SocialItem['shift']): string {
   return 'Curso Sabatino'
 }
 
-function shortDesc(text: string | undefined, max = 150): string {
-  if (!text) return ''
-  if (text.length <= max) return text
-  return text.slice(0, max).replace(/\s+\S*$/, '') + '…'
-}
-
 // Genera muchas opciones de post: plantilla × color × enfoque de copy.
 export function generateVariations(item: SocialItem, campusName: string): PostVariation[] {
   const isSabatino = item.kind === 'privado' || item.shift === 'sabatino'
   const reg = STATIC_PROGRAMS.find((p) => p.name === item.program)
   const sab = PRIVADOS_SABATINOS.find((s) => s.title === item.program)
 
-  const desc = shortDesc(reg?.description ?? sab?.description)
+  const desc = reg?.description ?? sab?.description ?? ''
   const months = reg ? `${reg.duration_months} meses` : null
   const credits = reg ? `${reg.credits} créditos` : null
   const tag = sab?.tag ?? null
