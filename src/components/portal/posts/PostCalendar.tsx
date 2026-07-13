@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Calendar as CalendarIcon, Plus, X, Download, Trash2, ChevronLeft, Loader2, AlertCircle } from 'lucide-react'
+import { Calendar as CalendarIcon, Plus, X, Download, Trash2, ChevronLeft, Loader2, AlertCircle, Layers } from 'lucide-react'
 
 export interface Calendar {
   id: string
@@ -27,6 +27,14 @@ const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 
 function monthLabel(monthIso: string) {
   const [y, m] = monthIso.split('-').map(Number)
   return `${MONTHS[m - 1]} ${y}`
+}
+
+// Si el post es un carousel, devuelve las URLs de todas sus tarjetas; si no, null.
+function carouselImages(p: SavedPost): string[] | null {
+  const cfg = p.config as { carousel?: boolean; slideImages?: unknown } | null
+  if (!cfg?.carousel || !Array.isArray(cfg.slideImages)) return null
+  const urls = cfg.slideImages.filter((u): u is string => typeof u === 'string')
+  return urls.length ? urls : null
 }
 
 async function downloadImage(url: string, name: string) {
@@ -193,9 +201,12 @@ export default function PostCalendar() {
                   <span className="text-[11px] font-semibold text-gray-500">{d}</span>
                   <div className="flex-1 flex flex-wrap gap-0.5 mt-0.5 overflow-hidden">
                     {dayPosts.slice(0, 4).map((p) => (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      p.image_url ? <img key={p.id} src={p.image_url} alt="" className="h-4 w-4 rounded object-cover" />
-                        : <span key={p.id} className="h-4 w-4 rounded bg-accent/30" />
+                      <span key={p.id} className="relative inline-flex h-4 w-4">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        {p.image_url ? <img src={p.image_url} alt="" className="h-4 w-4 rounded object-cover" />
+                          : <span className="h-4 w-4 rounded bg-accent/30" />}
+                        {carouselImages(p) && <Layers className="absolute -top-0.5 -right-0.5 h-2 w-2 text-white drop-shadow" strokeWidth={3} />}
+                      </span>
                     ))}
                     {dayPosts.length > 4 && <span className="text-[9px] text-gray-400">+{dayPosts.length - 4}</span>}
                   </div>
@@ -224,28 +235,58 @@ export default function PostCalendar() {
       )}
 
       {/* Modal: un post (descargar / eliminar) */}
-      {openPost && (
-        <Modal onClose={() => setOpenPost(null)} title={openPost.title ?? 'Post'}>
-          <div className="space-y-4">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            {openPost.image_url && (
-              <img src={openPost.image_url} alt={openPost.title ?? ''} className="w-full max-w-xs mx-auto rounded-xl shadow-md" />
-            )}
-            <div className="flex gap-3">
-              {openPost.image_url && (
-                <button onClick={() => downloadImage(openPost.image_url!, `dmart-post-${openPost.post_date}.png`)}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-full bg-accent text-white text-sm font-semibold hover:bg-accent-hover transition-colors">
-                  <Download className="h-4 w-4" /> Descargar
-                </button>
+      {openPost && (() => {
+        const slides = carouselImages(openPost)
+        async function downloadAll() {
+          if (!slides) return
+          for (let i = 0; i < slides.length; i++) {
+            await downloadImage(slides[i], `dmart-carousel-${openPost!.post_date}-${i + 1}.png`)
+            await new Promise((r) => setTimeout(r, 250))
+          }
+        }
+        return (
+          <Modal onClose={() => setOpenPost(null)} title={openPost.title ?? 'Post'}>
+            <div className="space-y-4">
+              {slides ? (
+                <>
+                  <p className="text-xs text-gray-500 flex items-center gap-1.5"><Layers className="h-3.5 w-3.5 text-accent" /> Carousel de {slides.length} tarjetas</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[50vh] overflow-y-auto">
+                    {slides.map((url, i) => (
+                      <div key={i} className="relative rounded-lg overflow-hidden border border-gray-200">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={url} alt="" className="w-full aspect-[4/5] object-cover" />
+                        <span className="absolute top-1 left-1 text-[10px] font-bold text-white bg-black/60 rounded px-1.5 py-0.5 leading-none">{i + 1}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                openPost.image_url && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={openPost.image_url} alt={openPost.title ?? ''} className="w-full max-w-xs mx-auto rounded-xl shadow-md" />
+                )
               )}
-              <button onClick={() => deletePost(openPost)}
-                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-full border border-gray-200 text-gray-600 text-sm font-semibold hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors">
-                <Trash2 className="h-4 w-4" /> Eliminar
-              </button>
+              <div className="flex gap-3">
+                {slides ? (
+                  <button onClick={downloadAll}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-full bg-accent text-white text-sm font-semibold hover:bg-accent-hover transition-colors">
+                    <Download className="h-4 w-4" /> Descargar todas ({slides.length})
+                  </button>
+                ) : openPost.image_url && (
+                  <button onClick={() => downloadImage(openPost.image_url!, `dmart-post-${openPost.post_date}.png`)}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-full bg-accent text-white text-sm font-semibold hover:bg-accent-hover transition-colors">
+                    <Download className="h-4 w-4" /> Descargar
+                  </button>
+                )}
+                <button onClick={() => deletePost(openPost)}
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-full border border-gray-200 text-gray-600 text-sm font-semibold hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors">
+                  <Trash2 className="h-4 w-4" /> Eliminar
+                </button>
+              </div>
             </div>
-          </div>
-        </Modal>
-      )}
+          </Modal>
+        )
+      })()}
     </div>
   )
 }

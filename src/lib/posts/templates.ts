@@ -63,6 +63,7 @@ export function generateVariations(item: SocialItem, campusName: string): PostVa
     campusPhone,
     handle: '@dmartinstitute',
     website: 'dmartpr.net',
+    logoScale: 1,
   }
 
   // Presets de copy (kicker/cuerpo/chips/CTA/tipo).
@@ -110,4 +111,62 @@ export function generateVariations(item: SocialItem, campusName: string): PostVa
     label: r.label,
     config: { ...base, template: r.template, bg: r.bg, logo: logoFor(r.bg), ...copy(r.copy) } as PostConfig,
   }))
+}
+
+// Requisitos de admisión (duplicado ligero para evitar dependencia circular con PostStudio).
+const CAROUSEL_REQS = [
+  '16 años o más (programas de salud: 18 años o más)',
+  'Diploma o Transcripción de Crédito con 4to año aprobado',
+  'Certificado de Vacunas (PVAC-3), si es menor de 21 años',
+  'Cuota de Admisión',
+]
+
+// Deriva un hilo de tarjetas (carousel) a partir de una config base: portada →
+// descripción → detalles → requisitos → cierre. Todas comparten fondo/logo/marca.
+export function buildCarousel(base: PostConfig): PostConfig[] {
+  const title = base.title || "D'Mart Institute"
+  const hasBody = !!base.body?.trim()
+  const chips = base.chips ?? []
+  const slides: PostConfig[] = []
+
+  // 1. Portada / gancho
+  slides.push({
+    ...base, template: 'centrado', type: 'evento',
+    kicker: base.kicker || 'Nuevo Grupo', title, body: '', reqs: [],
+    chips: chips.slice(0, 1), cta: 'Desliza →',
+  })
+
+  // 2. Descripción (si la hay)
+  if (hasBody) {
+    slides.push({
+      ...base, template: 'clasico', type: 'programa',
+      kicker: '¿De qué se trata?', title, body: base.body, reqs: [],
+      chips: [], cta: '',
+    })
+  }
+
+  // 3. Detalles (chips)
+  if (chips.length) {
+    slides.push({
+      ...base, template: 'lateral', type: 'programa',
+      kicker: 'Detalles', title, body: '', reqs: [],
+      chips, cta: '',
+    })
+  }
+
+  // 4. Requisitos de admisión
+  slides.push({
+    ...base, template: 'clasico', type: 'requisitos',
+    kicker: 'Requisitos de Admisión', title: 'Requisitos', body: '', reqs: CAROUSEL_REQS,
+    chips: [], cta: '',
+  })
+
+  // 5. Cierre / CTA
+  slides.push({
+    ...base, template: 'centrado', type: 'evento',
+    kicker: '¡Te esperamos!', title, body: 'Escríbenos o llámanos para más información.', reqs: [],
+    chips: [], cta: base.cta && base.cta !== 'Desliza →' ? base.cta : 'Matricúlate ya',
+  })
+
+  return slides
 }

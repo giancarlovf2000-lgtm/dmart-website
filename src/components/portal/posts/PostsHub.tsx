@@ -3,11 +3,11 @@
 import { useEffect, useState } from 'react'
 import {
   Calendar as CalendarIcon, Megaphone, BarChart3, ChevronLeft, ChevronRight,
-  X, AlertCircle, Download, History, Sparkles, PencilLine, Building2, Loader2,
+  X, AlertCircle, Download, History, Sparkles, PencilLine, Building2, Loader2, Layers, Image as ImageIcon,
 } from 'lucide-react'
 import { createClient as createBrowserSupabase } from '@/lib/supabase/client'
 import { STATIC_CAMPUSES } from '@/lib/utils'
-import PostStudio, { PostCard, type PostConfig } from '@/components/portal/PostStudio'
+import PostStudio, { CarouselStudio, PostCard, initialConfig, type PostConfig } from '@/components/portal/PostStudio'
 import PostCalendar, { type Calendar, type SavedPost } from '@/components/portal/posts/PostCalendar'
 import PostsStats from '@/components/portal/posts/PostsStats'
 import { generateVariations, type SocialItem } from '@/lib/posts/templates'
@@ -72,13 +72,20 @@ function HubCard({ icon: Icon, title, desc, onClick }: { icon: React.ComponentTy
 
 // ── Crear contenido (elegir origen → editor + guardar + historial) ────────────
 type CreateMode = 'home' | 'social' | 'editor'
+type EditorKind = 'single' | 'carousel'
+
+// Payload pendiente de guardar: post sencillo (1 imagen) o carousel (N imágenes).
+export type PendingSave =
+  | { kind: 'single'; config: PostConfig; dataUrl: string }
+  | { kind: 'carousel'; slides: PostConfig[]; dataUrls: string[] }
 
 function CreateContent() {
   const [mode, setMode] = useState<CreateMode>('home')
+  const [editorKind, setEditorKind] = useState<EditorKind>('single')
   const [editorConfig, setEditorConfig] = useState<PostConfig | null>(null)
   const [editorKey, setEditorKey] = useState(0)
   const [defaultDay, setDefaultDay] = useState<string | undefined>(undefined)
-  const [pending, setPending] = useState<{ config: PostConfig; dataUrl: string } | null>(null)
+  const [pending, setPending] = useState<PendingSave | null>(null)
   const [history, setHistory] = useState<SavedPost[]>([])
 
   async function loadHistory() {
@@ -88,8 +95,9 @@ function CreateContent() {
   }
   useEffect(() => { loadHistory() }, [])
 
-  function openEditor(config: PostConfig | null, day?: string) {
+  function openEditor(config: PostConfig | null, day?: string, kind: EditorKind = 'single') {
     setEditorConfig(config)
+    setEditorKind(kind)
     setDefaultDay(day)
     setEditorKey((k) => k + 1)
     setMode('editor')
@@ -121,7 +129,7 @@ function CreateContent() {
         <button onClick={() => setMode('home')} className="flex items-center gap-1 text-sm text-gray-500 hover:text-ink">
           <ChevronLeft className="h-4 w-4" /> Crear contenido
         </button>
-        <SocialPicker onPick={(config, day) => openEditor(config, day)} />
+        <SocialPicker onPick={(config, day, kind) => openEditor(config, day, kind)} />
       </div>
     )
   }
@@ -129,16 +137,37 @@ function CreateContent() {
   // Editor (en blanco o precargado con una variación).
   return (
     <div className="space-y-6">
-      <button onClick={() => setMode('home')} className="flex items-center gap-1 text-sm text-gray-500 hover:text-ink">
-        <ChevronLeft className="h-4 w-4" /> Crear contenido
-      </button>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <button onClick={() => setMode('home')} className="flex items-center gap-1 text-sm text-gray-500 hover:text-ink">
+          <ChevronLeft className="h-4 w-4" /> Crear contenido
+        </button>
+        {/* Toggle: post sencillo o carousel (hilo de varias tarjetas) */}
+        <div className="flex items-center gap-1 bg-gray-100 rounded-full p-1">
+          <button onClick={() => setEditorKind('single')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${editorKind === 'single' ? 'bg-white text-ink shadow-sm' : 'text-gray-500 hover:text-ink'}`}>
+            <ImageIcon className="h-3.5 w-3.5" /> Post sencillo
+          </button>
+          <button onClick={() => setEditorKind('carousel')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${editorKind === 'carousel' ? 'bg-white text-ink shadow-sm' : 'text-gray-500 hover:text-ink'}`}>
+            <Layers className="h-3.5 w-3.5" /> Carousel
+          </button>
+        </div>
+      </div>
 
-      <PostStudio
-        key={editorKey}
-        initial={editorConfig ?? undefined}
-        onSave={(config, dataUrl) => setPending({ config, dataUrl })}
-        onClear={() => {}}
-      />
+      {editorKind === 'single' ? (
+        <PostStudio
+          key={editorKey}
+          initial={editorConfig ?? undefined}
+          onSave={(config, dataUrl) => setPending({ kind: 'single', config, dataUrl })}
+          onClear={() => {}}
+        />
+      ) : (
+        <CarouselStudio
+          key={`carousel-${editorKey}`}
+          seed={editorConfig ?? initialConfig()}
+          onSave={(slides, dataUrls) => setPending({ kind: 'carousel', slides, dataUrls })}
+        />
+      )}
 
       {/* Historial */}
       <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-5">
@@ -185,7 +214,7 @@ function fmtDay(d: string | null): string {
   return new Date(d + 'T00:00:00').toLocaleDateString('es-PR', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-function SocialPicker({ onPick }: { onPick: (config: PostConfig, day?: string) => void }) {
+function SocialPicker({ onPick }: { onPick: (config: PostConfig, day?: string, kind?: EditorKind) => void }) {
   const [campus, setCampus] = useState(STATIC_CAMPUSES[0].name)
   const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7))
   const [data, setData] = useState<SocialCampus[]>([])
@@ -260,7 +289,15 @@ function SocialPicker({ onPick }: { onPick: (config: PostConfig, day?: string) =
               Opciones para <span className="font-semibold text-ink">{selected.program}</span> · {SHIFT_TAG[selected.shift]} · {fmtDay(selected.start_date)}
             </p>
           </div>
-          <p className="text-xs text-gray-500">Elige una opción para editarla y guardarla.</p>
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <p className="text-xs text-gray-500">Elige una opción para editarla y guardarla.</p>
+            {variations.length > 0 && (
+              <button onClick={() => onPick(variations[0].config, selected.start_date ?? undefined, 'carousel')}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-ink text-white text-xs font-semibold hover:bg-black transition-colors">
+                <Layers className="h-3.5 w-3.5" /> Generar carousel
+              </button>
+            )}
+          </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 justify-items-center">
             {variations.map((v) => (
               <button key={v.id} onClick={() => onPick(v.config, selected.start_date ?? undefined)}
@@ -283,11 +320,14 @@ function SocialPicker({ onPick }: { onPick: (config: PostConfig, day?: string) =
 
 // ── Modal: guardar post en un calendario + día ────────────────────────────────
 function SavePostModal({ pending, defaultDay, onClose, onSaved }: {
-  pending: { config: PostConfig; dataUrl: string }
+  pending: PendingSave
   defaultDay?: string
   onClose: () => void
   onSaved: () => void
 }) {
+  const isCarousel = pending.kind === 'carousel'
+  const coverUrl = pending.kind === 'single' ? pending.dataUrl : pending.dataUrls[0]
+  const postTitle = pending.kind === 'single' ? pending.config.title : (pending.slides[0]?.title ?? null)
   const [calendars, setCalendars] = useState<Calendar[]>([])
   const [calendarId, setCalendarId] = useState('')
   const [creatingNew, setCreatingNew] = useState(false)
@@ -314,11 +354,11 @@ function SavePostModal({ pending, defaultDay, onClose, onSaved }: {
   const dayMin = monthIso ? `${monthIso}-01` : undefined
   const dayMax = monthIso ? `${monthIso}-${String(new Date(Number(monthIso.slice(0, 4)), Number(monthIso.slice(5, 7)), 0).getDate()).padStart(2, '0')}` : undefined
 
-  async function uploadImage(calId: string): Promise<string | null> {
+  async function uploadOne(calId: string, dataUrl: string, idx: number): Promise<string | null> {
     try {
       const supabase = createBrowserSupabase()
-      const blob = dataUrlToBlob(pending.dataUrl)
-      const path = `${calId}/${Date.now()}.png`
+      const blob = dataUrlToBlob(dataUrl)
+      const path = `${calId}/${Date.now()}-${idx}.png`
       const { error: upErr } = await supabase.storage.from('saved-post-images').upload(path, blob, { upsert: true, contentType: 'image/png' })
       if (upErr) { console.error('[SavePost] upload', upErr); return null }
       const { data } = supabase.storage.from('saved-post-images').getPublicUrl(path)
@@ -354,17 +394,27 @@ function SavePostModal({ pending, defaultDay, onClose, onSaved }: {
       }
       if (!calId) { setError('Selecciona un calendario.'); setLoading(false); return }
 
-      const imageUrl = await uploadImage(calId)
-      if (!imageUrl) { setError('No se pudo subir la imagen. Intenta de nuevo.'); setLoading(false); return }
+      // Subir 1 imagen (sencillo) o N imágenes (carousel).
+      const dataUrls = pending.kind === 'single' ? [pending.dataUrl] : pending.dataUrls
+      const urls: string[] = []
+      for (let i = 0; i < dataUrls.length; i++) {
+        const u = await uploadOne(calId, dataUrls[i], i)
+        if (!u) { setError('No se pudo subir la imagen. Intenta de nuevo.'); setLoading(false); return }
+        urls.push(u)
+      }
+
+      const config = pending.kind === 'single'
+        ? pending.config
+        : { carousel: true, slides: pending.slides, slideImages: urls }
 
       const res = await fetch('/api/portal/posts', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           calendar_id: calId,
           post_date: day,
-          title: pending.config.title,
-          config: pending.config,
-          image_url: imageUrl,
+          title: postTitle,
+          config,
+          image_url: urls[0],
         }),
       })
       const data = await res.json()
@@ -386,8 +436,16 @@ function SavePostModal({ pending, defaultDay, onClose, onSaved }: {
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100"><X className="h-4 w-4 text-gray-500" /></button>
         </div>
         <form onSubmit={submit} className="px-5 py-5 space-y-4">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={pending.dataUrl} alt="" className="w-28 mx-auto rounded-lg shadow-md" />
+          <div className="relative w-28 mx-auto">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={coverUrl} alt="" className="w-28 rounded-lg shadow-md" />
+            {isCarousel && (
+              <span className="absolute -top-2 -right-2 flex items-center gap-1 text-[10px] font-bold text-white bg-accent rounded-full px-2 py-0.5 shadow">
+                <Layers className="h-3 w-3" /> {pending.dataUrls.length}
+              </span>
+            )}
+          </div>
+          {isCarousel && <p className="text-xs text-center text-gray-500">Carousel de {pending.dataUrls.length} tarjetas · se guarda como un solo post.</p>}
 
           {error && (
             <div className="p-3 rounded-lg bg-red-50 border border-red-200 flex gap-2 items-start">
