@@ -43,23 +43,16 @@ const SLUG_ICON: Record<string, string> = {
   'tecnico-de-refrigeracion': 'Snowflake',
 }
 
-// tag de sabatino → id de categoría (para heredar color).
-const TAG_CATEGORY: Record<string, string> = {
-  'Belleza': 'belleza', 'Salud': 'salud', 'Comercial': 'comercial', 'Técnico': 'tecnico',
-  'Gastronomía': 'belleza', 'Arte': 'belleza', 'Comunicación': 'comercial',
-}
-
-// Color de acento (por área) + icono temático de un programa/sabatino por su nombre.
+// Acento SIEMPRE rojo de marca (coherencia de brand) + icono temático por programa/sabatino.
 export function accentIconFor(programName: string): { accent: string; icon: string } {
   const reg = STATIC_PROGRAMS.find((p) => p.name === programName)
   if (reg) {
     const cat = STATIC_CATEGORIES.find((c) => c.id === reg.category_id)
-    return { accent: cat?.color ?? RED, icon: SLUG_ICON[reg.slug] ?? cat?.icon ?? 'GraduationCap' }
+    return { accent: RED, icon: SLUG_ICON[reg.slug] ?? cat?.icon ?? 'GraduationCap' }
   }
   const sab = PRIVADOS_SABATINOS.find((s) => s.title === programName)
   if (sab) {
-    const cat = STATIC_CATEGORIES.find((c) => c.id === (TAG_CATEGORY[sab.tag] ?? 'belleza'))
-    return { accent: cat?.color ?? RED, icon: sab.icon ?? cat?.icon ?? 'GraduationCap' }
+    return { accent: RED, icon: sab.icon ?? 'GraduationCap' }
   }
   return { accent: RED, icon: 'GraduationCap' }
 }

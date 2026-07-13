@@ -459,15 +459,6 @@ function iconCmp(name?: string): LucideIcon {
   return (name && ICON_MAP[name]) || GraduationCap
 }
 
-// ¿El color es tan oscuro que se pierde sobre fondo oscuro? (p. ej. #111111 de Comercial)
-function isDarkColor(hex: string): boolean {
-  const m = /^#?([0-9a-f]{6})$/i.exec(hex)
-  if (!m) return false
-  const n = parseInt(m[1], 16)
-  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255
-  return 0.299 * r + 0.587 * g + 0.114 * b < 70
-}
-
 // Icono para un chip según su contenido (11 meses → Clock, 39 créditos → Award, …).
 function chipIcon(text: string): LucideIcon {
   const t = text.toLowerCase()
@@ -927,9 +918,8 @@ function TplLista({ config, c }: { config: PostConfig; c: Colors }) {
 
 export function PostCard({ config }: { config: PostConfig }) {
   const dark = config.bg !== 'claro'
-  const rawAccent = config.accent || RED
-  // Sobre fondo oscuro, un acento muy oscuro (Comercial #111) se pierde → usar rojo de marca.
-  const accent = dark && isDarkColor(rawAccent) ? RED : rawAccent
+  // Marca D'Mart: el acento es SIEMPRE rojo (aunque una config guardada traiga otro color).
+  const accent = RED
   const c: Colors = {
     dark,
     fg: dark ? '#ffffff' : INK,
