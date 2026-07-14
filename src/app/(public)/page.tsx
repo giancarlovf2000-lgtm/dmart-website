@@ -140,7 +140,7 @@ export default async function HomePage() {
                       className="group flex h-full flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-card transition-all duration-300 hover:-translate-y-1.5 hover:border-gold/40 hover:shadow-card-hover"
                     >
                       <MediaSlot
-                        src={undefined /* sube /public/media/programa-{slug}.jpg y ponlo aquí */}
+                        src={program.slug === 'estetica-y-maquillaje' ? '/media/Estetica y Maquillaje.png' : undefined}
                         icon={Icon}
                         className="aspect-[16/10] w-full"
                         alt={program.name}
