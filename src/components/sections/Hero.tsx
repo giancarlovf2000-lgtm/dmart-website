@@ -1,6 +1,7 @@
 import Link from 'next/link'
-import { ArrowRight, Phone } from 'lucide-react'
+import { ArrowRight, Phone, ShieldCheck, GraduationCap, Sparkles } from 'lucide-react'
 import Button from '@/components/ui/Button'
+import MediaSlot from '@/components/ui/MediaSlot'
 
 interface HeroProps {
   title?: string
@@ -8,109 +9,140 @@ interface HeroProps {
   showCampuses?: boolean
 }
 
+// Slot de video de fondo: sube /public/media/hero.mp4 y pon la ruta aquí para activarlo.
+const HERO_VIDEO: string | null = null
+// Slot de imagen del visual derecho: sube /public/media/hero.jpg y pon la ruta aquí.
+const HERO_IMAGE: string | undefined = undefined
+
 export default function Hero({
-  title = "Tu Conexión Al Futuro",
-  subtitle = "Programas vocacionales acreditados en Belleza, Salud, Comercial y Técnico. Con recintos en Barranquitas y Vega Alta, Puerto Rico.",
+  title = 'Tu Conexión Al Futuro',
+  subtitle = 'Programas vocacionales acreditados en Belleza, Salud, Comercial y Técnico. Con recintos en Barranquitas y Vega Alta, Puerto Rico.',
   showCampuses = true,
 }: HeroProps) {
+  const words = title.trim().split(' ')
+  const lastWord = words.length > 1 ? words.pop() : null
+
   return (
-    <section className="relative min-h-[90vh] flex items-center overflow-hidden bg-navy">
-      {/* Background decorative elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* Red geometric accent top right */}
-        <div className="absolute -top-20 -right-20 w-96 h-96 rounded-full bg-gold/10 blur-3xl" />
-        {/* Dark accent bottom left */}
-        <div className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full bg-navy-600/80 blur-2xl" />
-        {/* Grid pattern overlay */}
-        <div
-          className="absolute inset-0 opacity-5"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23C9A84C' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-          }}
-        />
+    <section className="relative flex min-h-[92vh] items-center overflow-hidden bg-black">
+      {/* Fondo por capas */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-navy-800 via-black to-black" />
+        <div className="absolute -right-40 -top-40 h-[38rem] w-[38rem] rounded-full bg-gold/20 blur-[120px]" />
+        <div className="absolute -bottom-52 -left-40 h-[34rem] w-[34rem] rounded-full bg-gold/10 blur-[130px]" />
+        <div className="absolute inset-0 bg-grid-dark opacity-40" />
+        {HERO_VIDEO && (
+          <>
+            {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+            <video className="absolute inset-0 h-full w-full object-cover opacity-40" autoPlay muted loop playsInline>
+              <source src={HERO_VIDEO} />
+            </video>
+            <div className="absolute inset-0 bg-gradient-to-r from-black via-black/85 to-black/50" />
+          </>
+        )}
       </div>
 
-      <div className="container-custom relative z-10 py-24 md:py-32">
-        <div className="max-w-4xl">
-          {/* Eyebrow label */}
-          <div className="inline-flex items-center gap-2 bg-gold/10 border border-gold/20 rounded-full px-4 py-1.5 mb-6">
-            <span className="w-2 h-2 bg-gold rounded-full animate-pulse" />
-            <span className="text-gold text-sm font-semibold tracking-wide">
-              Institución Postsecundaria Acreditada · ACCSC
-            </span>
-          </div>
-
-          {/* Main headline */}
-          <h1 className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black text-white leading-[1.1] mb-6 text-balance">
-            {title.split('. ').map((part, i, arr) => (
-              <span key={i}>
-                {i === 0 ? (
-                  <span className="text-gradient-gold">{part}.</span>
-                ) : (
-                  <span> {part}{i < arr.length - 1 ? '.' : ''}</span>
-                )}
+      <div className="container-custom relative z-10 py-24 md:py-28">
+        <div className="grid items-center gap-12 lg:grid-cols-[1.05fr_0.95fr]">
+          {/* Columna de texto */}
+          <div className="animate-slide-up">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-gold/25 bg-gold/10 px-4 py-1.5">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-gold" />
+              <span className="text-sm font-semibold tracking-wide text-gold">
+                Institución Postsecundaria Acreditada · ACCSC
               </span>
-            ))}
-          </h1>
+            </div>
 
-          {/* Subtitle */}
-          <p className="text-lg md:text-xl text-gray-300 max-w-2xl leading-relaxed mb-10">
-            {subtitle}
-          </p>
+            <h1 className="mb-6 text-balance font-display text-5xl font-bold leading-[1.03] text-white md:text-6xl lg:text-7xl">
+              {lastWord ? (
+                <>
+                  {words.join(' ')} <span className="text-gold">{lastWord}</span>
+                </>
+              ) : (
+                title
+              )}
+            </h1>
 
-          {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 mb-12">
-            <Link href="/admisiones">
-              <Button variant="gold" size="xl" className="text-lg font-black">
-                Comienza Tu Matrícula
-                <ArrowRight className="h-5 w-5" />
-              </Button>
-            </Link>
-            <Link href="/programas">
-              <Button
-                variant="outline"
-                size="xl"
-                className="text-lg border-white/40 text-white hover:bg-white hover:text-black"
-              >
-                Ver Todos los Programas
-              </Button>
-            </Link>
+            <p className="mb-9 max-w-xl text-lg leading-relaxed text-gray-300 md:text-xl">
+              {subtitle}
+            </p>
+
+            <div className="mb-11 flex flex-col gap-4 sm:flex-row">
+              <Link href="/admisiones">
+                <Button variant="gold" size="xl" className="text-lg font-bold shadow-gold">
+                  Comienza Tu Matrícula
+                  <ArrowRight className="h-5 w-5" />
+                </Button>
+              </Link>
+              <Link href="/programas">
+                <Button variant="outline" size="xl" className="border-white/30 text-lg text-white hover:bg-white hover:text-black">
+                  Ver Todos los Programas
+                </Button>
+              </Link>
+            </div>
+
+            {showCampuses && (
+              <div className="flex flex-col gap-4 sm:flex-row">
+                {[
+                  { name: 'Barranquitas', tel: '7878576929', display: '(787) 857-6929' },
+                  { name: 'Vega Alta', tel: '7878838180', display: '(787) 883-8180' },
+                ].map((c) => (
+                  <a
+                    key={c.tel}
+                    href={`tel:${c.tel}`}
+                    className="group flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-5 py-3 transition-all duration-200 hover:border-gold/40 hover:bg-white/[0.08]"
+                  >
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gold/20">
+                      <Phone className="h-4 w-4 text-gold" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400">{c.name}</p>
+                      <p className="text-sm font-semibold text-white">{c.display}</p>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Quick campus contact */}
-          {showCampuses && (
-            <div className="flex flex-col sm:flex-row gap-4">
-              <a
-                href="tel:7878576929"
-                className="group flex items-center gap-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl px-5 py-3 transition-all duration-200"
-              >
-                <div className="w-9 h-9 rounded-lg bg-gold/20 flex items-center justify-center">
-                  <Phone className="h-4 w-4 text-gold" />
+          {/* Columna visual (composición de marca + slot de foto) */}
+          <div className="relative hidden lg:block">
+            <div className="absolute -inset-8 glow-red opacity-30" />
+            <div className="relative">
+              <MediaSlot
+                src={HERO_IMAGE}
+                icon={GraduationCap}
+                className="aspect-[4/5] w-full rounded-[2rem] border border-white/10 shadow-2xl"
+                alt="Estudiantes de D'Mart Institute"
+                priority
+                sizes="(max-width: 1024px) 0px, 45vw"
+              />
+              {/* Tarjeta flotante: acreditación */}
+              <div className="absolute -left-6 top-10 flex items-center gap-3 rounded-2xl border border-white/10 bg-black/70 px-4 py-3 shadow-xl backdrop-blur-md">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gold/15">
+                  <ShieldCheck className="h-5 w-5 text-gold" />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-400">Barranquitas</p>
-                  <p className="text-white font-semibold text-sm">(787) 857-6929</p>
+                  <p className="text-sm font-bold text-white">Acreditada ACCSC</p>
+                  <p className="text-[11px] text-gray-400">Autorizada en Puerto Rico</p>
                 </div>
-              </a>
-              <a
-                href="tel:7878838180"
-                className="group flex items-center gap-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl px-5 py-3 transition-all duration-200"
-              >
-                <div className="w-9 h-9 rounded-lg bg-gold/20 flex items-center justify-center">
-                  <Phone className="h-4 w-4 text-gold" />
+              </div>
+              {/* Tarjeta flotante: programas */}
+              <div className="absolute -right-6 bottom-10 flex items-center gap-3 rounded-2xl border border-white/10 bg-black/70 px-4 py-3 shadow-xl backdrop-blur-md">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gold/15">
+                  <Sparkles className="h-5 w-5 text-gold" />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-400">Vega Alta</p>
-                  <p className="text-white font-semibold text-sm">(787) 883-8180</p>
+                  <p className="text-sm font-bold text-white">10+ Programas</p>
+                  <p className="text-[11px] text-gray-400">Belleza · Salud · Técnico</p>
                 </div>
-              </a>
+              </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
 
-      {/* Bottom fade */}
-      <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-white/5 to-transparent pointer-events-none" />
+      {/* Fade inferior hacia la siguiente sección */}
+      <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black to-transparent" />
     </section>
   )
 }

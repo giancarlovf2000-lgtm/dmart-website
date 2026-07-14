@@ -27,7 +27,7 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-bold tracking-tight;
+    @apply font-display font-bold tracking-tight;
   }
 
   h1 { @apply text-4xl md:text-5xl lg:text-6xl; }
@@ -183,6 +183,24 @@
   /* Text balance */
   .text-balance {
     text-wrap: balance;
+  }
+
+  /* Rejilla sutil para fondos oscuros (hero/secciones premium) */
+  .bg-grid-dark {
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    background-size: 46px 46px;
+  }
+
+  /* Glow rojo radial reutilizable */
+  .glow-red {
+    background: radial-gradient(closest-side, rgba(212, 0, 0, 0.35), transparent);
+  }
+
+  /* Texto en degradado (blanco → gris) para titulares sobre oscuro */
+  .text-gradient-light {
+    @apply bg-gradient-to-br from-white via-white to-gray-400 bg-clip-text text-transparent;
   }
 }
 
