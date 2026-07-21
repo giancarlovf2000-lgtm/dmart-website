@@ -146,8 +146,35 @@ export default function PostStudio({ onSave, onClear, saving = false, initial, v
   // Si el usuario no ha elegido logo manualmente, se autoajusta según el fondo.
   const [logoAuto, setLogoAuto] = useState(true)
   const exportRef = useRef<HTMLDivElement>(null)
+  // Biblioteca de contenido aprobado de estudiantes/profesores.
+  const [showLib, setShowLib] = useState(false)
+  const [libItems, setLibItems] = useState<{ id: string; title: string | null; url: string }[]>([])
+  const [libLoading, setLibLoading] = useState(false)
 
   const set = (patch: Partial<PostConfig>) => setConfig((c) => ({ ...c, ...patch }))
+
+  async function openLibrary() {
+    setShowLib(true); setLibLoading(true)
+    try {
+      const res = await fetch('/api/portal/content-library')
+      const data = await res.json()
+      setLibItems(data.items ?? [])
+    } catch { setLibItems([]) }
+    setLibLoading(false)
+  }
+  // Descarga la imagen firmada → dataURL (evita CORS al exportar con html-to-image).
+  async function useLibraryImage(url: string) {
+    try {
+      const res = await fetch(url)
+      const blob = await res.blob()
+      const reader = new FileReader()
+      reader.onload = () => {
+        setConfig((c) => ({ ...c, photo: reader.result as string, bg: 'foto', ...(logoAuto ? { logo: 'blanco' as LogoKind } : {}) }))
+        setShowLib(false)
+      }
+      reader.readAsDataURL(blob)
+    } catch { alert('No se pudo cargar la imagen.') }
+  }
 
   // Cambiar fondo: ajusta el logo automáticamente (claro → color; resto → blanco) si no se eligió manual.
   function changeBg(bg: BgStyle) {
@@ -344,6 +371,10 @@ export default function PostStudio({ onSave, onClear, saving = false, initial, v
               <Upload className="h-3 w-3" /> Subir foto
               <input type="file" accept="image/*" className="hidden" onChange={onPhoto} />
             </label>
+            <button type="button" onClick={openLibrary}
+              className="px-3 py-1.5 rounded-full text-xs font-semibold border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 transition-colors flex items-center gap-1">
+              <ImageIcon className="h-3 w-3" /> Biblioteca
+            </button>
             {config.photo && (
               <button onClick={() => set({ photo: null, bg: 'degradado' })} className="px-2 py-1.5 rounded-full text-xs text-gray-400 hover:bg-gray-100" title="Quitar foto">
                 <X className="h-3.5 w-3.5" />
@@ -417,6 +448,38 @@ export default function PostStudio({ onSave, onClear, saving = false, initial, v
           </div>
         )}
       </div>
+
+      {/* Biblioteca de contenido aprobado (estudiantes/profesores) */}
+      {showLib && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setShowLib(false)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <div>
+                <h3 className="text-sm font-bold text-ink">Biblioteca de contenido aprobado</h3>
+                <p className="text-[11px] text-gray-400">Imágenes de estudiantes/profesores autorizadas para uso.</p>
+              </div>
+              <button onClick={() => setShowLib(false)} className="p-1.5 rounded-lg hover:bg-gray-100"><X className="h-4 w-4 text-gray-500" /></button>
+            </div>
+            <div className="p-4 overflow-y-auto">
+              {libLoading ? (
+                <div className="py-12 text-center text-sm text-gray-400">Cargando…</div>
+              ) : libItems.length === 0 ? (
+                <div className="py-12 text-center text-sm text-gray-400">Aún no hay imágenes aprobadas. Aprueba contenido en la pestaña &quot;Contenido&quot;.</div>
+              ) : (
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                  {libItems.map((it) => (
+                    <button key={it.id} onClick={() => useLibraryImage(it.url)}
+                      className="group rounded-xl overflow-hidden border border-gray-200 hover:border-accent transition-colors aspect-square">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={it.url} alt={it.title ?? ''} className="w-full h-full object-cover group-hover:opacity-90" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Vista previa ──────────────────────────────────────────── */}
       {!embedded && (

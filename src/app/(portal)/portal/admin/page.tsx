@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import PortalHeader from '@/components/portal/PortalHeader'
 import PostsHub from '@/components/portal/posts/PostsHub'
+import ContentSubmissionsPanel from '@/components/portal/ContentSubmissionsPanel'
 import Button from '@/components/ui/Button'
 import type { Employee } from '@/lib/types'
 
@@ -1766,7 +1767,7 @@ export default function AdminPage() {
   const [showModal, setShowModal] = useState(false)
   const [showImport, setShowImport] = useState(false)
   const [editEmployee, setEditEmployee] = useState<EmployeeWithCount | null>(null)
-  const [activeTab, setActiveTab] = useState<'empleados' | 'actividades' | 'informes' | 'informe_general' | 'solicitudes' | 'posts'>('actividades')
+  const [activeTab, setActiveTab] = useState<'empleados' | 'actividades' | 'informes' | 'informe_general' | 'solicitudes' | 'posts' | 'contenido'>('actividades')
 
   async function loadEmployees() {
     const res = await fetch('/api/portal/admin/employees')
@@ -1835,6 +1836,7 @@ export default function AdminPage() {
             { key: 'informe_general', label: 'Informe General',     icon: BarChart3 },
             { key: 'solicitudes',     label: 'Solicitudes',         icon: Briefcase },
             { key: 'posts',           label: 'Posts',               icon: Megaphone },
+            { key: 'contenido',       label: 'Contenido',           icon: GraduationCap },
           ] as const).map(({ key, label, icon: Icon }) => (
             <button
               key={key}
@@ -1951,6 +1953,8 @@ export default function AdminPage() {
         {activeTab === 'solicitudes' && <SolicitudesPanel />}
 
         {activeTab === 'posts' && <PostsHub />}
+
+        {activeTab === 'contenido' && <ContentSubmissionsPanel />}
       </div>
 
       {showModal && (

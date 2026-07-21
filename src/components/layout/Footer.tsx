@@ -27,6 +27,7 @@ const footerLinks = [
   { label: 'Catálogo', href: '/catalogo' },
   { label: 'Preguntas Frecuentes', href: '/preguntas-frecuentes' },
   { label: 'Contáctanos', href: '/contactanos' },
+  { label: 'Portal de Estudiantes · Sube tu contenido', href: '/mi-cuenta' },
 ]
 
 export default function Footer() {
