@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-import { Menu, X, ChevronDown, Phone } from 'lucide-react'
+import { Menu, X, ChevronDown, Phone, Camera } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
 
@@ -154,6 +154,15 @@ export default function Navbar() {
 
           {/* Desktop CTA */}
           <div className="hidden lg:flex items-center gap-3">
+            <Link
+              href="/mi-cuenta"
+              className="flex items-center gap-1.5 text-sm font-semibold text-gray-600 hover:text-gold transition-colors"
+              title="Portal de estudiantes y profesores"
+            >
+              <Camera className="h-4 w-4" />
+              <span>Sube tu Contenido</span>
+            </Link>
+            <span className="h-5 w-px bg-gray-200" aria-hidden />
             <a
               href="tel:7877107001"
               className="flex items-center gap-1.5 text-sm font-semibold text-gray-600 hover:text-gold transition-colors"
@@ -241,6 +250,12 @@ export default function Navbar() {
 
             {/* Mobile CTA */}
             <div className="pt-4 pb-2 space-y-3 border-t border-gray-100 mt-4">
+              <Link href="/mi-cuenta" className="block">
+                <Button variant="outline" size="md" fullWidth className="border-gold/40 text-navy">
+                  <Camera className="h-4 w-4" />
+                  Sube tu Contenido
+                </Button>
+              </Link>
               <Link href="/admisiones" className="block">
                 <Button variant="gold" size="md" fullWidth>
                   Matrícula Ahora
