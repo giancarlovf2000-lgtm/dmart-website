@@ -215,8 +215,14 @@ export default function Footer() {
             <p>
               © {currentYear} D'Mart Institute. Todos los derechos reservados.
             </p>
-            <div className="flex items-center gap-4">
-              <span>Barranquitas & Vega Alta, Puerto Rico</span>
+            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+              <Link href="/privacidad" className="hover:text-gray-300 transition-colors">
+                Política de Privacidad
+              </Link>
+              <span className="w-1 h-1 bg-gray-600 rounded-full" />
+              <Link href="/terminos-sms" className="hover:text-gray-300 transition-colors">
+                Términos SMS
+              </Link>
               <span className="w-1 h-1 bg-gray-600 rounded-full" />
               <Link href="/sitemap.xml" className="hover:text-gray-300 transition-colors">
                 Mapa del Sitio
