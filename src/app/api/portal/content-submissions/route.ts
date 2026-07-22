@@ -43,14 +43,28 @@ export async function GET(request: NextRequest) {
     : { data: [] }
   const byId = new Map((contribs ?? []).map((c) => [c.id, c]))
 
+  // Email autoritativo desde auth.users (por si no hay perfil de contribuidor).
+  const authById = new Map<string, { email: string | null; name: string | null }>()
+  await Promise.all(ids.map(async (id) => {
+    try {
+      const { data } = await admin.auth.admin.getUserById(id)
+      authById.set(id, {
+        email: data.user?.email ?? null,
+        name: (data.user?.user_metadata?.full_name as string) ?? null,
+      })
+    } catch { /* usuario borrado: se queda sin datos de auth */ }
+  }))
+
   const submissions = await Promise.all(rows.map(async (s) => {
     const { data: signed } = await admin.storage.from(BUCKET).createSignedUrl(s.storage_path, 3600)
     const c = byId.get(s.contributor_id)
+    const au = authById.get(s.contributor_id)
+    const email = c?.email ?? au?.email ?? null
     return {
       ...s,
       url: signed?.signedUrl ?? null,
-      author_name: c?.full_name ?? 'Desconocido',
-      author_email: c?.email ?? null,
+      author_name: c?.full_name ?? au?.name ?? email ?? 'Sin perfil',
+      author_email: email,
       author_type: c?.type ?? null,
     }
   }))

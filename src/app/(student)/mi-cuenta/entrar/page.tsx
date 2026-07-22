@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Mail, Lock, AlertCircle } from 'lucide-react'
+import { Mail, Lock, AlertCircle, MailCheck } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import Button from '@/components/ui/Button'
 
@@ -12,20 +12,33 @@ export default function StudentLoginPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [needsConfirm, setNeedsConfirm] = useState(false)
+  const [resent, setResent] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     setError('')
+    setNeedsConfirm(false)
     const supabase = createClient()
     await supabase.auth.signOut()
     const { error: authError } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password })
     if (authError) {
-      setError('Credenciales incorrectas. Verifica tu correo y contraseña.')
+      if (/not confirmed|email_not_confirmed|confirm/i.test(authError.message)) {
+        setNeedsConfirm(true)
+      } else {
+        setError('Credenciales incorrectas. Verifica tu correo y contraseña.')
+      }
       setLoading(false)
       return
     }
     window.location.href = '/mi-cuenta'
+  }
+
+  async function resend() {
+    const supabase = createClient()
+    await supabase.auth.resend({ type: 'signup', email: email.trim().toLowerCase(), options: { emailRedirectTo: `${window.location.origin}/mi-cuenta` } })
+    setResent(true)
   }
 
   return (
@@ -45,6 +58,18 @@ export default function StudentLoginPage() {
             <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 flex gap-2 items-start">
               <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0 mt-0.5" />
               <p className="text-sm text-red-700">{error}</p>
+            </div>
+          )}
+
+          {needsConfirm && (
+            <div className="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200">
+              <div className="flex gap-2 items-start">
+                <MailCheck className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-amber-800">Tu cuenta aún no está confirmada. Revisa tu correo (y el spam) y abre el enlace de confirmación.</p>
+              </div>
+              <button onClick={resend} disabled={resent} className="mt-2 text-sm font-bold text-accent hover:underline disabled:text-gray-400">
+                {resent ? 'Correo reenviado ✓' : 'Reenviar correo de confirmación'}
+              </button>
             </div>
           )}
 

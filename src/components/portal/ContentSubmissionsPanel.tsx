@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
   Loader2, CheckCircle2, XCircle, Clock, Download, ShieldCheck, GraduationCap, BookOpen,
-  Image as ImageIcon, Film, UserRound,
+  Image as ImageIcon, Film, UserRound, Mail,
 } from 'lucide-react'
 
 interface Submission {
@@ -101,10 +101,18 @@ export default function ContentSubmissionsPanel() {
                 {s.title && <p className="text-sm font-bold text-ink leading-tight">{s.title}</p>}
                 {s.caption && <p className="text-xs text-gray-500 leading-snug line-clamp-2">{s.caption}</p>}
 
-                <div className="flex items-center gap-1.5 text-xs text-gray-600">
-                  {s.author_type === 'profesor' ? <BookOpen className="h-3.5 w-3.5 text-accent" /> : s.author_type === 'estudiante' ? <GraduationCap className="h-3.5 w-3.5 text-accent" /> : <UserRound className="h-3.5 w-3.5 text-gray-400" />}
-                  <span className="font-semibold text-ink">{s.author_name}</span>
-                  <span className="text-gray-400">· {fmtDate(s.created_at)} · {fmtSize(s.size_bytes)}</span>
+                <div className="flex flex-col gap-0.5 text-xs">
+                  <div className="flex items-center gap-1.5 text-gray-600">
+                    {s.author_type === 'profesor' ? <BookOpen className="h-3.5 w-3.5 text-accent" /> : s.author_type === 'estudiante' ? <GraduationCap className="h-3.5 w-3.5 text-accent" /> : <UserRound className="h-3.5 w-3.5 text-gray-400" />}
+                    <span className="font-semibold text-ink">{s.author_name}</span>
+                    {s.author_type && <span className="text-gray-400">· {s.author_type}</span>}
+                  </div>
+                  {s.author_email && (
+                    <a href={`mailto:${s.author_email}`} className="flex items-center gap-1.5 text-accent hover:underline pl-[19px]">
+                      <Mail className="h-3 w-3" /> {s.author_email}
+                    </a>
+                  )}
+                  <span className="text-gray-400 pl-[19px]">{fmtDate(s.created_at)} · {fmtSize(s.size_bytes)}</span>
                 </div>
 
                 {/* Consentimiento */}
