@@ -27,9 +27,10 @@ hardcodear hex ni usar `gray-*/slate-*/emerald-*/blue-*`… en el portal — usa
 | `accent-ring` | `rgba(245,51,63,.22)` | Anillo de foco de inputs |
 | Tarjetas | `#FFFFFF` | Las tarjetas siempre son blancas puras |
 
-**Regla de oro del color:** todo es neutro (tinta/gris) salvo lo urgente. Los estados
-"positivos" (matriculado, graduado, éxito) son **tinta**, no verde. Nunca verde/azul/
-ámbar decorativos.
+**Regla de oro del color:** todo es neutro (tinta/gris) salvo lo urgente (rojo). Nunca
+verde/azul/ámbar **decorativos**. La **única excepción sancionada** es el **estado del
+lead**: los badges de estado y las tarjetas de conteo por estado del dashboard usan una
+paleta de color con lógica de embudo (ver §5). Todo lo demás sigue monocromo.
 
 ### Sombras (neumorfismo dual)
 | Token | Uso |
@@ -123,4 +124,39 @@ Consumir SIEMPRE estas clases en lugar de repetir utilidades inline.
 5. Modales → `.portal-modal-overlay` + `.portal-modal`.
 6. Tabs → `.portal-tabs`; filtros → `.portal-filter` / `.portal-pill`; badges → `.portal-badge`.
 7. Loader → `.portal-spinner`; vacío → `.portal-empty`.
-8. Color: todo neutro; rojo (`accent`) solo si es urgente/destructivo/error.
+8. Color: todo neutro; rojo (`accent`) solo si es urgente/destructivo/error. Única
+   excepción: el estado del lead (§5).
+
+---
+
+## 5. Color de estados de lead (única capa con color)
+
+Los **estados de lead** son el único elemento con color propio, porque el color aquí sí
+comunica (leer el pipeline de un vistazo). Tinte **suave/pastel iOS** (fondo `-50/-100`
+tenue + texto `-600/-700/-800` saturado), con lógica de embudo: frío → cálido →
+verde = ganado / gris = perdido / rojo = urgente.
+
+**Fuente única:** `src/components/portal/LeadStatusBadge.tsx` → `STATUS_CONFIG`
+(`{ label, className, chipBg, icon }`, exportado). Lo consumen:
+- `LeadStatusBadge` → badges en tabla de leads, detalle del lead y duplicados (`className`).
+- `dashboard/page.tsx` → tarjetas de conteo por estado (`chipBg` fondo del chip + `icon` color del icono).
+
+Para cambiar/añadir un color de estado, editar SOLO ese mapa (clases Tailwind **literales**,
+para que el compilador las incluya).
+
+| Estado | Tono | badge |
+|---|---|---|
+| Nuevo Lead | azul | `bg-blue-50 text-blue-700` |
+| Contacto Inicial | sky | `bg-sky-50 text-sky-700` |
+| Contacto Establecido | cyan | `bg-cyan-50 text-cyan-700` |
+| Cita Programada | índigo | `bg-indigo-50 text-indigo-700` |
+| Reagendado | violeta | `bg-violet-50 text-violet-700` |
+| En Espera de Documentos | ámbar | `bg-amber-50 text-amber-700` |
+| Orientado | teal | `bg-teal-50 text-teal-700` |
+| Seguimiento a Futuro | slate | `bg-slate-100 text-slate-600` |
+| Matriculado | verde | `bg-green-50 text-green-700` |
+| Graduado | esmeralda | `bg-emerald-50 text-emerald-700` |
+| Graduado con Reválida | esmeralda + | `bg-emerald-100 text-emerald-800` |
+| No Asistió a la Cita | naranja | `bg-orange-50 text-orange-700` |
+| Crítico | rojo (accent) | `bg-accent-soft text-accent` |
+| Desinteresado / Rechazado | gris (perdido) | `bg-surface text-ink-muted/70` |

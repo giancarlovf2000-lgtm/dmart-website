@@ -9,6 +9,7 @@ import { leadStatusRank } from '@/lib/utils'
 import PortalHeader from '@/components/portal/PortalHeader'
 import LeadTable from '@/components/portal/LeadTable'
 import DuplicatesView from '@/components/portal/DuplicatesView'
+import { STATUS_CONFIG } from '@/components/portal/LeadStatusBadge'
 import type { Lead, Employee, Activity } from '@/lib/types'
 import {
   AlertTriangle, Users, Calendar, GraduationCap, Flame,
@@ -195,24 +196,22 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   const currentStatusFilter = searchParams.status ?? ''
 
-  // Casi monocromo: iconos neutros (ink); rojo SOLO para urgente (Crítico, No Asistió).
-  const N = 'text-ink'        // neutral
-  const U = 'text-accent'     // urgente (rojo)
+  // Cada estado se colorea con la paleta de LeadStatusBadge (fuente única) — indexada por filterValue.
   const allStats = [
-    { label: 'Nuevo Lead',               filterValue: 'Nuevo Lead',                               value: counts.nuevo,               icon: Users,        color: N, urgent: false },
-    { label: 'Crítico',                  filterValue: 'Crítico',                                  value: counts.critico,             icon: Flame,        color: U, urgent: true },
-    { label: 'Contacto Inicial',         filterValue: 'Contacto Inicial (Pendiente de Respuesta)',value: counts.contacto_inicial,    icon: Clock,        color: N, urgent: false },
-    { label: 'Contacto Establecido',     filterValue: 'Contacto Establecido',                     value: counts.contacto_establecido,icon: Phone,        color: N, urgent: false },
-    { label: 'Cita Programada',          filterValue: 'Cita Programada',                          value: counts.cita,                icon: Calendar,     color: N, urgent: false },
-    { label: 'No Asistió a la Cita',     filterValue: 'No Asistió a la Cita',                     value: counts.no_asistio,          icon: CalendarX2,   color: U, urgent: true },
-    { label: 'Reagendado',               filterValue: 'Reagendado',                               value: counts.reagendado,          icon: RotateCcw,    color: N, urgent: false },
-    { label: 'En Espera de Documentos',  filterValue: 'En Espera de Documentos',                  value: counts.documentos,          icon: FileText,     color: N, urgent: false },
-    { label: 'Orientado',                filterValue: 'Orientado (En Proceso de Matricularse)',    value: counts.orientado,           icon: BookOpen,     color: N, urgent: false },
-    { label: 'Seguimiento a Futuro',     filterValue: 'Seguimiento a Futuro',                     value: counts.futuro,              icon: Timer,        color: N, urgent: false },
-    { label: 'Matriculado',              filterValue: 'Matriculado',                              value: counts.matriculado,         icon: GraduationCap,color: N, urgent: false },
-    { label: 'Graduado',                 filterValue: 'Graduado',                                 value: counts.graduado,            icon: GraduationCap,color: N, urgent: false },
-    { label: 'Graduado con Reválida',    filterValue: 'Graduado con Reválida',                    value: counts.graduado_revalida,   icon: Award,        color: N, urgent: false },
-    { label: 'Desinteresado / Rechazado',filterValue: 'Desinteresado / Rechazado',                value: counts.desinteresado,       icon: XCircle,      color: N, urgent: false },
+    { label: 'Nuevo Lead',               filterValue: 'Nuevo Lead',                               value: counts.nuevo,               icon: Users },
+    { label: 'Crítico',                  filterValue: 'Crítico',                                  value: counts.critico,             icon: Flame },
+    { label: 'Contacto Inicial',         filterValue: 'Contacto Inicial (Pendiente de Respuesta)',value: counts.contacto_inicial,    icon: Clock },
+    { label: 'Contacto Establecido',     filterValue: 'Contacto Establecido',                     value: counts.contacto_establecido,icon: Phone },
+    { label: 'Cita Programada',          filterValue: 'Cita Programada',                          value: counts.cita,                icon: Calendar },
+    { label: 'No Asistió a la Cita',     filterValue: 'No Asistió a la Cita',                     value: counts.no_asistio,          icon: CalendarX2 },
+    { label: 'Reagendado',               filterValue: 'Reagendado',                               value: counts.reagendado,          icon: RotateCcw },
+    { label: 'En Espera de Documentos',  filterValue: 'En Espera de Documentos',                  value: counts.documentos,          icon: FileText },
+    { label: 'Orientado',                filterValue: 'Orientado (En Proceso de Matricularse)',    value: counts.orientado,           icon: BookOpen },
+    { label: 'Seguimiento a Futuro',     filterValue: 'Seguimiento a Futuro',                     value: counts.futuro,              icon: Timer },
+    { label: 'Matriculado',              filterValue: 'Matriculado',                              value: counts.matriculado,         icon: GraduationCap },
+    { label: 'Graduado',                 filterValue: 'Graduado',                                 value: counts.graduado,            icon: GraduationCap },
+    { label: 'Graduado con Reválida',    filterValue: 'Graduado con Reválida',                    value: counts.graduado_revalida,   icon: Award },
+    { label: 'Desinteresado / Rechazado',filterValue: 'Desinteresado / Rechazado',                value: counts.desinteresado,       icon: XCircle },
   ]
 
   return (
@@ -287,16 +286,17 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
         {/* ── Status filter cards ───────────────────────────────────── */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-6">
-          {allStats.map(({ label, filterValue, value, icon: Icon, color, urgent }) => {
+          {allStats.map(({ label, filterValue, value, icon: Icon }) => {
             const isActive = currentStatusFilter === filterValue
+            const style = STATUS_CONFIG[filterValue as keyof typeof STATUS_CONFIG]
             const href = isActive ? '/portal/dashboard' : `/portal/dashboard?status=${encodeURIComponent(filterValue)}`
             return (
               <a key={label} href={href}
                 title={isActive ? `Quitar filtro: ${label}` : `Filtrar por: ${label}`}
                 className={`portal-stat-card ${isActive ? 'portal-stat-card--active' : ''}`}
               >
-                <div className={`portal-chip ${isActive ? 'bg-white/15' : urgent ? 'bg-accent-soft' : ''}`}>
-                  <Icon className={`h-4 w-4 ${isActive ? 'text-white' : color}`} />
+                <div className={`portal-chip ${isActive ? 'bg-white/15' : (style?.chipBg ?? '')}`}>
+                  <Icon className={`h-4 w-4 ${isActive ? 'text-white' : (style?.icon ?? 'text-ink')}`} />
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className={`text-xs leading-tight truncate ${isActive ? 'text-white/80' : 'text-ink-muted'}`}>{label}</p>

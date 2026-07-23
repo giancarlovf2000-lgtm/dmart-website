@@ -1,28 +1,27 @@
 import { cn } from '@/lib/utils'
 import type { LeadStatus } from '@/lib/types'
 
-// Casi monocromo: rojo SOLO para urgente; "sólido" (ink) para logrado/matriculado;
-// neutro gris para en-proceso; muted para perdido.
-const NEUTRAL = 'bg-surface text-ink-muted'
-const URGENT = 'bg-accent-soft text-accent'
-const SOLID = 'bg-ink/[0.06] text-ink'
-const MUTED = 'bg-surface text-ink-muted/60'
+// Los estados de lead son la ÚNICA capa con color del portal (todo lo demás es
+// monocromo). Paleta en tinte suave/pastel iOS con lógica de embudo:
+// frío → cálido → verde=ganado / gris=perdido / rojo=urgente.
+// Fuente única: el dashboard reusa `chipBg`/`icon` para las tarjetas de conteo.
+interface StatusStyle { label: string; className: string; chipBg: string; icon: string }
 
-const STATUS_CONFIG: Record<LeadStatus, { label: string; className: string }> = {
-  'Nuevo Lead':                                { label: 'Nuevo Lead',           className: SOLID },
-  'Crítico':                                   { label: 'Crítico',              className: URGENT },
-  'Contacto Inicial (Pendiente de Respuesta)': { label: 'Contacto Inicial',    className: NEUTRAL },
-  'Contacto Establecido':                      { label: 'Contacto Establecido', className: NEUTRAL },
-  'Cita Programada':                           { label: 'Cita Programada',      className: NEUTRAL },
-  'No Asistió a la Cita':                      { label: 'No Asistió',           className: URGENT },
-  'Reagendado':                                { label: 'Reagendado',           className: NEUTRAL },
-  'En Espera de Documentos':                   { label: 'Esp. Documentos',      className: NEUTRAL },
-  'Orientado (En Proceso de Matricularse)':    { label: 'Orientado',            className: NEUTRAL },
-  'Seguimiento a Futuro':                      { label: 'Seg. Futuro',          className: NEUTRAL },
-  'Matriculado':                               { label: 'Matriculado',          className: SOLID },
-  'Desinteresado / Rechazado':                 { label: 'Desinteresado',        className: MUTED },
-  'Graduado':                                  { label: 'Graduado',             className: SOLID },
-  'Graduado con Reválida':                     { label: 'Revalidado',           className: SOLID },
+const STATUS_CONFIG: Record<LeadStatus, StatusStyle> = {
+  'Nuevo Lead':                                { label: 'Nuevo Lead',            className: 'bg-blue-50 text-blue-700',       chipBg: 'bg-blue-50',    icon: 'text-blue-600' },
+  'Crítico':                                   { label: 'Crítico',               className: 'bg-accent-soft text-accent',     chipBg: 'bg-accent-soft', icon: 'text-accent' },
+  'Contacto Inicial (Pendiente de Respuesta)': { label: 'Contacto Inicial',     className: 'bg-sky-50 text-sky-700',         chipBg: 'bg-sky-50',     icon: 'text-sky-600' },
+  'Contacto Establecido':                      { label: 'Contacto Establecido', className: 'bg-cyan-50 text-cyan-700',        chipBg: 'bg-cyan-50',    icon: 'text-cyan-600' },
+  'Cita Programada':                           { label: 'Cita Programada',      className: 'bg-indigo-50 text-indigo-700',    chipBg: 'bg-indigo-50',  icon: 'text-indigo-600' },
+  'No Asistió a la Cita':                      { label: 'No Asistió',           className: 'bg-orange-50 text-orange-700',    chipBg: 'bg-orange-50',  icon: 'text-orange-600' },
+  'Reagendado':                                { label: 'Reagendado',           className: 'bg-violet-50 text-violet-700',    chipBg: 'bg-violet-50',  icon: 'text-violet-600' },
+  'En Espera de Documentos':                   { label: 'Esp. Documentos',      className: 'bg-amber-50 text-amber-700',      chipBg: 'bg-amber-50',   icon: 'text-amber-600' },
+  'Orientado (En Proceso de Matricularse)':    { label: 'Orientado',            className: 'bg-teal-50 text-teal-700',        chipBg: 'bg-teal-50',    icon: 'text-teal-600' },
+  'Seguimiento a Futuro':                      { label: 'Seg. Futuro',          className: 'bg-slate-100 text-slate-600',     chipBg: 'bg-slate-100',  icon: 'text-slate-500' },
+  'Matriculado':                               { label: 'Matriculado',          className: 'bg-green-50 text-green-700',      chipBg: 'bg-green-50',   icon: 'text-green-600' },
+  'Desinteresado / Rechazado':                 { label: 'Desinteresado',        className: 'bg-surface text-ink-muted/70',    chipBg: 'bg-surface',    icon: 'text-ink-muted' },
+  'Graduado':                                  { label: 'Graduado',             className: 'bg-emerald-50 text-emerald-700',  chipBg: 'bg-emerald-50', icon: 'text-emerald-600' },
+  'Graduado con Reválida':                     { label: 'Revalidado',           className: 'bg-emerald-100 text-emerald-800', chipBg: 'bg-emerald-100', icon: 'text-emerald-700' },
 }
 
 interface LeadStatusBadgeProps {
