@@ -209,7 +209,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
   if (loading) {
     return (
       <div className="min-h-screen bg-surface flex items-center justify-center">
-        <div className="animate-spin h-8 w-8 rounded-full border-4 border-ink border-t-transparent" />
+        <div className="portal-spinner h-8 w-8" />
       </div>
     )
   }
@@ -217,9 +217,9 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
   if (error || !lead) {
     return (
       <div className="min-h-screen bg-surface flex items-center justify-center">
-        <div className="text-center">
-          <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-3" />
-          <p className="text-gray-600">{error || 'Lead no encontrado.'}</p>
+        <div className="portal-empty text-center">
+          <AlertCircle className="h-12 w-12 text-accent mx-auto mb-3" />
+          <p className="text-ink-muted">{error || 'Lead no encontrado.'}</p>
           <button onClick={() => router.back()} className="mt-4 text-sm text-ink hover:underline">← Volver</button>
         </div>
       </div>
@@ -240,11 +240,11 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
   return (
     <div className="min-h-screen bg-surface">
       {/* Nav bar */}
-      <div className="bg-white border-b border-gray-200 px-4 md:px-6 py-4">
+      <div className="bg-white border-b border-black/[0.05] px-4 md:px-6 py-4">
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
           <button
             onClick={() => router.back()}
-            className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+            className="flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
             Volver
@@ -254,7 +254,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
               <button
                 onClick={handleDelete}
                 disabled={deleting}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-red-200 text-red-600 text-sm font-medium hover:bg-red-50 transition-colors disabled:opacity-50"
+                className="portal-btn-danger"
               >
                 <Trash2 className="h-4 w-4" />
                 {deleting ? 'Eliminando…' : 'Eliminar'}
@@ -262,7 +262,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
             )}
             <button
               onClick={() => setShowStatusModal(true)}
-              className="px-4 py-2 rounded-xl bg-ink text-white text-sm font-semibold hover:bg-black transition-colors"
+              className="portal-btn"
             >
               Cambiar Estado
             </button>
@@ -272,11 +272,11 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
 
       <div className="max-w-4xl mx-auto px-4 md:px-6 py-6 space-y-5">
         {/* Lead info card */}
-        <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-6">
+        <div className="portal-card p-6">
           <div className="flex flex-wrap items-start justify-between gap-3 mb-5">
             <div>
               <h1 className="text-2xl font-bold text-ink font-display">{lead.nombre} {lead.apellido}</h1>
-              <p className="text-sm text-gray-500 mt-0.5">{sourceDisplay()}</p>
+              <p className="text-sm text-ink-muted mt-0.5">{sourceDisplay()}</p>
             </div>
             <LeadStatusBadge status={lead.status} />
           </div>
@@ -289,7 +289,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
                     type="text"
                     value={editContact.nombre}
                     onChange={(e) => setEditContact((p) => p && ({ ...p, nombre: e.target.value }))}
-                    className="w-full text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-accent-ring"
+                    className="portal-input"
                   />
                 </EditField>
                 <EditField icon={User} label="Apellido">
@@ -297,7 +297,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
                     type="text"
                     value={editContact.apellido}
                     onChange={(e) => setEditContact((p) => p && ({ ...p, apellido: e.target.value }))}
-                    className="w-full text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-accent-ring"
+                    className="portal-input"
                   />
                 </EditField>
                 <EditField icon={Phone} label="Teléfono">
@@ -305,7 +305,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
                     type="tel"
                     value={editContact.telefono}
                     onChange={(e) => setEditContact((p) => p && ({ ...p, telefono: e.target.value }))}
-                    className="w-full text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-accent-ring"
+                    className="portal-input"
                   />
                 </EditField>
                 <EditField icon={Mail} label="Correo">
@@ -313,14 +313,14 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
                     type="email"
                     value={editContact.email}
                     onChange={(e) => setEditContact((p) => p && ({ ...p, email: e.target.value }))}
-                    className="w-full text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-accent-ring"
+                    className="portal-input"
                   />
                 </EditField>
                 <EditField icon={MapPin} label="Recinto">
                   <select
                     value={editContact.campus}
                     onChange={(e) => setEditContact((p) => p && ({ ...p, campus: e.target.value }))}
-                    className="w-full text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-accent-ring"
+                    className="portal-select"
                   >
                     <option value="">Sin especificar</option>
                     {CAMPUSES.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -330,7 +330,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
                   <select
                     value={editContact.horario}
                     onChange={(e) => setEditContact((p) => p && ({ ...p, horario: e.target.value }))}
-                    className="w-full text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-accent-ring"
+                    className="portal-select"
                   >
                     <option value="">Sin especificar</option>
                     {HORARIOS.map((h) => <option key={h} value={h}>{h}</option>)}
@@ -341,7 +341,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
                     type="date"
                     value={editContact.start_date}
                     onChange={(e) => setEditContact((p) => p && ({ ...p, start_date: e.target.value }))}
-                    className="w-full text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-accent-ring"
+                    className="portal-input"
                   />
                 </EditField>
                 <div className="sm:col-span-2">
@@ -349,7 +349,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
                     <select
                       value={editContact.programa_interes}
                       onChange={(e) => setEditContact((p) => p && ({ ...p, programa_interes: e.target.value }))}
-                      className="w-full text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-accent-ring"
+                      className="portal-select"
                     >
                       <option value="">Sin especificar</option>
                       {ALL_PROGRAMS.map((p) => <option key={p} value={p}>{p}</option>)}
@@ -370,20 +370,20 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
             <InfoRow icon={Calendar} label="Fecha del Lead" value={formatDateTime(lead.created_at)} />
             {(isAdmin || isSupervisor) && assignableEmployees.length > 1 ? (
               <div>
-                <p className="text-xs text-gray-500 mb-1">Asignado a</p>
+                <p className="text-xs text-ink-muted mb-1">Asignado a</p>
                 <div className="flex items-center gap-2">
-                  <User className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                  <User className="h-4 w-4 text-ink-muted flex-shrink-0" />
                   <select
                     value={lead.assigned_to ?? ''}
                     onChange={(e) => handleReassign(e.target.value)}
                     disabled={reassigning}
-                    className="text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-accent-ring disabled:opacity-50"
+                    className="portal-filter disabled:opacity-50"
                   >
                     {assignableEmployees.map((e) => (
                       <option key={e.id} value={e.id}>{e.full_name}</option>
                     ))}
                   </select>
-                  {reassigning && <span className="text-xs text-gray-400">Guardando…</span>}
+                  {reassigning && <span className="text-xs text-ink-muted">Guardando…</span>}
                 </div>
               </div>
             ) : (
@@ -393,23 +393,23 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
           </div>
 
           {/* Contact edit controls */}
-          <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-end gap-2">
+          <div className="mt-4 pt-4 border-t border-black/[0.05] flex items-center justify-end gap-2">
             {editContact ? (
               <>
                 <button
                   onClick={() => setEditContact(null)}
                   disabled={savingContact}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-gray-500 hover:bg-gray-100 transition-colors disabled:opacity-50"
+                  className="portal-btn-ghost"
                 >
-                  <X className="h-3.5 w-3.5" />
+                  <X className="h-4 w-4" />
                   Cancelar
                 </button>
                 <button
                   onClick={handleSaveContact}
                   disabled={savingContact}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-ink text-white text-sm font-semibold hover:bg-black transition-colors disabled:opacity-50"
+                  className="portal-btn"
                 >
-                  <Check className="h-3.5 w-3.5" />
+                  <Check className="h-4 w-4" />
                   {savingContact ? 'Guardando…' : 'Guardar'}
                 </button>
               </>
@@ -418,9 +418,9 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
                 {lead.programa_interes && PRIVATE_PROGRAM_KEYS[lead.programa_interes] && (
                   <a
                     href={`/portal/contratos-privados?program=${PRIVATE_PROGRAM_KEYS[lead.programa_interes]}&nombre=${encodeURIComponent(`${lead.nombre} ${lead.apellido}`)}&telefono=${encodeURIComponent(lead.telefono ?? '')}&email=${encodeURIComponent(lead.email ?? '')}`}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent text-white text-sm font-semibold hover:bg-accent-hover transition-colors"
+                    className="portal-btn"
                   >
-                    <FileText className="h-3.5 w-3.5" />
+                    <FileText className="h-4 w-4" />
                     Generar Contrato
                   </a>
                 )}
@@ -435,9 +435,9 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
                     programa_interes: lead.programa_interes ?? '',
                     horario: lead.horario ?? '',
                   })}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-gray-500 hover:bg-gray-100 transition-colors"
+                  className="portal-btn-ghost"
                 >
-                  <Pencil className="h-3.5 w-3.5" />
+                  <Pencil className="h-4 w-4" />
                   Editar contacto
                 </button>
               </>
@@ -446,9 +446,9 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
         </div>
 
         {/* Follow-up scheduler */}
-        <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-6">
+        <div className="portal-card p-6">
           <div className="flex items-center gap-2 mb-4">
-            <CalendarClock className="h-4 w-4 text-blue-600" />
+            <CalendarClock className="h-4 w-4 text-ink-muted" />
             <h2 className="text-sm font-bold text-ink font-display">Follow-up programado</h2>
           </div>
 
@@ -460,20 +460,20 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
                 const isDue = isProg && fu.due_date <= new Date().toISOString().slice(0, 10)
                 return (
                   <div key={fu.id} className={`flex items-start justify-between gap-3 rounded-xl border px-3.5 py-2.5 ${
-                    isDue ? 'bg-blue-50 border-blue-200' : isProg ? 'bg-gray-50 border-gray-200' : 'bg-gray-50 border-gray-100 opacity-70'
+                    isDue ? 'bg-accent-soft border-accent/20' : isProg ? 'bg-surface border-black/[0.05]' : 'bg-surface border-black/[0.05] opacity-70'
                   }`}>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-sm font-semibold text-ink">{formatDate(fu.due_date)}</span>
                         <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${
-                          fu.status === 'programado' ? (isDue ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-700')
-                          : fu.status === 'completado' ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500'
+                          fu.status === 'programado' ? (isDue ? 'bg-accent text-white' : 'bg-ink/[0.06] text-ink-muted')
+                          : fu.status === 'completado' ? 'bg-ink/[0.06] text-ink' : 'bg-ink/[0.06] text-ink-muted'
                         }`}>
                           {fu.status === 'programado' ? (isDue ? 'Pendiente hoy' : 'Programado') : fu.status === 'completado' ? 'Hecho' : 'Cancelado'}
                         </span>
                       </div>
-                      {fu.note && <p className="text-sm text-gray-600 mt-0.5">{fu.note}</p>}
-                      <p className="text-xs text-gray-400 mt-0.5">Programado por {fu.employee?.full_name ?? 'empleado'}</p>
+                      {fu.note && <p className="text-sm text-ink-muted mt-0.5">{fu.note}</p>}
+                      <p className="text-xs text-ink-muted mt-0.5">Programado por {fu.employee?.full_name ?? 'empleado'}</p>
                     </div>
                     {isProg && (
                       <div className="flex items-center gap-1 flex-shrink-0">
@@ -482,7 +482,7 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
                           <Check className="h-3 w-3" /> Hecho
                         </button>
                         <button onClick={() => handleCloseFollowup(fu.id, 'cancelado')}
-                          className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 transition-colors" title="Cancelar">
+                          className="p-1.5 rounded-lg text-ink-muted hover:bg-surface transition-colors" title="Cancelar">
                           <X className="h-3.5 w-3.5" />
                         </button>
                       </div>
@@ -494,46 +494,46 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
           )}
 
           {/* Formulario para programar */}
-          <div className="p-4 rounded-xl border border-gray-200 bg-gray-50 space-y-3">
-            <p className="text-xs font-semibold text-gray-700">Programar un follow-up</p>
+          <div className="p-4 rounded-xl border border-black/[0.05] bg-surface space-y-3">
+            <p className="text-xs font-semibold text-ink">Programar un follow-up</p>
             <div className="flex flex-wrap items-end gap-3">
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">Fecha</label>
+                <label className="text-xs text-ink-muted mb-1 block">Fecha</label>
                 <input
                   type="date"
                   value={fuForm.due_date}
                   min={new Date().toISOString().slice(0, 10)}
                   onChange={(e) => setFuForm((p) => ({ ...p, due_date: e.target.value }))}
-                  className="text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-accent-ring"
+                  className="portal-filter"
                 />
               </div>
               <div className="flex items-center gap-1.5">
                 {[7, 10, 30].map((n) => (
                   <button key={n} type="button" onClick={() => setFuForm((p) => ({ ...p, due_date: addDays(n) }))}
-                    className="px-2.5 py-1.5 rounded-full border border-gray-200 bg-white text-xs font-semibold text-gray-600 hover:bg-gray-100 transition-colors">
+                    className="portal-pill">
                     +{n} días
                   </button>
                 ))}
               </div>
             </div>
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Nota (opcional)</label>
+              <label className="text-xs text-ink-muted mb-1 block">Nota (opcional)</label>
               <input
                 type="text"
                 value={fuForm.note}
                 onChange={(e) => setFuForm((p) => ({ ...p, note: e.target.value }))}
                 placeholder="Motivo o recordatorio…"
                 maxLength={500}
-                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-accent-ring"
+                className="portal-input"
               />
             </div>
             <div className="flex justify-end">
               <button
                 onClick={handleScheduleFollowup}
                 disabled={savingFu || !fuForm.due_date}
-                className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50"
+                className="portal-btn"
               >
-                <CalendarPlus className="h-3.5 w-3.5" />
+                <CalendarPlus className="h-4 w-4" />
                 {savingFu ? 'Programando…' : 'Programar follow-up'}
               </button>
             </div>
@@ -541,15 +541,15 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
         </div>
 
         {/* History */}
-        <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-6">
+        <div className="portal-card p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-bold text-gray-900">Historial de Actividad</h2>
+            <h2 className="text-sm font-bold text-ink">Historial de Actividad</h2>
             {!showNoteForm && (
               <button
                 onClick={() => setShowNoteForm(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-gray-500 hover:bg-gray-100 transition-colors"
+                className="portal-btn-ghost"
               >
-                <MessageSquarePlus className="h-3.5 w-3.5" />
+                <MessageSquarePlus className="h-4 w-4" />
                 Agregar seguimiento
               </button>
             )}
@@ -557,31 +557,31 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
 
           {/* Inline note form */}
           {showNoteForm && (
-            <div className="mb-5 p-4 rounded-xl border border-gray-200 bg-gray-50 space-y-3">
-              <p className="text-xs font-semibold text-gray-700">Nuevo seguimiento</p>
+            <div className="mb-5 p-4 rounded-xl border border-black/[0.05] bg-surface space-y-3">
+              <p className="text-xs font-semibold text-ink">Nuevo seguimiento</p>
               {noteError && (
-                <div className="flex items-center gap-2 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                <div className="flex items-center gap-2 text-xs text-accent bg-accent-soft border border-accent/20 rounded-lg px-3 py-2">
                   <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
                   {noteError}
                 </div>
               )}
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">Tipo de seguimiento</label>
+                <label className="text-xs text-ink-muted mb-1 block">Tipo de seguimiento</label>
                 <CommTypeSelect
                   value={noteForm.communication_type}
                   onChange={(v) => setNoteForm((p) => ({ ...p, communication_type: v }))}
                 />
               </div>
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">Nota <span className="text-gray-400">(mín. 20 caracteres)</span></label>
+                <label className="text-xs text-ink-muted mb-1 block">Nota <span className="text-ink-muted">(mín. 20 caracteres)</span></label>
                 <textarea
                   rows={3}
                   value={noteForm.note}
                   onChange={(e) => setNoteForm((p) => ({ ...p, note: e.target.value }))}
                   placeholder="Describe el seguimiento realizado…"
-                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-accent-ring resize-none"
+                  className="portal-textarea resize-none"
                 />
-                <p className={`text-xs mt-0.5 ${noteForm.note.trim().length >= 20 ? 'text-green-600' : 'text-gray-400'}`}>
+                <p className={`text-xs mt-0.5 ${noteForm.note.trim().length >= 20 ? 'text-ink' : 'text-ink-muted'}`}>
                   {noteForm.note.trim().length}/20 caracteres mínimos
                 </p>
               </div>
@@ -589,16 +589,16 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
                 <button
                   onClick={() => { setShowNoteForm(false); setNoteForm({ communication_type: 'Llamada', note: '' }); setNoteError('') }}
                   disabled={savingNote}
-                  className="px-3 py-1.5 rounded-lg text-sm text-gray-500 hover:bg-gray-100 transition-colors disabled:opacity-50"
+                  className="portal-btn-ghost"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={handleSaveNote}
                   disabled={savingNote}
-                  className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-ink text-white text-sm font-semibold hover:bg-black transition-colors disabled:opacity-50"
+                  className="portal-btn"
                 >
-                  <Check className="h-3.5 w-3.5" />
+                  <Check className="h-4 w-4" />
                   {savingNote ? 'Guardando…' : 'Guardar seguimiento'}
                 </button>
               </div>
@@ -606,35 +606,35 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
           )}
 
           {history.length === 0 ? (
-            <p className="text-sm text-gray-400">Sin actividad registrada aún.</p>
+            <p className="portal-empty text-sm text-ink-muted">Sin actividad registrada aún.</p>
           ) : (
             <div className="space-y-4">
               {history.map((entry, i) => (
                 <div key={entry.id} className="flex gap-3">
                   <div className="flex flex-col items-center">
                     <div className="h-2.5 w-2.5 rounded-full bg-ink mt-1.5 flex-shrink-0" />
-                    {i < history.length - 1 && <div className="w-px flex-1 bg-gray-200 mt-1" />}
+                    {i < history.length - 1 && <div className="w-px flex-1 bg-black/[0.05] mt-1" />}
                   </div>
                   <div className="pb-4 flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2 mb-1">
-                      <span className="text-xs font-semibold text-gray-700">
+                      <span className="text-xs font-semibold text-ink">
                         {ACTION_LABELS[entry.action_type] ?? entry.action_type}
                       </span>
                       {entry.old_status && entry.new_status && (
-                        <span className="text-xs text-gray-400">
+                        <span className="text-xs text-ink-muted">
                           {entry.old_status} → {entry.new_status}
                         </span>
                       )}
                       {entry.communication_type && (
-                        <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">
+                        <span className="text-xs px-1.5 py-0.5 rounded bg-ink/[0.06] text-ink-muted">
                           {entry.communication_type}
                         </span>
                       )}
                     </div>
                     {entry.note && (
-                      <p className="text-sm text-gray-700 mt-1 leading-relaxed">{entry.note}</p>
+                      <p className="text-sm text-ink mt-1 leading-relaxed">{entry.note}</p>
                     )}
-                    <p className="text-xs text-gray-400 mt-1.5">
+                    <p className="text-xs text-ink-muted mt-1.5">
                       {entry.employee?.full_name ?? 'Sistema'} · {formatDateTime(entry.created_at)}
                     </p>
                   </div>
@@ -662,10 +662,10 @@ export default function LeadDetailPage({ params }: { params: { id: string } }) {
 function InfoRow({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
   return (
     <div className="flex items-start gap-2.5">
-      <Icon className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+      <Icon className="h-4 w-4 text-ink-muted mt-0.5 flex-shrink-0" />
       <div className="min-w-0">
-        <p className="text-xs text-gray-400">{label}</p>
-        <p className="text-sm font-medium text-gray-800 break-all">{value}</p>
+        <p className="text-xs text-ink-muted">{label}</p>
+        <p className="text-sm font-medium text-ink break-all">{value}</p>
       </div>
     </div>
   )
@@ -674,9 +674,9 @@ function InfoRow({ icon: Icon, label, value }: { icon: React.ElementType; label:
 function EditField({ icon: Icon, label, children }: { icon: React.ElementType; label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-start gap-2.5">
-      <Icon className="h-4 w-4 text-gray-400 mt-2.5 flex-shrink-0" />
+      <Icon className="h-4 w-4 text-ink-muted mt-2.5 flex-shrink-0" />
       <div className="flex-1 min-w-0">
-        <p className="text-xs text-gray-400 mb-1">{label}</p>
+        <p className="text-xs text-ink-muted mb-1">{label}</p>
         {children}
       </div>
     </div>

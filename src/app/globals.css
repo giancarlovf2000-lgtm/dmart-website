@@ -95,74 +95,111 @@
   }
 
   /* ─────────────────────────────────────────────────────────────────────────
-     Portal design system (Fynix-inspired, red accent). Opt-in: only used by
-     components under /portal. Does not affect the public marketing site.
+     Portal design system — neumórfico / soft UI (iOS). Casi monocromo + rojo
+     de urgencia. Fuente única para /portal. No afecta al sitio público.
      ───────────────────────────────────────────────────────────────────────── */
+
+  /* Superficies / tarjetas */
   .portal-card {
-    @apply bg-white rounded-2xl border border-black/[0.06] shadow-soft;
+    @apply bg-white rounded-neu shadow-soft;
+  }
+  .portal-card-hover {
+    @apply transition-all duration-200 hover:shadow-soft-lg hover:-translate-y-0.5;
+  }
+  .portal-tile {
+    @apply bg-white rounded-xl2 shadow-soft;
   }
 
-  /* Dashboard stat / filter card */
-  .portal-stat-card {
-    @apply flex items-center gap-3 px-4 py-3.5 rounded-2xl border border-black/[0.06]
-           bg-white shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-card-hover;
+  /* Contenedor de icono en relieve soft */
+  .portal-icon {
+    @apply grid h-11 w-11 flex-shrink-0 place-items-center rounded-xl2 bg-white text-ink shadow-neu-sm;
   }
-  .portal-stat-card--active {
-    @apply bg-ink border-ink text-white shadow-card-hover;
-  }
+  .portal-icon--sm { @apply h-9 w-9 rounded-xl; }
+  .portal-icon--urgent { @apply text-accent; }
 
-  /* Circular icon chip */
+  /* Chip circular (avatar/icono pequeño) */
   .portal-chip {
-    @apply h-9 w-9 rounded-full bg-surface grid place-items-center flex-shrink-0;
+    @apply grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-surface text-ink shadow-neu-sm;
   }
 
-  /* Pills (filters) */
+  /* Tarjeta de métrica (dashboard) */
+  .portal-stat-card {
+    @apply flex items-center gap-3 rounded-xl2 bg-white px-4 py-3.5 shadow-soft
+           transition-all duration-200 hover:-translate-y-0.5 hover:shadow-soft-lg;
+  }
+  .portal-stat-card--active { @apply bg-ink text-white shadow-soft-lg; }
+
+  /* Alert card ancho completo (icono + número grande + título + chevron) */
+  .portal-alert-card {
+    @apply flex w-full items-center gap-4 rounded-neu bg-white p-5 text-left shadow-soft
+           transition-all duration-200 hover:-translate-y-0.5 hover:shadow-soft-lg;
+  }
+  .portal-alert-card--urgent { @apply ring-1 ring-accent/25; }
+
+  /* Pills (filtros) */
   .portal-pill {
-    @apply inline-flex items-center gap-2 px-3.5 py-2 rounded-full border border-black/[0.08]
-           bg-white text-ink-muted text-xs font-semibold transition-all hover:bg-surface;
+    @apply inline-flex items-center gap-2 rounded-full bg-white px-3.5 py-2 text-xs font-semibold
+           text-ink-muted shadow-neu-sm transition-all hover:text-ink;
   }
-  .portal-pill--active {
-    @apply bg-accent border-accent text-white hover:bg-accent;
-  }
+  .portal-pill--active { @apply bg-ink text-white; }
 
   /* Tabs (segmented control) */
-  .portal-tabs {
-    @apply inline-flex gap-1 p-1 rounded-full bg-surface-soft;
-  }
+  .portal-tabs { @apply inline-flex gap-1 rounded-full bg-surface p-1 shadow-neu-inset; }
   .portal-tab {
-    @apply px-5 py-2 rounded-full text-sm font-semibold text-ink-muted transition-all hover:text-ink;
+    @apply rounded-full px-5 py-2 text-sm font-semibold text-ink-muted transition-all hover:text-ink;
   }
-  .portal-tab--active {
-    @apply bg-accent text-white shadow-sm hover:text-white;
-  }
+  .portal-tab--active { @apply bg-white text-ink shadow-soft; }
 
-  /* Buttons */
+  /* Botones */
   .portal-btn {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full
-           bg-ink text-white text-sm font-semibold transition-all hover:bg-black
-           disabled:opacity-50 disabled:pointer-events-none;
-  }
-  .portal-btn-accent {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full
-           bg-accent text-white text-sm font-semibold transition-all hover:bg-accent-hover
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-ink px-5 py-2.5 text-sm
+           font-semibold text-white shadow-soft transition-all hover:bg-black
+           active:translate-y-px active:shadow-neu-inset
            disabled:opacity-50 disabled:pointer-events-none;
   }
   .portal-btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full
-           border border-black/[0.1] bg-white text-ink text-sm font-semibold transition-all
-           hover:bg-surface disabled:opacity-50 disabled:pointer-events-none;
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm
+           font-semibold text-ink shadow-soft transition-all hover:shadow-soft-lg
+           active:translate-y-px active:shadow-neu-inset
+           disabled:opacity-50 disabled:pointer-events-none;
+  }
+  /* Rojo: solo acciones destructivas / urgentes */
+  .portal-btn-danger, .portal-btn-accent {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm
+           font-semibold text-white shadow-soft transition-all hover:bg-accent-hover
+           active:translate-y-px active:shadow-neu-inset
+           disabled:opacity-50 disabled:pointer-events-none;
   }
 
-  /* Inputs */
-  .portal-input {
-    @apply w-full px-3.5 py-2.5 rounded-xl border border-black/[0.1]
-           bg-white text-ink placeholder-ink-muted/60 text-sm
-           focus:outline-none focus:ring-2 focus:ring-accent-ring focus:border-accent
-           transition-all;
+  /* Inputs (relieve inset, sin borde duro) */
+  .portal-input, .portal-select, .portal-textarea {
+    @apply w-full rounded-xl bg-surface px-4 py-2.5 text-sm text-ink placeholder-ink-muted/60
+           shadow-neu-inset border-0 transition-all
+           focus:outline-none focus:ring-2 focus:ring-accent-ring;
   }
-  .portal-label {
-    @apply block text-xs font-semibold text-ink-muted mb-1.5;
+  .portal-label { @apply mb-1.5 block text-xs font-semibold text-ink-muted; }
+
+  /* Filtro compacto en línea (barras de filtros): inset soft, sin ancho fijo */
+  .portal-filter {
+    @apply rounded-xl bg-surface px-3 py-1.5 text-sm text-ink shadow-neu-inset border-0
+           transition-all focus:outline-none focus:ring-2 focus:ring-accent-ring;
   }
+
+  /* Badge (neutro) + urgente (rojo) */
+  .portal-badge {
+    @apply inline-flex items-center gap-1 rounded-full bg-surface px-2.5 py-0.5 text-xs font-semibold text-ink-muted;
+  }
+  .portal-badge--urgent { @apply bg-accent-soft text-accent; }
+
+  /* Modales */
+  .portal-modal-overlay {
+    @apply fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40 backdrop-blur-sm;
+  }
+  .portal-modal { @apply w-full rounded-neu-lg bg-white shadow-soft-lg; }
+
+  /* Estados vacíos y loaders */
+  .portal-empty { @apply flex flex-col items-center justify-center py-14 text-center text-ink-muted; }
+  .portal-spinner { @apply h-8 w-8 animate-spin rounded-full border-[3px] border-ink/15 border-t-accent; }
 }
 
 @layer utilities {

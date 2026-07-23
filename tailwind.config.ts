@@ -24,20 +24,20 @@ const config: Config = {
           50: '#fff0f0',
           100: '#ffd6d6',
         },
-        // Portal-only design system (Fynix-inspired, red accent)
+        // Portal design system — neumórfico / soft UI (iOS). Rojo = urgencia.
         ink: {
-          DEFAULT: '#1A1A1A',
-          muted: '#5A5A5A',
+          DEFAULT: '#1C1C1E',
+          muted: '#6E727A',
         },
         surface: {
-          DEFAULT: '#F4F3F1',
-          soft: '#ECEBE8',
+          DEFAULT: '#EEF0F3',
+          soft: '#E4E7EC',
         },
         accent: {
-          DEFAULT: '#D40000',
-          hover: '#b00000',
-          soft: '#FFECEC',
-          ring: 'rgba(212,0,0,0.18)',
+          DEFAULT: '#F5333F',
+          hover: '#DA1F2B',
+          soft: '#FFE9EA',
+          ring: 'rgba(245,51,63,0.22)',
         },
       },
       fontFamily: {
@@ -68,7 +68,16 @@ const config: Config = {
         'navy': '0 4px 24px rgba(17, 17, 17, 0.4)',
         'card': '0 2px 16px rgba(10, 22, 40, 0.08)',
         'card-hover': '0 8px 32px rgba(10, 22, 40, 0.16)',
-        'soft': '0 1px 3px rgba(0,0,0,0.04), 0 10px 30px rgba(17,17,17,0.05)',
+        // Neumorfismo dual: sombra oscura abajo-derecha + brillo claro arriba-izquierda.
+        'soft': '6px 8px 20px rgba(174,179,191,0.28), -6px -6px 16px rgba(255,255,255,0.7)',
+        'soft-lg': '10px 14px 32px rgba(168,174,188,0.38), -8px -8px 22px rgba(255,255,255,0.8)',
+        'neu-sm': '3px 4px 10px rgba(174,179,191,0.30), -3px -3px 8px rgba(255,255,255,0.75)',
+        'neu-inset': 'inset 2px 2px 5px rgba(174,179,191,0.35), inset -2px -2px 5px rgba(255,255,255,0.85)',
+      },
+      borderRadius: {
+        'xl2': '1.25rem',
+        'neu': '1.5rem',
+        'neu-lg': '1.75rem',
       },
     },
   },

@@ -4,7 +4,6 @@ import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { X, AlertCircle, Camera } from 'lucide-react'
 import { createClient as createBrowserSupabase } from '@/lib/supabase/client'
-import Button from '@/components/ui/Button'
 import CommTypeSelect from '@/components/portal/CommTypeSelect'
 import type { LeadStatus, CommunicationType } from '@/lib/types'
 
@@ -156,29 +155,29 @@ export default function StatusChangeModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white rounded-t-2xl">
-          <h2 className="text-base font-bold text-gray-900">Cambiar Estado del Lead</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
-            <X className="h-4 w-4 text-gray-500" />
+    <div className="portal-modal-overlay">
+      <div className="portal-modal max-w-md max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-black/[0.05] sticky top-0 bg-white rounded-t-neu-lg z-10">
+          <h2 className="text-base font-bold text-ink">Cambiar Estado del Lead</h2>
+          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-surface transition-colors">
+            <X className="h-4 w-4 text-ink-muted" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
           {error && (
-            <div className="p-3 rounded-lg bg-red-50 border border-red-200 flex gap-2 items-start">
-              <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-red-700">{error}</p>
+            <div className="p-3 rounded-xl bg-accent-soft flex gap-2 items-start">
+              <AlertCircle className="h-4 w-4 text-accent flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-accent">{error}</p>
             </div>
           )}
 
           <div>
-            <label className="form-label">Nuevo Estado <span className="text-red-500">*</span></label>
+            <label className="portal-label">Nuevo Estado <span className="text-accent">*</span></label>
             <select
               value={newStatus}
               onChange={(e) => setNewStatus(e.target.value as LeadStatus)}
-              className="form-input"
+              className="portal-select"
             >
               {STATUSES.map((s) => (
                 <option key={s} value={s}>{s}</option>
@@ -187,48 +186,48 @@ export default function StatusChangeModal({
           </div>
 
           <div>
-            <label className="form-label">Tipo de Seguimiento <span className="text-red-500">*</span></label>
+            <label className="portal-label">Tipo de Seguimiento <span className="text-accent">*</span></label>
             <CommTypeSelect
               value={communicationType}
               onChange={(v) => setCommunicationType(v)}
               placeholder="Seleccionar tipo…"
-              className="form-input"
+              className="portal-select"
             />
           </div>
 
           <div>
-            <label className="form-label">
-              Nota de Seguimiento <span className="text-red-500">*</span>
-              <span className="text-gray-400 font-normal ml-1">(mín. 20 caracteres)</span>
+            <label className="portal-label">
+              Nota de Seguimiento <span className="text-accent">*</span>
+              <span className="text-ink-muted/60 font-normal ml-1">(mín. 20 caracteres)</span>
             </label>
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
               rows={4}
               placeholder="Describe el tipo de contacto realizado y el resultado de la comunicación…"
-              className="form-input resize-none"
+              className="portal-textarea resize-none"
             />
-            <p className={`text-xs mt-1 ${note.trim().length >= 20 ? 'text-green-600' : 'text-gray-400'}`}>
+            <p className={`text-xs mt-1 ${note.trim().length >= 20 ? 'text-ink' : 'text-ink-muted/60'}`}>
               {note.trim().length}/20 caracteres mínimos
             </p>
           </div>
 
           {/* ── Graduate profile section (only for Graduado con Reválida) ── */}
           {isGradRevalida && (
-            <div className="pt-2 border-t border-emerald-100 space-y-4">
-              <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wide">
+            <div className="pt-2 border-t border-black/[0.05] space-y-4">
+              <p className="text-xs font-semibold text-ink-muted uppercase tracking-wide">
                 Perfil de Egresado con Reválida
               </p>
 
               {/* Photo */}
               <div>
-                <label className="form-label">Foto del Estudiante</label>
+                <label className="portal-label">Foto del Estudiante</label>
                 <div className="flex items-center gap-4">
                   {photoPreview ? (
-                    <img src={photoPreview} alt="preview" className="h-16 w-16 rounded-full object-cover border border-gray-200" />
+                    <img src={photoPreview} alt="preview" className="h-16 w-16 rounded-full object-cover shadow-neu-sm" />
                   ) : (
-                    <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center border border-dashed border-gray-300">
-                      <Camera className="h-6 w-6 text-gray-400" />
+                    <div className="h-16 w-16 rounded-full bg-surface flex items-center justify-center shadow-neu-inset">
+                      <Camera className="h-6 w-6 text-ink-muted/60" />
                     </div>
                   )}
                   <button
@@ -250,49 +249,49 @@ export default function StatusChangeModal({
 
               {/* Specialty */}
               <div>
-                <label className="form-label">Especialidad / Servicios que Ofrece <span className="text-red-500">*</span></label>
+                <label className="portal-label">Especialidad / Servicios que Ofrece <span className="text-accent">*</span></label>
                 <input
                   type="text"
                   value={specialty}
                   onChange={(e) => setSpecialty(e.target.value)}
                   placeholder="Ej: Electricidad residencial, Cosmetología, Contabilidad…"
-                  className="form-input"
+                  className="portal-input"
                 />
               </div>
 
               {/* Bio */}
               <div>
-                <label className="form-label">Descripción breve <span className="text-gray-400 font-normal">(opcional)</span></label>
+                <label className="portal-label">Descripción breve <span className="text-ink-muted/60 font-normal">(opcional)</span></label>
                 <textarea
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
                   rows={3}
                   placeholder="Breve descripción del estudiante y sus habilidades…"
-                  className="form-input resize-none"
+                  className="portal-textarea resize-none"
                 />
               </div>
 
               {/* Graduation date */}
               <div>
-                <label className="form-label">Fecha de Graduación <span className="text-gray-400 font-normal">(opcional)</span></label>
+                <label className="portal-label">Fecha de Graduación <span className="text-ink-muted/60 font-normal">(opcional)</span></label>
                 <input
                   type="date"
                   value={graduationDate}
                   onChange={(e) => setGraduationDate(e.target.value)}
-                  className="form-input"
+                  className="portal-input"
                 />
               </div>
 
               {/* FERPA consent checkbox */}
-              <label className="flex items-start gap-3 p-3 rounded-xl bg-emerald-50 border border-emerald-200 cursor-pointer">
+              <label className="flex items-start gap-3 p-3 rounded-xl bg-surface cursor-pointer">
                 <input
                   type="checkbox"
                   checked={consentGiven}
                   onChange={(e) => setConsentGiven(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 accent-emerald-600 flex-shrink-0"
+                  className="mt-0.5 h-4 w-4 accent-ink flex-shrink-0"
                 />
-                <span className="text-xs text-emerald-800 leading-relaxed">
-                  <strong>Consentimiento FERPA requerido:</strong> El estudiante ha firmado el formulario de consentimiento para aparecer en la plataforma pública de egresados de D&apos;Mart Institute.
+                <span className="text-xs text-ink-muted leading-relaxed">
+                  <strong className="text-ink">Consentimiento FERPA requerido:</strong> El estudiante ha firmado el formulario de consentimiento para aparecer en la plataforma pública de egresados de D&apos;Mart Institute.
                 </span>
               </label>
             </div>
@@ -302,13 +301,14 @@ export default function StatusChangeModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              className="portal-btn-ghost flex-1"
             >
               Cancelar
             </button>
-            <Button type="submit" variant="gold" size="sm" loading={loading} className="flex-1">
+            <button type="submit" disabled={loading} className="portal-btn flex-1">
+              {loading && <span className="portal-spinner h-4 w-4 border-2 border-white/30 border-t-white" />}
               Guardar Cambio
-            </Button>
+            </button>
           </div>
         </form>
       </div>

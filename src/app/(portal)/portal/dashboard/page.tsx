@@ -13,7 +13,7 @@ import type { Lead, Employee, Activity } from '@/lib/types'
 import {
   AlertTriangle, Users, Calendar, GraduationCap, Flame,
   Clock, Phone, CalendarX2, RotateCcw, FileText, BookOpen,
-  Timer, XCircle, Copy, CalendarClock, Award,
+  Timer, XCircle, Copy, CalendarClock, Award, ChevronRight,
 } from 'lucide-react'
 
 function getAdminClient() {
@@ -195,21 +195,24 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   const currentStatusFilter = searchParams.status ?? ''
 
+  // Casi monocromo: iconos neutros (ink); rojo SOLO para urgente (Crítico, No Asistió).
+  const N = 'text-ink'        // neutral
+  const U = 'text-accent'     // urgente (rojo)
   const allStats = [
-    { label: 'Nuevo Lead',               filterValue: 'Nuevo Lead',                               value: counts.nuevo,               icon: Users,        color: 'text-blue-600',    iconBg: 'bg-blue-50' },
-    { label: 'Crítico',                  filterValue: 'Crítico',                                  value: counts.critico,             icon: Flame,        color: 'text-red-600',     iconBg: 'bg-red-50' },
-    { label: 'Contacto Inicial',         filterValue: 'Contacto Inicial (Pendiente de Respuesta)',value: counts.contacto_inicial,    icon: Clock,        color: 'text-orange-500',  iconBg: 'bg-orange-50' },
-    { label: 'Contacto Establecido',     filterValue: 'Contacto Establecido',                     value: counts.contacto_establecido,icon: Phone,        color: 'text-teal-600',    iconBg: 'bg-teal-50' },
-    { label: 'Cita Programada',          filterValue: 'Cita Programada',                          value: counts.cita,                icon: Calendar,     color: 'text-indigo-600',  iconBg: 'bg-indigo-50' },
-    { label: 'No Asistió a la Cita',     filterValue: 'No Asistió a la Cita',                     value: counts.no_asistio,          icon: CalendarX2,   color: 'text-rose-500',    iconBg: 'bg-rose-50' },
-    { label: 'Reagendado',               filterValue: 'Reagendado',                               value: counts.reagendado,          icon: RotateCcw,    color: 'text-amber-600',   iconBg: 'bg-amber-50' },
-    { label: 'En Espera de Documentos',  filterValue: 'En Espera de Documentos',                  value: counts.documentos,          icon: FileText,     color: 'text-purple-600',  iconBg: 'bg-purple-50' },
-    { label: 'Orientado',                filterValue: 'Orientado (En Proceso de Matricularse)',    value: counts.orientado,           icon: BookOpen,     color: 'text-emerald-600', iconBg: 'bg-emerald-50' },
-    { label: 'Seguimiento a Futuro',     filterValue: 'Seguimiento a Futuro',                     value: counts.futuro,              icon: Timer,        color: 'text-slate-500',   iconBg: 'bg-slate-50' },
-    { label: 'Matriculado',              filterValue: 'Matriculado',                              value: counts.matriculado,         icon: GraduationCap,color: 'text-green-600',   iconBg: 'bg-green-50' },
-    { label: 'Graduado',                 filterValue: 'Graduado',                                 value: counts.graduado,            icon: GraduationCap,color: 'text-emerald-700', iconBg: 'bg-emerald-50' },
-    { label: 'Graduado con Reválida',    filterValue: 'Graduado con Reválida',                    value: counts.graduado_revalida,   icon: Award,        color: 'text-cyan-700',    iconBg: 'bg-cyan-50' },
-    { label: 'Desinteresado / Rechazado',filterValue: 'Desinteresado / Rechazado',                value: counts.desinteresado,       icon: XCircle,      color: 'text-gray-500',    iconBg: 'bg-gray-100' },
+    { label: 'Nuevo Lead',               filterValue: 'Nuevo Lead',                               value: counts.nuevo,               icon: Users,        color: N, urgent: false },
+    { label: 'Crítico',                  filterValue: 'Crítico',                                  value: counts.critico,             icon: Flame,        color: U, urgent: true },
+    { label: 'Contacto Inicial',         filterValue: 'Contacto Inicial (Pendiente de Respuesta)',value: counts.contacto_inicial,    icon: Clock,        color: N, urgent: false },
+    { label: 'Contacto Establecido',     filterValue: 'Contacto Establecido',                     value: counts.contacto_establecido,icon: Phone,        color: N, urgent: false },
+    { label: 'Cita Programada',          filterValue: 'Cita Programada',                          value: counts.cita,                icon: Calendar,     color: N, urgent: false },
+    { label: 'No Asistió a la Cita',     filterValue: 'No Asistió a la Cita',                     value: counts.no_asistio,          icon: CalendarX2,   color: U, urgent: true },
+    { label: 'Reagendado',               filterValue: 'Reagendado',                               value: counts.reagendado,          icon: RotateCcw,    color: N, urgent: false },
+    { label: 'En Espera de Documentos',  filterValue: 'En Espera de Documentos',                  value: counts.documentos,          icon: FileText,     color: N, urgent: false },
+    { label: 'Orientado',                filterValue: 'Orientado (En Proceso de Matricularse)',    value: counts.orientado,           icon: BookOpen,     color: N, urgent: false },
+    { label: 'Seguimiento a Futuro',     filterValue: 'Seguimiento a Futuro',                     value: counts.futuro,              icon: Timer,        color: N, urgent: false },
+    { label: 'Matriculado',              filterValue: 'Matriculado',                              value: counts.matriculado,         icon: GraduationCap,color: N, urgent: false },
+    { label: 'Graduado',                 filterValue: 'Graduado',                                 value: counts.graduado,            icon: GraduationCap,color: N, urgent: false },
+    { label: 'Graduado con Reválida',    filterValue: 'Graduado con Reválida',                    value: counts.graduado_revalida,   icon: Award,        color: N, urgent: false },
+    { label: 'Desinteresado / Rechazado',filterValue: 'Desinteresado / Rechazado',                value: counts.desinteresado,       icon: XCircle,      color: N, urgent: false },
   ]
 
   return (
@@ -223,87 +226,60 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         {/* ── Alert banners ────────────────────────────────────────── */}
         {staleLeadIds.length > 0 && (
           <a href={showStale ? '/portal/dashboard' : '/portal/dashboard?stale=1'}
-            className="block mb-3 p-4 rounded-2xl bg-amber-50 border border-amber-200 hover:bg-amber-100 transition-colors">
-            <div className="flex gap-3 items-start">
-              <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm font-semibold text-amber-800">
-                  {staleLeadIds.length} lead{staleLeadIds.length > 1 ? 's' : ''} con seguimiento pendiente
-                </p>
-                <p className="text-xs text-amber-700 mt-0.5">
-                  Más de 7 días sin actividad. Haz clic para filtrarlos.
-                </p>
-              </div>
+            className="portal-alert-card portal-alert-card--urgent group mb-3">
+            <div className="portal-icon portal-icon--urgent"><AlertTriangle className="h-5 w-5" /></div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-ink">
+                {staleLeadIds.length} lead{staleLeadIds.length > 1 ? 's' : ''} con seguimiento pendiente
+              </p>
+              <p className="mt-0.5 text-xs text-ink-muted">Más de 7 días sin actividad. Haz clic para filtrarlos.</p>
             </div>
+            <ChevronRight className="h-5 w-5 flex-shrink-0 text-ink-muted/50 transition-colors group-hover:text-ink" />
           </a>
         )}
 
         {followupLeadIds.length > 0 && (
           <a href={showFollowup ? '/portal/dashboard' : '/portal/dashboard?followup=1'}
-            className="block mb-3 p-4 rounded-2xl bg-blue-50 border border-blue-200 hover:bg-blue-100 transition-colors">
-            <div className="flex gap-3 items-start">
-              <CalendarClock className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm font-semibold text-blue-800">
-                  {followupLeadIds.length} lead{followupLeadIds.length > 1 ? 's' : ''} con follow-up programado para hoy
-                </p>
-                <p className="text-xs text-blue-700 mt-0.5">
-                  Follow-up que tú o un compañero del recinto programaron. Haz clic para filtrarlos.
-                </p>
-              </div>
+            className="portal-alert-card group mb-3">
+            <div className="portal-icon"><CalendarClock className="h-5 w-5" /></div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-ink">
+                {followupLeadIds.length} lead{followupLeadIds.length > 1 ? 's' : ''} con follow-up programado para hoy
+              </p>
+              <p className="mt-0.5 text-xs text-ink-muted">Follow-up que tú o un compañero del recinto programaron. Haz clic para filtrarlos.</p>
             </div>
+            <ChevronRight className="h-5 w-5 flex-shrink-0 text-ink-muted/50 transition-colors group-hover:text-ink" />
           </a>
         )}
 
         {duplicateCount > 0 && (
           <a href={showDuplicates ? '/portal/dashboard' : '/portal/dashboard?duplicates=1'}
-            className="block mb-5 p-4 rounded-2xl bg-red-50 border border-red-200 hover:bg-red-100 transition-colors">
-            <div className="flex gap-3 items-start">
-              <Copy className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm font-semibold text-red-800">
-                  {duplicateCount} posible{duplicateCount > 1 ? 's' : ''} lead{duplicateCount > 1 ? 's' : ''} duplicado{duplicateCount > 1 ? 's' : ''} detectado{duplicateCount > 1 ? 's' : ''}
-                </p>
-                <p className="text-xs text-red-700 mt-0.5">
-                  Leads con el mismo teléfono, correo o nombre. Haz clic para revisarlos y fusionarlos.
-                </p>
-              </div>
+            className="portal-alert-card portal-alert-card--urgent group mb-5">
+            <div className="portal-icon portal-icon--urgent"><Copy className="h-5 w-5" /></div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-ink">
+                {duplicateCount} posible{duplicateCount > 1 ? 's' : ''} lead{duplicateCount > 1 ? 's' : ''} duplicado{duplicateCount > 1 ? 's' : ''} detectado{duplicateCount > 1 ? 's' : ''}
+              </p>
+              <p className="mt-0.5 text-xs text-ink-muted">Leads con el mismo teléfono, correo o nombre. Haz clic para revisarlos y fusionarlos.</p>
             </div>
+            <ChevronRight className="h-5 w-5 flex-shrink-0 text-ink-muted/50 transition-colors group-hover:text-ink" />
           </a>
         )}
 
         {/* ── Special filter buttons (stale + duplicates) ──────────── */}
-        <div className="flex gap-2 mb-3">
-          <a
-            href={showStale ? '/portal/dashboard' : '/portal/dashboard?stale=1'}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-full border text-xs font-semibold transition-all ${
-              showStale
-                ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
-                : 'bg-white border-amber-200 text-amber-700 hover:bg-amber-50'
-            }`}
-          >
+        <div className="flex flex-wrap gap-2 mb-4">
+          <a href={showStale ? '/portal/dashboard' : '/portal/dashboard?stale=1'}
+            className={`portal-pill ${showStale ? 'portal-pill--active' : ''}`}>
             <AlertTriangle className="h-3.5 w-3.5" />
             Seguimiento pendiente · {staleLeadIds.length}
           </a>
-          <a
-            href={showFollowup ? '/portal/dashboard' : '/portal/dashboard?followup=1'}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-full border text-xs font-semibold transition-all ${
-              showFollowup
-                ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                : 'bg-white border-blue-200 text-blue-700 hover:bg-blue-50'
-            }`}
-          >
+          <a href={showFollowup ? '/portal/dashboard' : '/portal/dashboard?followup=1'}
+            className={`portal-pill ${showFollowup ? 'portal-pill--active' : ''}`}>
             <CalendarClock className="h-3.5 w-3.5" />
             Follow-up · {followupLeadIds.length}
           </a>
-          <a
-            href={showDuplicates ? '/portal/dashboard' : '/portal/dashboard?duplicates=1'}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-full border text-xs font-semibold transition-all ${
-              showDuplicates
-                ? 'bg-red-600 text-white border-red-600 shadow-sm'
-                : 'bg-white border-red-200 text-red-700 hover:bg-red-50'
-            }`}
-          >
+          <a href={showDuplicates ? '/portal/dashboard' : '/portal/dashboard?duplicates=1'}
+            className={`portal-pill ${showDuplicates ? 'portal-pill--active' : ''}`}>
             <Copy className="h-3.5 w-3.5" />
             Duplicados · {duplicateCount}
           </a>
@@ -311,7 +287,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
         {/* ── Status filter cards ───────────────────────────────────── */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-6">
-          {allStats.map(({ label, filterValue, value, icon: Icon, color, iconBg }) => {
+          {allStats.map(({ label, filterValue, value, icon: Icon, color, urgent }) => {
             const isActive = currentStatusFilter === filterValue
             const href = isActive ? '/portal/dashboard' : `/portal/dashboard?status=${encodeURIComponent(filterValue)}`
             return (
@@ -319,7 +295,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                 title={isActive ? `Quitar filtro: ${label}` : `Filtrar por: ${label}`}
                 className={`portal-stat-card ${isActive ? 'portal-stat-card--active' : ''}`}
               >
-                <div className={`portal-chip ${isActive ? 'bg-white/15' : iconBg}`}>
+                <div className={`portal-chip ${isActive ? 'bg-white/15' : urgent ? 'bg-accent-soft' : ''}`}>
                   <Icon className={`h-4 w-4 ${isActive ? 'text-white' : color}`} />
                 </div>
                 <div className="min-w-0 flex-1">

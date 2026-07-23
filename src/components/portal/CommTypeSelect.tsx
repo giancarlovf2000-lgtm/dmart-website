@@ -59,7 +59,7 @@ export default function CommTypeSelect({ value, onChange, placeholder, className
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={className ?? 'w-full text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-accent-ring'}
+        className={className ?? 'portal-select'}
       >
         {placeholder && <option value="">{placeholder}</option>}
         {types.map((t) => <option key={t.id} value={t.name}>{t.name}</option>)}
@@ -75,20 +75,20 @@ export default function CommTypeSelect({ value, onChange, placeholder, className
             placeholder="Nuevo tipo de seguimiento…"
             maxLength={50}
             autoFocus
-            className="flex-1 text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-accent-ring"
+            className="portal-filter flex-1"
           />
           <button type="button" onClick={handleAdd} disabled={saving || newName.trim().length < 2}
-            className="p-1.5 rounded-lg bg-accent text-white hover:bg-accent-hover disabled:opacity-40" title="Agregar">
+            className="p-1.5 rounded-lg bg-ink text-white hover:bg-black disabled:opacity-40" title="Agregar">
             <Check className="h-3.5 w-3.5" />
           </button>
           <button type="button" onClick={() => { setAdding(false); setNewName('') }}
-            className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100" title="Cancelar">
+            className="p-1.5 rounded-lg text-ink-muted hover:bg-surface" title="Cancelar">
             <X className="h-3.5 w-3.5" />
           </button>
         </div>
       ) : (
         <button type="button" onClick={() => setAdding(true)}
-          className="flex items-center gap-1 text-xs text-accent font-semibold hover:underline">
+          className="flex items-center gap-1 text-xs text-ink-muted font-semibold hover:text-ink hover:underline">
           <Plus className="h-3 w-3" /> Agregar tipo
         </button>
       )}

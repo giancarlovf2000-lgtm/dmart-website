@@ -258,15 +258,15 @@ export default function PostStudio({ onSave, onClear, saving = false, initial, v
     onClear?.()
   }
 
-  const inputCls = 'w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-accent-ring'
-  const labelCls = 'text-xs font-semibold text-gray-600 mb-1 block'
+  const inputCls = 'portal-input'
+  const labelCls = 'portal-label'
 
   return (
     <div className={embedded ? '' : 'grid lg:grid-cols-[1fr_400px] gap-6'}>
       {/* ── Controles ─────────────────────────────────────────────── */}
-      <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-6 space-y-4">
+      <div className="portal-card p-6 space-y-4">
         <div className="flex items-center gap-2">
-          <ImageIcon className="h-4 w-4 text-accent" />
+          <ImageIcon className="h-4 w-4 text-ink" />
           <h2 className="text-sm font-bold text-ink font-display">Generador de Posts (Instagram 4:5)</h2>
         </div>
 
@@ -278,7 +278,7 @@ export default function PostStudio({ onSave, onClear, saving = false, initial, v
               ['programa', 'Programa'], ['sabatino', 'Curso sabatino'], ['requisitos', 'Requisitos'], ['evento', 'Evento / Promo'],
             ] as [PostType, string][]).map(([k, l]) => (
               <button key={k} onClick={() => changeType(k)}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${config.type === k ? 'bg-accent text-white border-accent' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
+                className={`portal-pill ${config.type === k ? 'portal-pill--active' : ''}`}>
                 {l}
               </button>
             ))}
@@ -311,7 +311,7 @@ export default function PostStudio({ onSave, onClear, saving = false, initial, v
         <div>
           <label className={labelCls}>Título</label>
           <input className={inputCls} value={config.title} onChange={(e) => set({ title: e.target.value })} />
-          <p className="text-[11px] text-gray-400 mt-1">Envuelve una palabra en **asteriscos** para resaltarla en el color de acento.</p>
+          <p className="text-[11px] text-ink-muted mt-1">Envuelve una palabra en **asteriscos** para resaltarla en el color de acento.</p>
         </div>
         {config.type !== 'requisitos' && (
           <div>
@@ -342,7 +342,7 @@ export default function PostStudio({ onSave, onClear, saving = false, initial, v
           <div className="flex flex-wrap gap-2">
             {TEMPLATE_OPTIONS.map(([k, l]) => (
               <button key={k} onClick={() => set({ template: k })}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${(config.template ?? 'enfoque') === k ? 'bg-accent text-white border-accent' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
+                className={`portal-pill ${(config.template ?? 'enfoque') === k ? 'portal-pill--active' : ''}`}>
                 {l}
               </button>
             ))}
@@ -363,20 +363,20 @@ export default function PostStudio({ onSave, onClear, saving = false, initial, v
           <div className="flex flex-wrap gap-2">
             {([['degradado', 'Degradado'], ['rojo', 'Rojo'], ['negro', 'Negro'], ['claro', 'Claro']] as [BgStyle, string][]).map(([k, l]) => (
               <button key={k} onClick={() => changeBg(k)}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${config.bg === k ? 'bg-ink text-white border-ink' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
+                className={`portal-pill ${config.bg === k ? 'portal-pill--active' : ''}`}>
                 {l}
               </button>
             ))}
-            <label className={`px-3 py-1.5 rounded-full text-xs font-semibold border cursor-pointer transition-colors flex items-center gap-1 ${config.bg === 'foto' ? 'bg-ink text-white border-ink' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
+            <label className={`portal-pill cursor-pointer ${config.bg === 'foto' ? 'portal-pill--active' : ''}`}>
               <Upload className="h-3 w-3" /> Subir foto
               <input type="file" accept="image/*" className="hidden" onChange={onPhoto} />
             </label>
             <button type="button" onClick={openLibrary}
-              className="px-3 py-1.5 rounded-full text-xs font-semibold border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 transition-colors flex items-center gap-1">
+              className="portal-pill">
               <ImageIcon className="h-3 w-3" /> Biblioteca
             </button>
             {config.photo && (
-              <button onClick={() => set({ photo: null, bg: 'degradado' })} className="px-2 py-1.5 rounded-full text-xs text-gray-400 hover:bg-gray-100" title="Quitar foto">
+              <button onClick={() => set({ photo: null, bg: 'degradado' })} className="portal-pill" title="Quitar foto">
                 <X className="h-3.5 w-3.5" />
               </button>
             )}
@@ -402,17 +402,17 @@ export default function PostStudio({ onSave, onClear, saving = false, initial, v
           <div className="flex flex-wrap gap-2">
             {([['blanco', 'Blanco'], ['color', 'Color'], ['icono', 'Ícono'], ['none', 'Ninguno']] as [LogoKind, string][]).map(([k, l]) => (
               <button key={k} onClick={() => chooseLogo(k)}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${config.logo === k ? 'bg-ink text-white border-ink' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
+                className={`portal-pill ${config.logo === k ? 'portal-pill--active' : ''}`}>
                 {l}
               </button>
             ))}
           </div>
-          <p className="text-[11px] text-gray-400 mt-1">Blanco para fondos oscuros · Color para fondo claro · Ícono = solo el swoosh.</p>
+          <p className="text-[11px] text-ink-muted mt-1">Blanco para fondos oscuros · Color para fondo claro · Ícono = solo el swoosh.</p>
           {config.logo !== 'none' && (
             <div className="mt-3">
               <div className="flex items-center justify-between mb-1">
                 <label className={labelCls + ' mb-0'}>Tamaño del logo</label>
-                <span className="text-[11px] font-semibold text-gray-500">{Math.round((config.logoScale ?? 1) * 100)}%</span>
+                <span className="text-[11px] font-semibold text-ink-muted">{Math.round((config.logoScale ?? 1) * 100)}%</span>
               </div>
               <input type="range" min={0.5} max={1.8} step={0.1} value={config.logoScale ?? 1}
                 onChange={(e) => set({ logoScale: Number(e.target.value) })}
@@ -423,7 +423,7 @@ export default function PostStudio({ onSave, onClear, saving = false, initial, v
 
         {!embedded && (
           <button onClick={download} disabled={downloading}
-            className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-full bg-accent text-white text-sm font-semibold hover:bg-accent-hover transition-colors disabled:opacity-50">
+            className="portal-btn w-full">
             <Download className="h-4 w-4" />
             {downloading ? 'Generando…' : 'Descargar imagen (1080×1350)'}
           </button>
@@ -433,14 +433,14 @@ export default function PostStudio({ onSave, onClear, saving = false, initial, v
           <div className="grid grid-cols-2 gap-2">
             {onSave && (
               <button onClick={handleSave} disabled={preparing || saving}
-                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-full bg-ink text-white text-sm font-semibold hover:bg-black transition-colors disabled:opacity-50">
+                className="portal-btn">
                 <Save className="h-4 w-4" />
                 {preparing || saving ? 'Guardando…' : 'Guardar contenido'}
               </button>
             )}
             {onClear && (
               <button onClick={handleClear} disabled={preparing || saving}
-                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-full border border-gray-200 text-gray-600 text-sm font-semibold hover:bg-gray-50 transition-colors disabled:opacity-50">
+                className="portal-btn-ghost">
                 <Trash2 className="h-4 w-4" />
                 Borrar contenido
               </button>
@@ -451,25 +451,25 @@ export default function PostStudio({ onSave, onClear, saving = false, initial, v
 
       {/* Biblioteca de contenido aprobado (estudiantes/profesores) */}
       {showLib && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setShowLib(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+        <div className="portal-modal-overlay" onClick={() => setShowLib(false)}>
+          <div className="portal-modal max-w-2xl max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-black/[0.05]">
               <div>
                 <h3 className="text-sm font-bold text-ink">Biblioteca de contenido aprobado</h3>
-                <p className="text-[11px] text-gray-400">Imágenes de estudiantes/profesores autorizadas para uso.</p>
+                <p className="text-[11px] text-ink-muted">Imágenes de estudiantes/profesores autorizadas para uso.</p>
               </div>
-              <button onClick={() => setShowLib(false)} className="p-1.5 rounded-lg hover:bg-gray-100"><X className="h-4 w-4 text-gray-500" /></button>
+              <button onClick={() => setShowLib(false)} className="p-1.5 rounded-lg hover:bg-surface"><X className="h-4 w-4 text-ink-muted" /></button>
             </div>
             <div className="p-4 overflow-y-auto">
               {libLoading ? (
-                <div className="py-12 text-center text-sm text-gray-400">Cargando…</div>
+                <div className="py-12 text-center text-sm text-ink-muted">Cargando…</div>
               ) : libItems.length === 0 ? (
-                <div className="py-12 text-center text-sm text-gray-400">Aún no hay imágenes aprobadas. Aprueba contenido en la pestaña &quot;Contenido&quot;.</div>
+                <div className="py-12 text-center text-sm text-ink-muted">Aún no hay imágenes aprobadas. Aprueba contenido en la pestaña &quot;Contenido&quot;.</div>
               ) : (
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
                   {libItems.map((it) => (
                     <button key={it.id} onClick={() => useLibraryImage(it.url)}
-                      className="group rounded-xl overflow-hidden border border-gray-200 hover:border-accent transition-colors aspect-square">
+                      className="group rounded-xl overflow-hidden border border-black/[0.05] hover:border-ink transition-colors aspect-square">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={it.url} alt={it.title ?? ''} className="w-full h-full object-cover group-hover:opacity-90" />
                     </button>
@@ -484,13 +484,13 @@ export default function PostStudio({ onSave, onClear, saving = false, initial, v
       {/* ── Vista previa ──────────────────────────────────────────── */}
       {!embedded && (
         <div className="space-y-3">
-          <p className="text-xs font-semibold text-gray-500">Vista previa</p>
+          <p className="text-xs font-semibold text-ink-muted">Vista previa</p>
           <div style={{ width: 360, height: 450, overflow: 'hidden', borderRadius: 16, boxShadow: '0 10px 30px rgba(0,0,0,.12)' }}>
             <div style={{ transform: 'scale(0.33333)', transformOrigin: 'top left' }}>
               <PostCard config={config} />
             </div>
           </div>
-          <p className="text-xs text-gray-400">Formato 4:5 (1080×1350 px), listo para Instagram.</p>
+          <p className="text-xs text-ink-muted">Formato 4:5 (1080×1350 px), listo para Instagram.</p>
         </div>
       )}
 
@@ -1152,16 +1152,16 @@ export function CarouselStudio({ seed, onSave, onClear, saving = false }: Carous
   return (
     <div className="space-y-5">
       {/* Barra de tarjetas (miniaturas + acciones) */}
-      <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-4">
+      <div className="portal-card p-4">
         <div className="flex items-center gap-2 mb-3">
-          <Layers className="h-4 w-4 text-accent" />
+          <Layers className="h-4 w-4 text-ink" />
           <h2 className="text-sm font-bold text-ink font-display">Carousel · {slides.length} tarjeta{slides.length === 1 ? '' : 's'}</h2>
-          <span className="text-[11px] text-gray-400">Editando la #{active + 1}</span>
+          <span className="text-[11px] text-ink-muted">Editando la #{active + 1}</span>
         </div>
         <div className="flex items-center gap-3 overflow-x-auto pb-2">
           {slides.map((s, i) => (
             <button key={i} onClick={() => setActive(i)}
-              className={`relative flex-shrink-0 rounded-lg overflow-hidden border-2 transition-colors ${i === active ? 'border-accent' : 'border-gray-200 hover:border-gray-300'}`}
+              className={`relative flex-shrink-0 rounded-lg overflow-hidden border-2 transition-colors ${i === active ? 'border-ink' : 'border-black/[0.05] hover:border-black/20'}`}
               style={{ width: 96, height: 120 }} title={`Tarjeta ${i + 1}`}>
               <div style={{ width: 1080, height: 1350, transform: 'scale(0.0888)', transformOrigin: 'top left' }}>
                 <PostCard config={s} />
@@ -1170,7 +1170,7 @@ export function CarouselStudio({ seed, onSave, onClear, saving = false }: Carous
             </button>
           ))}
           <button onClick={addSlide}
-            className="flex-shrink-0 flex flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-gray-300 text-gray-400 hover:border-accent hover:text-accent transition-colors"
+            className="flex-shrink-0 flex flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-black/[0.1] text-ink-muted hover:border-ink hover:text-ink transition-colors"
             style={{ width: 96, height: 120 }} title="Añadir tarjeta">
             <Plus className="h-5 w-5" />
             <span className="text-[10px] font-semibold">Añadir</span>
@@ -1179,19 +1179,19 @@ export function CarouselStudio({ seed, onSave, onClear, saving = false }: Carous
         {/* Acciones sobre la tarjeta activa */}
         <div className="flex flex-wrap items-center gap-2 mt-3">
           <button onClick={() => move(-1)} disabled={active === 0}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-gray-200 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-40">
+            className="portal-btn-ghost">
             <ChevronLeft className="h-3.5 w-3.5" /> Mover
           </button>
           <button onClick={() => move(1)} disabled={active === slides.length - 1}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-gray-200 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-40">
+            className="portal-btn-ghost">
             Mover <ChevronRight className="h-3.5 w-3.5" />
           </button>
           <button onClick={duplicateSlide}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-gray-200 text-xs text-gray-600 hover:bg-gray-50">
+            className="portal-btn-ghost">
             <Copy className="h-3.5 w-3.5" /> Duplicar
           </button>
           <button onClick={deleteSlide} disabled={slides.length <= 1}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-gray-200 text-xs text-gray-600 hover:bg-red-50 hover:text-red-600 hover:border-red-200 disabled:opacity-40">
+            className="portal-btn-danger">
             <Trash2 className="h-3.5 w-3.5" /> Borrar
           </button>
         </div>
@@ -1203,13 +1203,13 @@ export function CarouselStudio({ seed, onSave, onClear, saving = false }: Carous
 
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold text-gray-500">Vista previa</p>
+            <p className="text-xs font-semibold text-ink-muted">Vista previa</p>
             <div className="flex items-center gap-2">
               <button onClick={() => setActive((i) => Math.max(0, i - 1))} disabled={active === 0}
-                className="p-1 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-40"><ChevronLeft className="h-4 w-4" /></button>
-              <span className="text-xs font-semibold text-gray-600">{active + 1} / {slides.length}</span>
+                className="p-1 rounded-lg border border-black/[0.05] text-ink-muted hover:bg-surface disabled:opacity-40"><ChevronLeft className="h-4 w-4" /></button>
+              <span className="text-xs font-semibold text-ink-muted">{active + 1} / {slides.length}</span>
               <button onClick={() => setActive((i) => Math.min(slides.length - 1, i + 1))} disabled={active === slides.length - 1}
-                className="p-1 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-40"><ChevronRight className="h-4 w-4" /></button>
+                className="p-1 rounded-lg border border-black/[0.05] text-ink-muted hover:bg-surface disabled:opacity-40"><ChevronRight className="h-4 w-4" /></button>
             </div>
           </div>
           <div style={{ width: 360, height: 450, overflow: 'hidden', borderRadius: 16, boxShadow: '0 10px 30px rgba(0,0,0,.12)' }}>
@@ -1217,10 +1217,10 @@ export function CarouselStudio({ seed, onSave, onClear, saving = false }: Carous
               <PostCard config={current} />
             </div>
           </div>
-          <p className="text-xs text-gray-400">Formato 4:5 (1080×1350 px). Se exporta una imagen por tarjeta.</p>
+          <p className="text-xs text-ink-muted">Formato 4:5 (1080×1350 px). Se exporta una imagen por tarjeta.</p>
 
           <button onClick={downloadAll} disabled={downloading}
-            className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-full bg-accent text-white text-sm font-semibold hover:bg-accent-hover transition-colors disabled:opacity-50">
+            className="portal-btn w-full">
             <Download className="h-4 w-4" />
             {downloading ? 'Generando…' : `Descargar ${slides.length} imágenes`}
           </button>
@@ -1229,14 +1229,14 @@ export function CarouselStudio({ seed, onSave, onClear, saving = false }: Carous
             <div className="grid grid-cols-2 gap-2">
               {onSave && (
                 <button onClick={handleSave} disabled={preparing || saving}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-full bg-ink text-white text-sm font-semibold hover:bg-black transition-colors disabled:opacity-50">
+                  className="portal-btn">
                   <Save className="h-4 w-4" />
                   {preparing || saving ? 'Guardando…' : 'Guardar carousel'}
                 </button>
               )}
               {onClear && (
                 <button onClick={onClear} disabled={preparing || saving}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-full border border-gray-200 text-gray-600 text-sm font-semibold hover:bg-gray-50 transition-colors disabled:opacity-50">
+                  className="portal-btn-ghost">
                   <Trash2 className="h-4 w-4" /> Descartar
                 </button>
               )}

@@ -35,19 +35,19 @@ function formatDate(d: string) {
 
 function LeadCard({ lead }: { lead: DupLead }) {
   return (
-    <div className="flex-1 min-w-0 bg-gray-50 rounded-xl p-4 space-y-2">
+    <div className="flex-1 min-w-0 bg-surface rounded-xl2 p-4 space-y-2 shadow-neu-inset">
       <div>
-        <p className="font-semibold text-gray-900 text-sm">{lead.nombre} {lead.apellido}</p>
+        <p className="font-semibold text-ink text-sm">{lead.nombre} {lead.apellido}</p>
         <LeadStatusBadge status={lead.status as never} />
       </div>
-      <div className="space-y-1 text-xs text-gray-600">
-        <p><span className="text-gray-400">Tel:</span> {formatPhone(lead.telefono)}</p>
-        <p><span className="text-gray-400">Correo:</span> {lead.email || '—'}</p>
-        <p><span className="text-gray-400">Recinto:</span> {lead.campus ?? '—'}</p>
-        <p className="line-clamp-2"><span className="text-gray-400">Programa:</span> {lead.programa_interes ?? '—'}</p>
-        <p><span className="text-gray-400">Origen:</span> {lead.source ?? '—'}</p>
-        <p><span className="text-gray-400">Asignado a:</span> {lead.employee_name ?? '—'}</p>
-        <p><span className="text-gray-400">Fecha:</span> {formatDate(lead.created_at)}</p>
+      <div className="space-y-1 text-xs text-ink-muted">
+        <p><span className="text-ink-muted/60">Tel:</span> {formatPhone(lead.telefono)}</p>
+        <p><span className="text-ink-muted/60">Correo:</span> {lead.email || '—'}</p>
+        <p><span className="text-ink-muted/60">Recinto:</span> {lead.campus ?? '—'}</p>
+        <p className="line-clamp-2"><span className="text-ink-muted/60">Programa:</span> {lead.programa_interes ?? '—'}</p>
+        <p><span className="text-ink-muted/60">Origen:</span> {lead.source ?? '—'}</p>
+        <p><span className="text-ink-muted/60">Asignado a:</span> {lead.employee_name ?? '—'}</p>
+        <p><span className="text-ink-muted/60">Fecha:</span> {formatDate(lead.created_at)}</p>
       </div>
     </div>
   )
@@ -110,42 +110,42 @@ export default function DuplicatesView() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-16 flex items-center justify-center">
-        <div className="animate-spin h-8 w-8 rounded-full border-4 border-ink border-t-transparent" />
+      <div className="portal-card p-16 flex items-center justify-center">
+        <div className="portal-spinner" />
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="bg-white rounded-xl border border-red-100 p-10 text-center">
-        <AlertCircle className="h-8 w-8 text-red-400 mx-auto mb-2" />
-        <p className="text-sm text-gray-600">{error}</p>
+      <div className="portal-card p-10 text-center">
+        <AlertCircle className="h-8 w-8 text-accent mx-auto mb-2" />
+        <p className="text-sm text-ink-muted">{error}</p>
       </div>
     )
   }
 
   if (pairs.length === 0) {
     return (
-      <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-16 text-center">
-        <Users className="h-10 w-10 text-gray-300 mx-auto mb-3" />
-        <p className="font-medium text-gray-600">No hay leads duplicados detectados</p>
-        <p className="text-sm text-gray-400 mt-1">Todos los leads han sido revisados o no hay coincidencias.</p>
+      <div className="portal-card p-16 text-center">
+        <Users className="h-10 w-10 text-ink-muted/40 mx-auto mb-3" />
+        <p className="font-medium text-ink-muted">No hay leads duplicados detectados</p>
+        <p className="text-sm text-ink-muted/60 mt-1">Todos los leads han sido revisados o no hay coincidencias.</p>
       </div>
     )
   }
 
   return (
     <div className="space-y-4">
-      <p className="text-xs text-gray-500">{pairs.length} par{pairs.length !== 1 ? 'es' : ''} de posibles duplicados detectados. Revisa cada par y decide si fusionarlos o mantenerlos separados.</p>
+      <p className="text-xs text-ink-muted">{pairs.length} par{pairs.length !== 1 ? 'es' : ''} de posibles duplicados detectados. Revisa cada par y decide si fusionarlos o mantenerlos separados.</p>
 
       {pairs.map((pair) => {
         const isActing = actionLoading === pair.key
         return (
-          <div key={pair.key} className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-5">
+          <div key={pair.key} className="portal-card p-5">
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-50 border border-red-100 text-xs font-medium text-red-700">
+              <span className="portal-badge portal-badge--urgent">
                 <AlertCircle className="h-3.5 w-3.5" />
                 {pair.reason}
               </span>
@@ -153,14 +153,14 @@ export default function DuplicatesView() {
                 <button
                   onClick={() => handleDismiss(pair)}
                   disabled={isActing}
-                  className="px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-40"
+                  className="px-3 py-1.5 rounded-full bg-white shadow-neu-sm text-xs font-medium text-ink-muted hover:text-ink transition-colors disabled:opacity-40"
                 >
                   {isActing ? '…' : 'Mantener ambos'}
                 </button>
                 <button
                   onClick={() => handleMerge(pair)}
                   disabled={isActing}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-ink text-white text-xs font-semibold hover:bg-black transition-colors disabled:opacity-40"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-ink text-white text-xs font-semibold hover:bg-black transition-colors disabled:opacity-40"
                 >
                   <GitMerge className="h-3.5 w-3.5" />
                   {isActing ? 'Fusionando…' : 'Fusionar'}
@@ -171,8 +171,8 @@ export default function DuplicatesView() {
             {/* Side by side lead cards */}
             <div className="flex gap-3 flex-col sm:flex-row">
               <LeadCard lead={pair.lead_a} />
-              <div className="hidden sm:flex items-center text-gray-300 text-lg font-light">vs</div>
-              <div className="flex sm:hidden items-center justify-center text-gray-300 text-xs">vs</div>
+              <div className="hidden sm:flex items-center text-ink-muted/40 text-lg font-light">vs</div>
+              <div className="flex sm:hidden items-center justify-center text-ink-muted/40 text-xs">vs</div>
               <LeadCard lead={pair.lead_b} />
             </div>
           </div>

@@ -141,34 +141,34 @@ function TutorialModal({ role, onClose }: { role: string; onClose: () => void })
   const isLast = current === steps.length - 1
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md flex flex-col">
+    <div className="portal-modal-overlay">
+      <div className="portal-modal max-w-md flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-black/[0.05]">
           <div className="flex items-center gap-2">
-            <BookOpen className="h-4 w-4 text-accent" />
+            <BookOpen className="h-4 w-4 text-ink" />
             <span className="text-sm font-bold text-ink font-display">Tutorial</span>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
-            <X className="h-4 w-4 text-gray-500" />
+          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-surface transition-colors">
+            <X className="h-4 w-4 text-ink-muted" />
           </button>
         </div>
 
         {/* Step content */}
         <div className="px-6 py-6 flex-1">
           <div className="flex items-center justify-center mb-5">
-            <div className="h-14 w-14 rounded-2xl bg-accent-soft flex items-center justify-center">
-              <Icon className="h-7 w-7 text-accent" />
+            <div className="portal-icon h-14 w-14 rounded-neu">
+              <Icon className="h-7 w-7 text-ink" />
             </div>
           </div>
 
           <h2 className="text-base font-bold text-ink text-center mb-2 font-display">{step.title}</h2>
-          <p className="text-sm text-gray-600 text-center leading-relaxed">{step.description}</p>
+          <p className="text-sm text-ink-muted text-center leading-relaxed">{step.description}</p>
 
           {step.tip && (
-            <div className="mt-4 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
-              <p className="text-xs text-amber-800">
-                <span className="font-semibold">Consejo: </span>{step.tip}
+            <div className="mt-4 bg-surface rounded-xl px-4 py-3">
+              <p className="text-xs text-ink-muted">
+                <span className="font-semibold text-ink">Consejo: </span>{step.tip}
               </p>
             </div>
           )}
@@ -180,23 +180,23 @@ function TutorialModal({ role, onClose }: { role: string; onClose: () => void })
             <button
               key={i}
               onClick={() => setCurrent(i)}
-              className={`h-1.5 rounded-full transition-all ${i === current ? 'w-5 bg-accent' : 'w-1.5 bg-gray-200 hover:bg-gray-300'}`}
+              className={`h-1.5 rounded-full transition-all ${i === current ? 'w-5 bg-ink' : 'w-1.5 bg-surface-soft hover:bg-ink-muted/40'}`}
             />
           ))}
         </div>
 
         {/* Navigation */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100">
+        <div className="flex items-center justify-between px-6 py-4 border-t border-black/[0.05]">
           <button
             onClick={() => setCurrent((c) => c - 1)}
             disabled={isFirst}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-0 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-full text-sm text-ink-muted hover:bg-surface disabled:opacity-0 transition-colors"
           >
             <ChevronLeft className="h-4 w-4" />
             Anterior
           </button>
 
-          <span className="text-xs text-gray-400">{current + 1} / {steps.length}</span>
+          <span className="text-xs text-ink-muted/60">{current + 1} / {steps.length}</span>
 
           {isLast ? (
             <button
@@ -208,7 +208,7 @@ function TutorialModal({ role, onClose }: { role: string; onClose: () => void })
           ) : (
             <button
               onClick={() => setCurrent((c) => c + 1)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-semibold text-accent hover:bg-accent-soft transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-semibold text-ink hover:bg-surface transition-colors"
             >
               Siguiente
               <ChevronRight className="h-4 w-4" />
@@ -250,7 +250,7 @@ export default function PortalHeader({ employee }: PortalHeaderProps) {
                 {employee.campus.map((c) => (
                   <span
                     key={c}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-accent-soft text-accent"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-surface text-ink-muted shadow-neu-sm"
                   >
                     <Building2 className="h-3 w-3" />
                     {c}

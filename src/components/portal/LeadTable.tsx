@@ -132,27 +132,27 @@ export default function LeadTable({ leads, staleLeadIds, followupLeadIds = [], e
   return (
     <div>
       {/* Filters + action bar */}
-      <div className="flex flex-wrap items-center gap-3 mb-4">
-        <div className="flex items-center gap-1.5 text-sm text-gray-500">
+      <div className="flex flex-wrap items-center gap-2.5 mb-4">
+        <div className="flex items-center gap-1.5 text-sm text-ink-muted">
           <Filter className="h-4 w-4" />
           <span className="hidden sm:inline">Filtrar:</span>
         </div>
 
         <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-ink-muted/60 pointer-events-none z-10" />
           <input
             type="text"
             placeholder="Buscar por nombre…"
             value={searchName}
             onChange={(e) => setSearchName(e.target.value)}
-            className="text-sm border border-gray-200 rounded-lg pl-8 pr-3 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-accent-ring w-44"
+            className="portal-filter pl-8 w-44"
           />
         </div>
 
         <select
           value={currentStatus}
           onChange={(e) => updateFilter('status', e.target.value)}
-          className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-accent-ring"
+          className="portal-filter"
         >
           <option value="">Todos los estados</option>
           {ALL_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -161,7 +161,7 @@ export default function LeadTable({ leads, staleLeadIds, followupLeadIds = [], e
         <select
           value={currentCampus}
           onChange={(e) => updateFilter('campus', e.target.value)}
-          className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-accent-ring"
+          className="portal-filter"
         >
           <option value="">Todos los recintos</option>
           <option value="Barranquitas">Barranquitas</option>
@@ -172,7 +172,7 @@ export default function LeadTable({ leads, staleLeadIds, followupLeadIds = [], e
           <select
             value={currentSource}
             onChange={(e) => updateFilter('source', e.target.value)}
-            className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-accent-ring"
+            className="portal-filter"
           >
             <option value="">Todos los orígenes</option>
             {sources.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -183,7 +183,7 @@ export default function LeadTable({ leads, staleLeadIds, followupLeadIds = [], e
           <select
             value={currentRep}
             onChange={(e) => updateFilter('rep', e.target.value)}
-            className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-accent-ring"
+            className="portal-filter"
           >
             <option value="">Todos los representantes</option>
             {reps.map((r) => <option key={r.id} value={r.id}>{r.full_name}</option>)}
@@ -194,7 +194,7 @@ export default function LeadTable({ leads, staleLeadIds, followupLeadIds = [], e
         <select
           value={currentProgram}
           onChange={(e) => updateFilter('programa', e.target.value)}
-          className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-accent-ring max-w-[200px]"
+          className="portal-filter max-w-[200px]"
         >
           <option value="">Todos los programas</option>
           {ALL_PROGRAMS.map((p) => <option key={p} value={p}>{p}</option>)}
@@ -203,30 +203,30 @@ export default function LeadTable({ leads, staleLeadIds, followupLeadIds = [], e
         <select
           value={currentHorario}
           onChange={(e) => updateFilter('horario', e.target.value)}
-          className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-accent-ring"
+          className="portal-filter"
         >
           <option value="">Todos los horarios</option>
           {HORARIOS.map((h) => <option key={h} value={h}>{h}</option>)}
         </select>
 
-        <div className="flex items-center gap-1.5 text-sm text-gray-600">
-          <span className="text-xs text-gray-400">Fecha:</span>
+        <div className="flex items-center gap-1.5 text-sm text-ink-muted">
+          <span className="text-xs text-ink-muted/70">Fecha:</span>
           <input
             type="date"
             value={currentDateFrom}
             max={currentDateTo || undefined}
             onChange={(e) => updateFilter('date_from', e.target.value)}
             title="Desde"
-            className="text-sm border border-gray-200 rounded-lg px-2 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-accent-ring"
+            className="portal-filter"
           />
-          <span className="text-gray-400">–</span>
+          <span className="text-ink-muted/60">–</span>
           <input
             type="date"
             value={currentDateTo}
             min={currentDateFrom || undefined}
             onChange={(e) => updateFilter('date_to', e.target.value)}
             title="Hasta"
-            className="text-sm border border-gray-200 rounded-lg px-2 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-accent-ring"
+            className="portal-filter"
           />
         </div>
 
@@ -236,7 +236,7 @@ export default function LeadTable({ leads, staleLeadIds, followupLeadIds = [], e
           <button
             onClick={deleteSelected}
             disabled={deleting}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-50"
+            className="portal-btn-danger"
           >
             <Trash2 className="h-4 w-4" />
             {deleting ? 'Eliminando…' : `Eliminar (${selected.size})`}
@@ -245,7 +245,7 @@ export default function LeadTable({ leads, staleLeadIds, followupLeadIds = [], e
 
         <button
           onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-accent text-white text-sm font-semibold hover:bg-accent-hover transition-colors shadow-sm"
+          className="portal-btn"
         >
           <Plus className="h-4 w-4" />
           Agregar Lead
@@ -254,38 +254,38 @@ export default function LeadTable({ leads, staleLeadIds, followupLeadIds = [], e
 
       {/* Table */}
       {filteredLeads.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-12 text-center">
-          <p className="text-gray-500 font-medium">No hay leads que mostrar.</p>
-          <p className="text-sm text-gray-400 mt-1">Ajusta los filtros o agrega un nuevo lead.</p>
+        <div className="portal-card p-12 text-center">
+          <p className="text-ink-muted font-medium">No hay leads que mostrar.</p>
+          <p className="text-sm text-ink-muted/60 mt-1">Ajusta los filtros o agrega un nuevo lead.</p>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft overflow-hidden">
+        <div className="portal-card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-100 bg-gray-50 text-left">
+                <tr className="border-b border-black/[0.05] bg-surface text-left">
                   {isAdmin && (
                     <th className="px-3 py-3 w-8">
                       <input
                         type="checkbox"
                         checked={allSelected}
                         onChange={toggleAll}
-                        className="h-4 w-4 rounded border-gray-300 text-ink focus:ring-accent-ring cursor-pointer"
+                        className="h-4 w-4 rounded border-ink-muted/30 text-ink focus:ring-accent-ring cursor-pointer"
                         title={allSelected ? 'Deseleccionar todos' : 'Seleccionar todos'}
                       />
                     </th>
                   )}
-                  <th className="px-4 py-3 font-semibold text-gray-600 whitespace-nowrap">Nombre</th>
-                  <th className="px-4 py-3 font-semibold text-gray-600 whitespace-nowrap">Teléfono</th>
-                  <th className="px-4 py-3 font-semibold text-gray-600 whitespace-nowrap hidden md:table-cell">Programa</th>
-                  <th className="px-4 py-3 font-semibold text-gray-600 whitespace-nowrap hidden sm:table-cell">Recinto</th>
-                  <th className="px-4 py-3 font-semibold text-gray-600 whitespace-nowrap">Estado</th>
-                  <th className="px-4 py-3 font-semibold text-gray-600 whitespace-nowrap hidden xl:table-cell">Origen</th>
-                  <th className="px-4 py-3 font-semibold text-gray-600 whitespace-nowrap hidden lg:table-cell">Fecha</th>
+                  <th className="px-4 py-3 font-semibold text-ink-muted whitespace-nowrap">Nombre</th>
+                  <th className="px-4 py-3 font-semibold text-ink-muted whitespace-nowrap">Teléfono</th>
+                  <th className="px-4 py-3 font-semibold text-ink-muted whitespace-nowrap hidden md:table-cell">Programa</th>
+                  <th className="px-4 py-3 font-semibold text-ink-muted whitespace-nowrap hidden sm:table-cell">Recinto</th>
+                  <th className="px-4 py-3 font-semibold text-ink-muted whitespace-nowrap">Estado</th>
+                  <th className="px-4 py-3 font-semibold text-ink-muted whitespace-nowrap hidden xl:table-cell">Origen</th>
+                  <th className="px-4 py-3 font-semibold text-ink-muted whitespace-nowrap hidden lg:table-cell">Fecha</th>
                   <th className="px-4 py-3 w-8"></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody className="divide-y divide-black/[0.04]">
                 {filteredLeads.map((lead) => {
                   const isStale = staleSet.has(lead.id)
                   const hasFollowup = followupSet.has(lead.id)
@@ -293,7 +293,7 @@ export default function LeadTable({ leads, staleLeadIds, followupLeadIds = [], e
                   return (
                     <tr
                       key={lead.id}
-                      className={`hover:bg-gray-50 transition-colors ${isStale ? 'bg-amber-50/40' : ''} ${isChecked ? 'bg-blue-50/50' : ''}`}
+                      className={`hover:bg-surface/60 transition-colors ${isStale ? 'bg-accent-soft/30' : ''} ${isChecked ? 'bg-surface' : ''}`}
                     >
                       {isAdmin && (
                         <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
@@ -301,45 +301,45 @@ export default function LeadTable({ leads, staleLeadIds, followupLeadIds = [], e
                             type="checkbox"
                             checked={isChecked}
                             onChange={() => toggleOne(lead.id)}
-                            className="h-4 w-4 rounded border-gray-300 text-ink focus:ring-accent-ring cursor-pointer"
+                            className="h-4 w-4 rounded border-ink-muted/30 text-ink focus:ring-accent-ring cursor-pointer"
                           />
                         </td>
                       )}
-                      <td className="px-4 py-3 font-medium text-gray-900 cursor-pointer" onClick={() => router.push(`/portal/leads/${lead.id}`)}>
+                      <td className="px-4 py-3 font-medium text-ink cursor-pointer" onClick={() => router.push(`/portal/leads/${lead.id}`)}>
                         <div className="flex items-center gap-2">
                           {isStale && (
                             <span title="Seguimiento pendiente (7+ días sin actividad)">
-                              <AlertTriangle className="h-3.5 w-3.5 text-amber-500 flex-shrink-0" />
+                              <AlertTriangle className="h-3.5 w-3.5 text-accent flex-shrink-0" />
                             </span>
                           )}
                           {hasFollowup && (
                             <span title="Follow-up programado para hoy o antes">
-                              <CalendarClock className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
+                              <CalendarClock className="h-3.5 w-3.5 text-ink-muted flex-shrink-0" />
                             </span>
                           )}
                           <span className="max-w-[180px] truncate" title={`${lead.nombre} ${lead.apellido}`}>{lead.nombre} {lead.apellido}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-gray-600 font-mono text-xs whitespace-nowrap cursor-pointer" onClick={() => router.push(`/portal/leads/${lead.id}`)}>
+                      <td className="px-4 py-3 text-ink-muted font-mono text-xs whitespace-nowrap cursor-pointer" onClick={() => router.push(`/portal/leads/${lead.id}`)}>
                         {formatPhone(lead.telefono)}
                       </td>
-                      <td className="px-4 py-3 text-gray-600 max-w-[180px] truncate hidden md:table-cell cursor-pointer" title={lead.programa_interes ?? ''} onClick={() => router.push(`/portal/leads/${lead.id}`)}>
+                      <td className="px-4 py-3 text-ink-muted max-w-[180px] truncate hidden md:table-cell cursor-pointer" title={lead.programa_interes ?? ''} onClick={() => router.push(`/portal/leads/${lead.id}`)}>
                         {lead.programa_interes ?? '—'}
                       </td>
-                      <td className="px-4 py-3 text-gray-600 whitespace-nowrap hidden sm:table-cell cursor-pointer" onClick={() => router.push(`/portal/leads/${lead.id}`)}>
+                      <td className="px-4 py-3 text-ink-muted whitespace-nowrap hidden sm:table-cell cursor-pointer" onClick={() => router.push(`/portal/leads/${lead.id}`)}>
                         {lead.campus ?? '—'}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap cursor-pointer" onClick={() => router.push(`/portal/leads/${lead.id}`)}>
                         <LeadStatusBadge status={lead.status} />
                       </td>
-                      <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap hidden xl:table-cell cursor-pointer max-w-[160px] truncate" title={leadOrigin(lead)} onClick={() => router.push(`/portal/leads/${lead.id}`)}>
+                      <td className="px-4 py-3 text-ink-muted text-xs whitespace-nowrap hidden xl:table-cell cursor-pointer max-w-[160px] truncate" title={leadOrigin(lead)} onClick={() => router.push(`/portal/leads/${lead.id}`)}>
                         {leadOrigin(lead)}
                       </td>
-                      <td className="px-4 py-3 text-gray-400 text-xs whitespace-nowrap hidden lg:table-cell cursor-pointer" onClick={() => router.push(`/portal/leads/${lead.id}`)}>
+                      <td className="px-4 py-3 text-ink-muted/70 text-xs whitespace-nowrap hidden lg:table-cell cursor-pointer" onClick={() => router.push(`/portal/leads/${lead.id}`)}>
                         {formatDate(lead.created_at)}
                       </td>
                       <td className="px-4 py-3 cursor-pointer" onClick={() => router.push(`/portal/leads/${lead.id}`)}>
-                        <ChevronRight className="h-4 w-4 text-gray-300" />
+                        <ChevronRight className="h-4 w-4 text-ink-muted/40" />
                       </td>
                     </tr>
                   )

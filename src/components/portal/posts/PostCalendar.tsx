@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Calendar as CalendarIcon, Plus, X, Download, Trash2, ChevronLeft, Loader2, AlertCircle, Layers } from 'lucide-react'
+import { Calendar as CalendarIcon, Plus, X, Download, Trash2, ChevronLeft, AlertCircle, Layers } from 'lucide-react'
 
 export interface Calendar {
   id: string
@@ -102,38 +102,38 @@ export default function PostCalendar() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-base font-bold text-ink font-display">Calendarios de posts</h2>
-            <p className="text-xs text-gray-500">Programa tus publicaciones por día del mes.</p>
+            <p className="text-xs text-ink-muted">Programa tus publicaciones por día del mes.</p>
           </div>
           <button onClick={() => setShowCreate(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-accent text-white text-sm font-semibold hover:bg-accent-hover transition-colors">
+            className="portal-btn">
             <Plus className="h-4 w-4" /> Crear nuevo calendario
           </button>
         </div>
 
         {loading ? (
-          <div className="flex items-center gap-2 text-sm text-gray-400 py-10 justify-center">
-            <Loader2 className="h-4 w-4 animate-spin" /> Cargando…
+          <div className="flex items-center gap-2 text-sm text-ink-muted py-10 justify-center">
+            <span className="portal-spinner h-4 w-4" /> Cargando…
           </div>
         ) : calendars.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-2xl border border-black/[0.06]">
-            <CalendarIcon className="h-10 w-10 text-gray-300 mx-auto mb-3" />
-            <p className="text-sm text-gray-500">Aún no tienes calendarios. Crea el primero para empezar a programar posts.</p>
+          <div className="portal-card portal-empty">
+            <CalendarIcon className="h-10 w-10 text-ink-muted/50 mx-auto mb-3" />
+            <p className="text-sm text-ink-muted">Aún no tienes calendarios. Crea el primero para empezar a programar posts.</p>
           </div>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {calendars.map((c) => (
               <button key={c.id} onClick={() => setSelected(c)}
-                className="text-left bg-white rounded-2xl border border-black/[0.06] shadow-soft p-5 hover:border-accent/40 hover:shadow-md transition-all">
+                className="text-left portal-card portal-card-hover p-5">
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="h-9 w-9 rounded-xl bg-accent/10 flex items-center justify-center">
-                    <CalendarIcon className="h-4 w-4 text-accent" />
+                  <div className="portal-icon portal-icon--sm">
+                    <CalendarIcon className="h-4 w-4 text-ink" />
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-bold text-ink truncate">{c.name}</p>
-                    <p className="text-xs text-gray-500 capitalize">{monthLabel(c.month)}</p>
+                    <p className="text-xs text-ink-muted capitalize">{monthLabel(c.month)}</p>
                   </div>
                 </div>
-                <p className="text-xs text-gray-400">{c.post_count} post{c.post_count === 1 ? '' : 's'} guardado{c.post_count === 1 ? '' : 's'}</p>
+                <p className="text-xs text-ink-muted">{c.post_count} post{c.post_count === 1 ? '' : 's'} guardado{c.post_count === 1 ? '' : 's'}</p>
               </button>
             ))}
           </div>
@@ -167,27 +167,27 @@ export default function PostCalendar() {
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <button onClick={() => setSelected(null)} className="flex items-center gap-1 text-sm text-gray-500 hover:text-ink">
+        <button onClick={() => setSelected(null)} className="flex items-center gap-1 text-sm text-ink-muted hover:text-ink">
           <ChevronLeft className="h-4 w-4" /> Calendarios
         </button>
         <div className="text-center">
           <h2 className="text-base font-bold text-ink font-display">{selected.name}</h2>
-          <p className="text-xs text-gray-500 capitalize">{monthLabel(selected.month)} · {posts.length} post{posts.length === 1 ? '' : 's'}</p>
+          <p className="text-xs text-ink-muted capitalize">{monthLabel(selected.month)} · {posts.length} post{posts.length === 1 ? '' : 's'}</p>
         </div>
-        <button onClick={() => deleteCalendar(selected)} className="flex items-center gap-1 text-xs text-gray-400 hover:text-red-500">
+        <button onClick={() => deleteCalendar(selected)} className="flex items-center gap-1 text-xs text-ink-muted hover:text-accent">
           <Trash2 className="h-3.5 w-3.5" /> Eliminar
         </button>
       </div>
 
       {postsLoading ? (
-        <div className="flex items-center gap-2 text-sm text-gray-400 py-10 justify-center">
-          <Loader2 className="h-4 w-4 animate-spin" /> Cargando posts…
+        <div className="flex items-center gap-2 text-sm text-ink-muted py-10 justify-center">
+          <span className="portal-spinner h-4 w-4" /> Cargando posts…
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-black/[0.06] shadow-soft p-3 sm:p-4">
+        <div className="portal-card p-3 sm:p-4">
           <div className="grid grid-cols-7 gap-1 mb-1">
             {WEEKDAYS.map((w) => (
-              <div key={w} className="text-center text-[11px] font-semibold text-gray-400 py-1">{w}</div>
+              <div key={w} className="text-center text-[11px] font-semibold text-ink-muted py-1">{w}</div>
             ))}
           </div>
           <div className="grid grid-cols-7 gap-1">
@@ -197,18 +197,18 @@ export default function PostCalendar() {
               const dayPosts = byDay[iso] ?? []
               return (
                 <button key={iso} onClick={() => dayPosts.length && setOpenDay(iso)}
-                  className={`aspect-square rounded-lg border p-1 flex flex-col text-left transition-colors ${dayPosts.length ? 'border-accent/30 bg-accent/[0.04] hover:bg-accent/10 cursor-pointer' : 'border-gray-100'}`}>
-                  <span className="text-[11px] font-semibold text-gray-500">{d}</span>
+                  className={`aspect-square rounded-lg border p-1 flex flex-col text-left transition-colors ${dayPosts.length ? 'border-black/[0.08] bg-surface hover:bg-ink/[0.04] cursor-pointer' : 'border-black/[0.05]'}`}>
+                  <span className="text-[11px] font-semibold text-ink-muted">{d}</span>
                   <div className="flex-1 flex flex-wrap gap-0.5 mt-0.5 overflow-hidden">
                     {dayPosts.slice(0, 4).map((p) => (
                       <span key={p.id} className="relative inline-flex h-4 w-4">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         {p.image_url ? <img src={p.image_url} alt="" className="h-4 w-4 rounded object-cover" />
-                          : <span className="h-4 w-4 rounded bg-accent/30" />}
+                          : <span className="h-4 w-4 rounded bg-ink/20" />}
                         {carouselImages(p) && <Layers className="absolute -top-0.5 -right-0.5 h-2 w-2 text-white drop-shadow" strokeWidth={3} />}
                       </span>
                     ))}
-                    {dayPosts.length > 4 && <span className="text-[9px] text-gray-400">+{dayPosts.length - 4}</span>}
+                    {dayPosts.length > 4 && <span className="text-[9px] text-ink-muted">+{dayPosts.length - 4}</span>}
                   </div>
                 </button>
               )
@@ -223,11 +223,11 @@ export default function PostCalendar() {
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {(byDay[openDay] ?? []).map((p) => (
               <button key={p.id} onClick={() => { setOpenPost(p); setOpenDay(null) }}
-                className="rounded-xl overflow-hidden border border-gray-200 hover:border-accent transition-colors">
+                className="rounded-xl overflow-hidden border border-black/[0.05] hover:border-accent transition-colors">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 {p.image_url ? <img src={p.image_url} alt={p.title ?? ''} className="w-full aspect-[4/5] object-cover" />
-                  : <div className="w-full aspect-[4/5] bg-gray-100 flex items-center justify-center text-xs text-gray-400">Sin imagen</div>}
-                {p.title && <p className="text-[11px] text-gray-600 px-2 py-1 truncate">{p.title}</p>}
+                  : <div className="w-full aspect-[4/5] bg-surface flex items-center justify-center text-xs text-ink-muted">Sin imagen</div>}
+                {p.title && <p className="text-[11px] text-ink-muted px-2 py-1 truncate">{p.title}</p>}
               </button>
             ))}
           </div>
@@ -249,10 +249,10 @@ export default function PostCalendar() {
             <div className="space-y-4">
               {slides ? (
                 <>
-                  <p className="text-xs text-gray-500 flex items-center gap-1.5"><Layers className="h-3.5 w-3.5 text-accent" /> Carousel de {slides.length} tarjetas</p>
+                  <p className="text-xs text-ink-muted flex items-center gap-1.5"><Layers className="h-3.5 w-3.5 text-ink-muted" /> Carousel de {slides.length} tarjetas</p>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[50vh] overflow-y-auto">
                     {slides.map((url, i) => (
-                      <div key={i} className="relative rounded-lg overflow-hidden border border-gray-200">
+                      <div key={i} className="relative rounded-lg overflow-hidden border border-black/[0.05]">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={url} alt="" className="w-full aspect-[4/5] object-cover" />
                         <span className="absolute top-1 left-1 text-[10px] font-bold text-white bg-black/60 rounded px-1.5 py-0.5 leading-none">{i + 1}</span>
@@ -269,17 +269,17 @@ export default function PostCalendar() {
               <div className="flex gap-3">
                 {slides ? (
                   <button onClick={downloadAll}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-full bg-accent text-white text-sm font-semibold hover:bg-accent-hover transition-colors">
+                    className="portal-btn flex-1">
                     <Download className="h-4 w-4" /> Descargar todas ({slides.length})
                   </button>
                 ) : openPost.image_url && (
                   <button onClick={() => downloadImage(openPost.image_url!, `dmart-post-${openPost.post_date}.png`)}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-full bg-accent text-white text-sm font-semibold hover:bg-accent-hover transition-colors">
+                    className="portal-btn flex-1">
                     <Download className="h-4 w-4" /> Descargar
                   </button>
                 )}
                 <button onClick={() => deletePost(openPost)}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-full border border-gray-200 text-gray-600 text-sm font-semibold hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors">
+                  className="portal-btn-danger">
                   <Trash2 className="h-4 w-4" /> Eliminar
                 </button>
               </div>
@@ -294,11 +294,11 @@ export default function PostCalendar() {
 // ── Modal genérico ────────────────────────────────────────────────────────────
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 overflow-y-auto">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md my-4">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+    <div className="portal-modal-overlay overflow-y-auto">
+      <div className="portal-modal max-w-md my-4">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-black/[0.05]">
           <h3 className="text-sm font-bold text-ink truncate">{title}</h3>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100"><X className="h-4 w-4 text-gray-500" /></button>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface"><X className="h-4 w-4 text-ink-muted" /></button>
         </div>
         <div className="px-5 py-5">{children}</div>
       </div>
@@ -334,23 +334,23 @@ function CreateCalendarModal({ onClose, onCreated }: { onClose: () => void; onCr
     <Modal title="Crear nuevo calendario" onClose={onClose}>
       <form onSubmit={submit} className="space-y-4">
         {error && (
-          <div className="p-3 rounded-lg bg-red-50 border border-red-200 flex gap-2 items-start">
-            <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-red-700">{error}</p>
+          <div className="p-3 rounded-lg bg-accent-soft border border-accent/20 flex gap-2 items-start">
+            <AlertCircle className="h-4 w-4 text-accent flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-accent">{error}</p>
           </div>
         )}
         <div>
-          <label className="text-xs font-semibold text-gray-600 mb-1 block">Nombre</label>
+          <label className="portal-label">Nombre</label>
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ej: Campaña de Verano"
-            className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent-ring" />
+            className="portal-input" />
         </div>
         <div>
-          <label className="text-xs font-semibold text-gray-600 mb-1 block">Mes</label>
+          <label className="portal-label">Mes</label>
           <input type="month" value={month} onChange={(e) => setMonth(e.target.value)}
-            className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent-ring" />
+            className="portal-input" />
         </div>
         <button type="submit" disabled={loading}
-          className="w-full px-4 py-2.5 rounded-full bg-accent text-white text-sm font-semibold hover:bg-accent-hover transition-colors disabled:opacity-50">
+          className="portal-btn w-full">
           {loading ? 'Creando…' : 'Crear calendario'}
         </button>
       </form>
